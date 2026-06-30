@@ -1,0 +1,121 @@
+/* ==========================================================================
+   LEAVE HISTORY DASHBOARD LAYOUT MODULES
+   ========================================================================== */
+
+/* Unified Layout Header Structural Lock */
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 24px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+/* User Profile & Actions Right Side Cluster */
+.user-controls-cluster {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto;
+}
+
+/* Base layout settings for the Leave Balance & Used cards */
+.leave-metrics-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 22px 26px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  min-height: 220px;
+  box-sizing: border-box;
+  border-bottom: 4px solid #4a1521; /* Dark maroon footer line matching image_18279c */
+}
+
+/* Card Section Header Line */
+.leave-card-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d3748;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+/* ==========================================================================
+   FILTER OPTIONS CONTAINER (FIELDSET BOX)
+   ========================================================================== */
+.filter-options-box {
+  border: 1px solid #996666 !important; /* Muted reddish-brown border matching image_18279c */
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+  background-color: #ffffff;
+  box-sizing: border-box;
+}
+
+.filter-options-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7a0000;
+  margin-bottom: 14px;
+  text-transform: none;
+}
+
+/* Form input elements styling inside the grid */
+.filter-input-field {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background-color: #ffffff;
+  color: #2d3748;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.filter-input-field:focus {
+  border-color: #7a0000;
+}
+
+/* ==========================================================================
+   DATA TABLE DESIGN SYSTEM COMPLIANCE
+   ========================================================================== */
+.leave-table-banner {
+  background-color: #4a080e !important; /* Deep red background matching image_18279c */
+  color: #ffffff !important;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 14px 20px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Action button to load view drawer modal details */
+.view-details-btn {
+  background-color: #680000;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: background-color 0.15s ease;
+}
+
+.view-details-btn:hover {
+  background-color: #4a0000;
+}

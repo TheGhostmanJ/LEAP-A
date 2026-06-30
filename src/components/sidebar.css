@@ -1,0 +1,114 @@
+/* ==========================================================================
+   GLOBAL APP SHELL SETTINGS
+   ========================================================================== */
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* OUTER SHELL — locks the whole page layout view layout so it never scrolls. */
+.dashboard-container {
+  display: flex;
+  flex-direction: row;
+  width: 100vw;
+  height: 100vh;
+  background-color: #111111;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   SIDEBAR NAV MASTER HOUSING
+   ========================================================================== */
+.dashboard-sidebar {
+  width: 260px;
+  height: 100vh;
+  background-color: #fcfcfc;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e5e7eb;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  overflow-y: auto; /* Handles shorter browser window viewports gracefully */
+}
+
+/* SIDEBAR HEADER BLOCK / BRAND LOGO AREA */
+.sidebar-brand {
+  background-color: #7a0000;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 24px;
+}
+
+/* SIDEBAR NAV LINKS LIST */
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  padding: 0 16px;
+  margin: 0;
+}
+
+/* INDIVIDUAL ITEM ROW LAYOUT */
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+/* DYNAMIC SELECTED NAVIGATION STATES */
+.sidebar-item.active {
+  background-color: #5a0000;
+  color: #ffffff;
+}
+
+.sidebar-item:hover:not(.active) {
+  background-color: #f0eee9;
+}
+
+/* ==========================================================================
+   BOTTOM DATE TIME DISPLAY BOX
+   ========================================================================== */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px;
+}
+
+.datetime-box {
+  border: 1.5px solid #7a0000;
+  border-radius: 8px;
+  padding: 12px;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #5a0000;
+}
+
+.datetime-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.datetime-text .time-label {
+  font-weight: 500;
+  color: #374151;
+}

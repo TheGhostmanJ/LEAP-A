@@ -1,0 +1,73 @@
+/* ==========================================================================
+   TRAINING RECORDS DASHBOARD DECORATORS (image_189c39.png)
+   ========================================================================== */
+
+/* Accented bottom structural borders matching the prototype rules */
+.tr-card-accent-maroon {
+  border-bottom: 5px solid #4a080e !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04) !important;
+}
+
+.tr-card-accent-gold {
+  border-bottom: 5px solid #a16207 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Prototype typography mapping: [Number] [Label text] */
+.tr-center-big-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 38px;
+  font-weight: 800;
+  color: #2d3748;
+  margin: 28px 0;
+  line-height: 1;
+  width: 100%;
+}
+
+.tr-text-lbl-maroon {
+  font-size: 24px;
+  font-weight: 700;
+  color: #4a080e;
+}
+
+.tr-text-lbl-gold {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ca8a04;
+}
+
+/* Horizontal matrix split container system */
+.tr-split-tables-container {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tr-matrix-flex-box {
+  flex: 1;
+  min-width: 0; /* Prevents overflow collapse inside a flex environment */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Scheduled status pill indicator matching design language definitions */
+.tr-status-pill-gold {
+  background-color: #fef3c7;
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid #fde68a;
+  display: inline-block;
+}
+
+/* Uniform transparent empty cells padding layout builder */
+.tr-empty-spacer-cell {
+  padding: 18px 12px !important;
+  border-bottom: 1px solid #edf2f7;
+  background-color: transparent;
+}

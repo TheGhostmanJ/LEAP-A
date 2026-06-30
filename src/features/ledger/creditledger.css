@@ -1,0 +1,174 @@
+/* ==========================================================================
+   PROTOTYPE ARCHITECTURE IMPLEMENTATION (image_1848e6.png)
+   ========================================================================== */
+
+.cl-proto-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 16px 20px 12px 20px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.cl-border-maroon {
+  border-bottom: 5px solid #4a080e !important;
+}
+
+.cl-border-gold {
+  border-bottom: 5px solid #a16207 !important;
+}
+
+.cl-proto-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+/* Metric text readouts centered */
+.cl-proto-value {
+  font-size: 34px;
+  font-weight: 700;
+  text-align: center;
+  margin: 14px 0 6px 0;
+  line-height: 1;
+}
+
+.cl-text-maroon { color: #850000; }
+.cl-text-dark { color: #374151; }
+
+.cl-proto-unit {
+  font-size: 26px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.cl-text-gold { color: #ca8a04; }
+
+/* Custom Progress Bar Segmenter Tracking */
+.cl-proto-bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  display: flex;
+  background-color: #e5e7eb;
+  margin-bottom: 4px;
+}
+
+/* Layout context markers for labels inside segments */
+.cl-proto-labels {
+  position: relative;
+  width: 100%;
+  height: 14px;
+  margin-bottom: 10px;
+}
+
+.cl-proto-labels div {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+/* Flex rows for legend dots */
+.cl-proto-legend-container {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.cl-proto-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.cl-proto-box {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  border-radius: 1px;
+}
+
+/* Monetization Balance Horizontal Ribbon */
+.cl-proto-ribbon {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+}
+
+.cl-proto-ribbon-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cl-proto-ribbon-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #4a080e;
+}
+
+.cl-proto-badge-green {
+  background-color: #38a169;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 14px;
+  border-radius: 999px;
+}
+
+.cl-proto-ribbon-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.cl-proto-avail-text {
+  font-size: 12px;
+  color: #4b5563;
+}
+
+/* Master gradient button with top/bottom block text layouts */
+.cl-proto-gradient-btn {
+  background: linear-gradient(135deg, #a16207 0%, #78350f 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+}
+
+.cl-proto-gradient-btn .btn-main-txt {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.cl-proto-gradient-btn .btn-sub-txt {
+  font-size: 10px;
+  opacity: 0.95;
+}

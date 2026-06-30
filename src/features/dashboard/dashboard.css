@@ -1,0 +1,595 @@
+/* src/Dashboard.css */
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* OUTER SHELL — locks the whole page so it never scrolls.
+   Only .dashboard-main-content is allowed to scroll. */
+.dashboard-container {
+  display: flex;
+  flex-direction: row;
+  width: 100vw;
+  height: 100vh;
+  background-color: #111111;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.dashboard-sidebar {
+  width: 260px;
+  height: 100vh;
+  background-color: #fcfcfc;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e5e7eb;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  overflow-y: auto; /* in case sidebar content ever grows taller than the screen */
+}
+
+/* THE FIX:
+   flex: 1            -> takes remaining width next to sidebar
+   min-height: 0       -> REQUIRED override; without this a flex child
+                          ignores overflow and just grows to fit content
+   height: 100%        -> constrains it to the parent's fixed 100vh height
+   overflow-y: auto     -> this is what actually creates the scrollbar
+*/
+.dashboard-main-content {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  background-color: #f3f4f6;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* SIDEBAR HEADER BLOCK */
+.sidebar-brand {
+  background-color: #7a0000;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 24px;
+}
+
+/* SIDEBAR MENU */
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  padding: 0 16px;
+  margin: 0;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+.sidebar-item.active {
+  background-color: #5a0000;
+  color: #ffffff;
+}
+
+.sidebar-item:hover:not(.active) {
+  background-color: #f0eee9;
+}
+
+/* BOTTOM DATE TIME BOX */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px;
+}
+
+.datetime-box {
+  border: 1.5px solid #7a0000;
+  border-radius: 8px;
+  padding: 12px;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #5a0000;
+}
+
+.datetime-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.datetime-text .time-label {
+  font-weight: 500;
+  color: #374151;
+}
+
+/* ==========================================================================
+   CONTENT TOP HEADER BAR
+   ========================================================================== */
+.content-top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0; /* prevents header from being squeezed when content scrolls */
+}
+
+.welcome-heading {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.highlight-name {
+  color: #7a0000;
+}
+
+.user-controls-cluster {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.icon-alert-btn {
+  background: #7a0000;
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.badge-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  background-color: #e7b103;
+  border-radius: 50%;
+}
+
+.profile-identity-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #7a0000;
+  padding: 6px 14px;
+  border-radius: 20px;
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.profile-identity-card:hover {
+  opacity: 0.8;
+}
+
+.avatar-placeholder {
+  width: 22px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-name-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.logout-action-btn {
+  background-color: white;
+  border: 1px solid #d1d5db;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout-action-btn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* ==========================================================================
+   METRICS ROW BLOCKS
+   ========================================================================== */
+.leave-summary-metrics-bar {
+  display: flex;
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.metric-cell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-right: 1px solid #e5e7eb;
+  font-size: 15px;
+}
+
+.metric-cell.action-cell {
+  border-right: none;
+}
+
+.metric-title-label {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.metric-numeric-value {
+  color: #7a0000;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.see-more-hyperlink {
+  color: #7a0000;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.see-more-hyperlink:hover {
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   ANALYTICS & CHARTS SIMULATIONS
+   ========================================================================== */
+.analytics-display-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  flex-shrink: 0;
+}
+
+.analytics-visual-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  padding: 16px;
+}
+
+.card-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mock-graphic-frame {
+  background: #ffffff;
+  border: 2px solid #5a0000;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.graphic-footer-caption {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-top: 14px;
+}
+
+/* Donut Chart Simulation Styling */
+.chart-flex-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  width: 100%;
+}
+
+.donut-graphic-mock {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: conic-gradient(#680000 0% 50%, #e7b103 50% 80%, #4a5568 80% 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.donut-graphic-mock::before {
+  content: "";
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background-color: white;
+  border-radius: 50%;
+}
+
+.donut-center-label {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.donut-sub {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.donut-main {
+  font-size: 13px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.chart-legend-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legend-row-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.color-primary {
+  background-color: #680000;
+}
+.color-secondary {
+  background-color: #e7b103;
+}
+.color-tertiary {
+  background-color: #4a5568;
+}
+
+.legend-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.legend-sub-label {
+  font-size: 10px;
+  color: #6b7280;
+}
+
+/* Sparkline Wave Chart Simulation Styling */
+.attendance-chart-mock {
+  width: 100%;
+  height: 120px;
+  position: relative;
+  border-bottom: 1px dashed #d1d5db;
+  padding-top: 20px;
+}
+
+.time-stamp-marker {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 600;
+  background: white;
+  border: 1px solid #e5e7eb;
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.stamp-top {
+  top: 0px;
+  left: 120px;
+  color: #4b5563;
+}
+.stamp-bottom {
+  bottom: 35px;
+  right: 80px;
+  color: #4b5563;
+}
+
+.sparkline-svg-vector {
+  width: 100%;
+  height: 70px;
+}
+
+.axis-labels-timeline {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+.attendance-summary-data-strip {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #374151;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 8px;
+}
+
+/* ==========================================================================
+   UTILITY FILTER CONTROL LAYER
+   ========================================================================== */
+.table-filter-utilities-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.search-bar-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 240px;
+}
+
+.search-lens-embed {
+  position: absolute;
+  left: 12px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.utility-search-field {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  font-size: 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  outline: none;
+  background: white;
+}
+
+.primary-action-trigger-btn {
+  background-color: #5a0000;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(90, 0, 0, 0.2);
+}
+
+.primary-action-trigger-btn:hover {
+  background-color: #420000;
+}
+
+/* ==========================================================================
+   DATA GRID STORAGE RECORD SYSTEM
+   ========================================================================== */
+.data-table-container-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+  margin-bottom: 24px; /* breathing room at the bottom when scrolled all the way down */
+}
+
+.table-header-title-banner {
+  background-color: #5a0000;
+  color: white;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.responsive-table-overflow-scroller {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.record-grid-system {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.record-grid-system th {
+  background-color: #e5e7eb;
+  color: #374151;
+  font-weight: 600;
+  padding: 12px 16px;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.record-grid-system td {
+  padding: 14px 16px;
+  color: #1f2937;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-badge.status-pending {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.table-action-link-anchor {
+  color: #7a0000;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.table-action-link-anchor:hover {
+  text-decoration: underline;
+}
+
+.dimmed-empty-cell {
+  color: #9ca3af;
+  letter-spacing: 2px;
+}

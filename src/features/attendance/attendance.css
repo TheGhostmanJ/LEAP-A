@@ -1,0 +1,298 @@
+/* src/Attendance.css */
+
+/* ==========================================================================
+   UNIFIED HEADER POSITIONING & BASELINE ALIGNMENT
+   ========================================================================== */
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 24px;
+  flex-shrink: 0;
+}
+
+/* FIX: Locks icon and title side-by-side on the same horizontal row */
+.page-title-cluster {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px;
+}
+
+/* FIX: Forces text baseline to align cleanly with the icon */
+.page-title-cluster h2 {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a202c;
+  line-height: 1 !important;
+  white-space: nowrap; /* Prevents text from wrapping underneath the icon */
+}
+
+/* FIX: Centers the svg element vertically within the block line */
+.maroon-header-icon {
+  color: #7a0000;
+  display: flex !important;
+  align-items: center;
+}
+
+/* ==========================================================================
+   TOP RIGHT ACTION BAR CONTROL CLUSTER
+   ========================================================================== */
+.user-controls-cluster {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto; 
+}
+
+.icon-alert-btn {
+  background: #7a0000;
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.badge-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  background-color: #e7b103;
+  border-radius: 50%;
+}
+
+.profile-identity-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #7a0000;
+  padding: 6px 14px;
+  border-radius: 20px;
+  color: white;
+}
+
+.avatar-placeholder {
+  width: 22px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-name-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.logout-action-btn {
+  background-color: white;
+  border: 1px solid #d1d5db;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout-action-btn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* ==========================================================================
+   CALENDAR SELECTOR FILTER ROW
+   ========================================================================== */
+.calendar-filter-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -8px;
+  flex-shrink: 0;
+}
+
+.calendar-picker-bubble {
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2937;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: background 0.15s ease;
+}
+
+.calendar-picker-bubble:hover {
+  background-color: #f9fafb;
+}
+
+.maroon-text-icon {
+  color: #7a0000;
+}
+
+/* ==========================================================================
+   ATTENDANCE CARD INTERFACE ALIGNMENTS & VISUAL HIERARCHY
+   ========================================================================== */
+
+.attendance-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.attendance-metric-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 22px 26px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  min-height: 165px; /* Boosted slightly to give breathing room for centered values */
+  box-sizing: border-box;
+}
+
+/* Top context row housing label title and small fraction elements */
+.card-top-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.card-top-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.card-top-stat {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* FIX: Changed font size to 42px and added justify-content: center */
+.card-center-value {
+  font-size: 42px;          /* Bigger primary metric readout */
+  font-weight: 800;         /* Extra bold styling weight */
+  line-height: 1;
+  margin-top: 12px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;  /* Centers the primary numbers horizontally */
+  gap: 6px;
+  width: 100%;
+}
+
+/* Consistent unit sizing adjacent to the main numbers */
+.card-value-unit {
+  font-size: 16px;
+  font-weight: 600;
+  color: inherit;           /* Inherits the specific metric text color rules */
+}
+
+/* FIX: Added text-align: center to center align the bottom details row */
+.card-footer-caption {
+  font-size: 12px;          /* Unified consistent text size */
+  color: #718096;
+  font-weight: 500;
+  margin-top: auto;
+  text-align: center;       /* Centers the caption details */
+  width: 100%;
+}
+
+/* FIX: Standardized font size to match card-footer-caption exactly */
+.text-italic-muted {
+  font-size: 12px;          /* Consistent text size across all footers */
+  font-style: italic;
+  color: #718096;
+  text-align: center;       /* Centers the caption text */
+  margin-top: auto;
+  width: 100%;
+}
+
+/* ==========================================================================
+   SEARCH ROW POSITIONING
+   ========================================================================== */
+.attendance-table-search-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-shrink: 0;
+  margin-top: 8px;
+  margin-bottom: -4px;
+}
+
+.inline-search-alignment-cluster {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-icon-toggle {
+  color: #718096;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.filter-icon-toggle:hover {
+  color: #4a5568;
+}
+
+/* ==========================================================================
+   STATUS CODES TABLE SYSTEM
+   ========================================================================== */
+.ledger-status-badge {
+  display: inline-block;
+  padding: 4px 18px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  width: 70px;
+}
+
+.badge-present-light {
+  background-color: #e2f0d9;
+  color: #385723;
+}
+
+.badge-late-light {
+  background-color: #fff2cc;
+  color: #7f6000;
+}
+
+.biometric-disclaimer-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #555555;
+  margin-top: 16px;
+  flex-shrink: 0;
+}
+
+.muted-gray-icon {
+  color: #718096;
+}

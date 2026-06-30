@@ -1,0 +1,309 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap');
+
+/* GLOBAL RESET */
+body {
+  background-color: #f6f8f6;
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  font-family: 'Roboto', sans-serif;
+  box-sizing: border-box;
+}
+
+/* LAYOUT CLASSES */
+.screen-container {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background-color: #f6f8f6;
+  padding: 20px;
+}
+
+.main-card {
+  display: flex;
+  width: 100%;
+  max-width: 1040px;
+  background-color: #ffffff;
+  border-radius: 40px;
+  overflow: hidden;
+  box-shadow: 0px 25px 60px rgba(0, 0, 0, 0.08);
+  flex-direction: row;
+}
+
+/* LEFT PANEL COMPONENTS */
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 48%;
+  padding: 50px 60px;
+  background-color: #ffffff;
+}
+
+.login-header {
+  font-size: 34px;
+  font-weight: 700;
+  color: #b11212;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.login-subtext {
+  font-size: 11px;
+  color: #9ca3af;
+  font-style: italic;
+  font-weight: 300;
+  max-width: 220px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.form-element {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.input-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 6px;
+  padding-left: 2px;
+}
+
+.relative-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+}
+
+.text-input {
+  width: 100%;
+  padding: 12px 16px 12px 42px;
+  font-size: 13px;
+  border-radius: 12px;
+  border: 1px solid #eef1f2;
+  background-color: #f7f9fa;
+  color: #333333;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.text-input:focus {
+  background-color: #ffffff;
+  border-color: #b11212;
+  box-shadow: 0 0 0 4px rgba(177, 18, 18, 0.08);
+}
+
+.options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  cursor: pointer;
+  flex: 1;
+}
+
+.checkbox-input {
+  width: 14px;
+  height: 14px;
+  accent-color: #b11212;
+  cursor: pointer;
+}
+
+.forgot-password-link {
+  color: #b11212;
+  text-decoration: none;
+  font-weight: 400;
+}
+
+.forgot-password-link:hover {
+  text-decoration: underline;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  z-index: 5;
+  transition: color 0.2s ease;
+}
+
+/* Subtle hover interaction */
+.password-toggle-btn:hover {
+  color: #4b5563;
+}
+
+.legal-footnote {
+  text-align: center;
+  font-size: 10px;
+  color: #9ca3af;
+  line-height: 1.6;
+  margin: 12px 0 0 0;
+}
+
+.legal-link {
+  font-weight: 600;
+  color: #6b7280;
+  text-decoration: none;
+}
+
+.legal-link:hover {
+  text-decoration: underline;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(180deg, #8a0000 0%, #5a0000 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0px 4px 15px rgba(90, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.submit-button:hover {
+  filter: brightness(1.1);
+}
+
+.submit-button:active {
+  transform: scale(0.995);
+}
+
+/* RIGHT PANEL COMPONENTS */
+.right-panel {
+  position: relative;
+  display: flex;
+  width: 52%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, #7a0000 0%, #520000 45%, #2d0000 100%);
+  padding: 32px;
+  color: #ffffff;
+  border-radius: 36px;
+  margin: 6px;
+  box-shadow: 0px 10px 30px rgba(0,0,0,0.15);
+}
+
+.logo-image {
+  height: 90px;             /* 🎯 Increased from 65px to make it a bit bigger and bolder */
+  width: auto;              /* Keeps the aspect ratio perfectly intact */
+  object-fit: contain;
+  transform: none;          
+  margin-top: 20px;         
+  margin-bottom: 0px;       
+}
+
+.glass-slider-box {
+  position: relative;
+  width: 100%;
+  max-width: 460px;       /* Slightly widened the maximum card boundary */
+  background-color: rgba(0, 0, 0, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 28px;
+  padding: 28px 24px;
+  min-height: 220px;      /* Increased height profile to accommodate larger illustrations */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 24px 0;
+  overflow: hidden;
+}
+
+.carousel-image-wrapper {
+  width: 38%;             /* Allocated more layout grid width (up from 32%) */
+  flex-shrink: 0;
+  height: 130px;          /* Allowed vertical expansion from 96px */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carousel-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  text-transform: uppercase;
+  margin: 0;
+  text-align: center;         /* 🎯 Centers the title text */
+}
+
+.carousel-divider {
+  width: 100%;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.2);
+  margin: 8px auto;           /* 🎯 Added "auto" to center the line divider itself */
+}
+
+.carousel-description {
+  font-size: 12px;
+  color: #e5e7eb;
+  font-weight: 300;
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+  margin: 0;
+  text-align: center;         /* 🎯 Centers the description text */
+}
+
+.carousel-controls-row {
+  width: 100%;
+  max-width: 430px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  margin-bottom: 16px;
+}
+
+.arrow-button {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s ease;
+}
+
+.arrow-button:hover {
+  color: #ffffff;
+}
