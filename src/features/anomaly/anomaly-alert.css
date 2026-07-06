@@ -1,0 +1,194 @@
+/* Layout Alignment Variables and Scoping */
+.hod-view-wrapper {
+  display: flex;
+  background-color: #f4f6f8;
+  min-height: 100vh;
+}
+
+.text-maroon-value {
+  color: #610c04;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.text-dark-value {
+  color: #610c04;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.text-green-value {
+  color: #1b4d3e;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.stat-right-numbers-large {
+  margin: 15px 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.stat-unit-label {
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: #222;
+}
+
+.long-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 140px;
+}
+
+/* Progress bar aesthetics matching image_91d883.png */
+.progress-bar-container {
+  width: 100%;
+  background-color: #e0e0e0;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.maroon-fill {
+  background-color: #610c04;
+}
+
+.green-fill {
+  background-color: #2e7d32;
+}
+
+.inline-icon {
+  display: inline-block;
+  vertical-align: text-bottom;
+  margin-right: 6px;
+}
+
+.maroon-icon { color: #610c04; }
+.green-icon { color: #2e7d32; }
+
+/* Filter Controls bar */
+.table-controls-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 24px 10px 24px;
+}
+
+.filter-icon-btn {
+  background: none;
+  border: none;
+  color: #555;
+  cursor: pointer;
+  padding: 6px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon-svg {
+  position: absolute;
+  left: 10px;
+  color: #888;
+}
+
+.table-search-field {
+  padding: 6px 12px 6px 34px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 220px;
+  font-size: 0.9rem;
+}
+
+/* Table Card Frame matching image_91d883.png banner */
+.card-shadow-wrap {
+  background: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  border: 1px solid #e2e8f0;
+  margin: 10px 24px;
+}
+
+.box-header-title-maroon-bar {
+  background-color: #610c04;
+  color: #ffffff;
+  padding: 12px 20px;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+/* Table Contents formatting */
+.left-aligned-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.left-aligned-table th {
+  background-color: #b0b0b0;
+  color: #333333;
+  text-align: left;
+  padding: 12px 20px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.left-aligned-table td {
+  padding: 14px 20px;
+  border-bottom: 1px solid #eeeeee;
+  color: #444;
+  font-size: 0.95rem;
+}
+
+.text-bold-danger {
+  color: #b71c1c;
+  font-weight: 700;
+}
+
+/* Action button stylings directly matching layout reference */
+.table-action-cell-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.text-center-heading {
+  text-align: center !important;
+}
+
+.action-btn-investigate {
+  background-color: #610c04;
+  color: #ffffff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.action-btn-cancel {
+  background-color: #d4af37;
+  color: #ffffff;
+  border: none;
+  padding: 6px 20px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.action-btn-investigate:hover { background-color: #4a0903; }
+.action-btn-cancel:hover { background-color: #baa232; }

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { loginUser } from './services/authService'; 
 import './login.css'; 
 
-export default function Login({onLoginSuccess}) { 
+export default function Login({onLoginSuccess, ...props}) { // Included props fallback structure
   const navigate = useNavigate(); 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showPassword, setShowPassword] = useState(false); 
@@ -57,18 +57,42 @@ export default function Login({onLoginSuccess}) {
     const username = e.target.elements.username.value;
     const password = e.target.elements.password.value;
 
+    /* ==========================================
+       🛠️ FRONTEND MOCK DATABASE INTERCEPTOR
+       ========================================== */
+    const mockDatabase = {
+      "hod": { password: "password123", role: "hod", name: "Mario Santos" },
+      "employee": { password: "password123", role: "employee", name: "Juan Dela Cruz" }
+    };
+
+    if (mockDatabase[username] && mockDatabase[username].password === password) {
+      const mockUser = {
+        username: username,
+        role: mockDatabase[username].role,
+        name: mockDatabase[username].name
+      };
+
+      // Execute view transition triggers matching your group's architecture
+      if (typeof onLoginSuccess === 'function') {
+        onLoginSuccess(mockUser);
+      } else if (props && typeof props.onLoginSuccess === 'function') {
+        props.onLoginSuccess(mockUser);
+      }
+      
+      setIsSubmitting(false);
+      return; // Stop function execution here to bypass backend service!
+    }
+    /* ========================================== */
+
     try {
       const data = await loginUser(username, password);
 
       if (data.success) {
-        // Safe fallback check for both destructured parameters OR standard props naming structures
         if (typeof onLoginSuccess === 'function') {
           onLoginSuccess(data.user);
         } else if (props && typeof props.onLoginSuccess === 'function') {
           props.onLoginSuccess(data.user);
         }
-        
-        // REMOVED navigate('/dashboard') — main.jsx state handles view transitions natively now!
       } else {
         setErrorMessage(data.message || "Invalid username or password");
       }
@@ -118,7 +142,7 @@ export default function Login({onLoginSuccess}) {
                   name="username"
                   type="text" 
                   required 
-                  placeholder="Enter Username" 
+                  placeholder="Enter Username (use 'hod' or 'employee')" 
                   className="text-input" 
                   disabled={isSubmitting}
                 />
@@ -232,7 +256,7 @@ export default function Login({onLoginSuccess}) {
             ))}
           </div>
 
-          {/* Carousel Controllers */}
+          {/* Carousel Controls */}
           <div className="carousel-controls-row">
             <button type="button" onClick={handlePrev} className="arrow-button"><ChevronLeft size={22} /></button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

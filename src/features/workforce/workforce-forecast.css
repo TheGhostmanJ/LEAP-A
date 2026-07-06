@@ -1,0 +1,348 @@
+/* ==========================================================================
+   📊 WORKFORCE FORECAST MODULE UNIFORM COMPONENT STYLES
+   ========================================================================== */
+
+.title-text-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.subtitle-department {
+  font-size: 13px;
+  font-weight: 500;
+  color: #444444;
+  margin: 2px 0 0 0;
+}
+
+.highlight-maroon {
+  color: #5a0000;
+  font-weight: 700;
+}
+
+.title-icon-svg {
+  color: #111111;
+}
+
+/* --- Summary Metric Metrics Row Grid --- */
+.forecast-summary-metrics-row {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  margin-top: 12px;
+  margin-bottom: 20px;
+}
+
+.forecast-stat-card {
+  position: relative;
+  flex: 1;
+  background-color: #ffffff;
+  border: 1.5px solid #d3d3d3;
+  border-radius: 8px;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+}
+
+.stat-left-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-main-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #222222;
+}
+
+.stat-subtext-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #555555;
+}
+
+.stat-right-numbers {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.text-green-value { color: #1e7e34; }
+.text-dark-value { color: #2d3748; }
+.text-yellow-value { color: #d69e2e; }
+
+.card-info-indicator {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: #5a0000;
+}
+
+/* --- Content Panel Structures Layout Split --- */
+.forecast-grid-split {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.forecast-left-column {
+  flex: 1.4;
+  display: flex;
+  flex-direction: column;
+}
+
+.forecast-right-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.space-between-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-filter-icon {
+  color: #ffffff;
+  cursor: pointer;
+}
+
+/* --- Mock SVG Graph Workspace Layout --- */
+.chart-wrapper-body {
+  padding: 24px 16px 12px 16px;
+  background: #ffffff;
+}
+
+.mock-svg-graph-container {
+  display: flex;
+  height: 140px;
+  width: 100%;
+  position: relative;
+}
+
+.y-axis-labels {
+  display: flex;
+  flex-direction: space-between;
+  justify-content: space-between;
+  flex-direction: column;
+  font-size: 10px;
+  color: #666666;
+  width: 50px;
+  text-align: right;
+  padding-right: 8px;
+}
+
+.graph-image-mask {
+  flex: 1;
+  border-left: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  background-image: linear-gradient(#f9f9f9 1px, transparent 1px);
+  background-size: 100% 28px;
+  position: relative;
+}
+
+.mock-graph-vector-line {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  width: 100%;
+  height: 45px;
+  border-top: 2px solid #5a0000;
+  border-radius: 50% 50% 0 0/15% 40% 0 0; /* Creates an engineered mockup line wave flow */
+}
+
+.critical-dip-marker-pulse {
+  position: absolute;
+  left: 65%;
+  top: 55px;
+  width: 24px;
+  height: 24px;
+  background-color: rgba(90, 0, 0, 0.2);
+  border: 2px solid #5a0000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.critical-dip-marker-pulse::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background-color: #5a0000;
+  border-radius: 50%;
+}
+
+.critical-label-pill {
+  position: absolute;
+  bottom: 28px;
+  background-color: #5a0000;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 99px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.x-axis-timeline-wrapper {
+  display: flex;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.x-axis-spacer {
+  width: 50px;
+}
+
+.x-axis-days {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #666666;
+  padding: 0 4px;
+}
+
+/* Graph Footer Legend Formatting */
+.graph-footer-legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+  font-size: 11px;
+  color: #333333;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-line {
+  display: inline-block;
+  width: 16px;
+  height: 2px;
+}
+
+.maroon-line { background-color: #5a0000; }
+.dashed-line { border-top: 2px dashed #777; }
+.legend-square { display: inline-block; width: 10px; height: 10px; }
+.gray-box { background-color: #e2e8f0; border: 1px solid #cbd5e1; }
+
+/* Table Adjustments & Risk Badges */
+.table-box-margin {
+  margin-top: 20px;
+}
+
+.risk-badge {
+  display: inline-block;
+  padding: 4px 16px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  width: 110px;
+  text-align: center;
+}
+
+.risk-badge-low { background-color: #249c1e; }
+.risk-badge-moderate { background-color: #d69e2e; }
+
+/* --- Right Side Panel Alert Lists & Suggestion Blocks --- */
+.paddingless-box {
+  padding-bottom: 8px !important;
+}
+
+.alert-list-wrapper {
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.alert-item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.alert-item-row:last-child {
+  border-bottom: none;
+}
+
+.alert-icon-red { color: #bd2130; min-width: 18px; }
+.alert-icon-yellow { color: #d69e2e; min-width: 18px; }
+
+.alert-text {
+  font-size: 13px;
+  color: #2d3748;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.alert-bold-tag { font-weight: 700; }
+.alert-bold-tag.text-red { color: #bd2130; }
+.alert-bold-tag.text-yellow { color: #b57a00; }
+
+/* Suggestion Panel Content Box Border Customizations */
+.border-suggestion-box {
+  border: 1.5px solid #5a0000 !important;
+  background: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.bg-transparent {
+  background-color: transparent !important;
+  border-bottom: none !important;
+  padding-bottom: 4px !important;
+}
+
+.text-maroon-title {
+  color: #5a0000 !important;
+  font-weight: 700 !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+}
+
+.suggestion-title-icon {
+  color: #5a0000;
+}
+
+.suggestion-inner-body {
+  padding: 0 20px 20px 20px;
+}
+
+.suggestion-description {
+  font-size: 13px;
+  color: #333333;
+  line-height: 1.5;
+  margin: 0 0 16px 0;
+}
+
+.apply-deferral-action-btn {
+  background-color: #5a0000;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  width: 100%;
+  padding: 10px 0;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.apply-deferral-action-btn:hover {
+  opacity: 0.9;
+}
