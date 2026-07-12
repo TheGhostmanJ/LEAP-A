@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Eye, EyeOff, AlertCircle } from 'lucide-react'; 
 import { useNavigate } from 'react-router-dom'; 
 import { loginUser } from './services/authService'; 
+import { GoogleLogin } from '@react-oauth/google'; // Imported for Google OAuth integration
 import './login.css'; 
 
-export default function Login({onLoginSuccess, ...props}) { // Included props fallback structure
+export default function Login({ onLoginSuccess }) { 
   const navigate = useNavigate(); 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showPassword, setShowPassword] = useState(false); 
@@ -57,47 +58,46 @@ export default function Login({onLoginSuccess, ...props}) { // Included props fa
     const username = e.target.elements.username.value;
     const password = e.target.elements.password.value;
 
-    /* ==========================================
-       🛠️ FRONTEND MOCK DATABASE INTERCEPTOR
-       ========================================== */
-    const mockDatabase = {
-      "hod": { password: "password123", role: "hod", name: "Mario Santos" },
-      "employee": { password: "password123", role: "employee", name: "Juan Dela Cruz" }
-    };
-
-    if (mockDatabase[username] && mockDatabase[username].password === password) {
-      const mockUser = {
-        username: username,
-        role: mockDatabase[username].role,
-        name: mockDatabase[username].name
-      };
-
-      // Execute view transition triggers matching your group's architecture
-      if (typeof onLoginSuccess === 'function') {
-        onLoginSuccess(mockUser);
-      } else if (props && typeof props.onLoginSuccess === 'function') {
-        props.onLoginSuccess(mockUser);
-      }
-      
-      setIsSubmitting(false);
-      return; // Stop function execution here to bypass backend service!
-    }
-    /* ========================================== */
-
     try {
       const data = await loginUser(username, password);
 
       if (data.success) {
         if (typeof onLoginSuccess === 'function') {
           onLoginSuccess(data.user);
-        } else if (props && typeof props.onLoginSuccess === 'function') {
-          props.onLoginSuccess(data.user);
         }
       } else {
         setErrorMessage(data.message || "Invalid username or password");
       }
     } catch (err) {
       setErrorMessage("Incorrect username or password. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // --- NEW: Google Authentication Handoff Handler ---
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      setIsSubmitting(true);
+      setErrorMessage('');
+      
+      const response = await fetch('http://localhost:3001/api/login/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: credentialResponse.credential })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        if (typeof onLoginSuccess === 'function') {
+          onLoginSuccess(data.user);
+        }
+      } else {
+        setErrorMessage(data.message || "Google email not registered in system.");
+      }
+    } catch (err) {
+      setErrorMessage("Google Authentication failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -142,7 +142,7 @@ export default function Login({onLoginSuccess, ...props}) { // Included props fa
                   name="username"
                   type="text" 
                   required 
-                  placeholder="Enter Username (use 'hod' or 'employee')" 
+                  placeholder="Enter Username" 
                   className="text-input" 
                   disabled={isSubmitting}
                 />
@@ -196,7 +196,7 @@ export default function Login({onLoginSuccess, ...props}) { // Included props fa
                 <input type="checkbox" className="checkbox-input" name="rememberMe" />
                 <span>Remember me</span>
               </label>
-              <a href="#forgot" className="forgot-password-link">Forgot Password?</a>
+                <a href="#forgot" className="forgot-password-link">Forgot Password?</a>
             </div>
 
             {/* Legal Footnote */}
@@ -218,6 +218,21 @@ export default function Login({onLoginSuccess, ...props}) { // Included props fa
               </button>
             </div>
           </form>
+
+          {/* --- NEW: PLACED DIRECTLY BENEATH THE MAIN FORM UTILITY --- */}
+          <div style={{ margin: '24px 0 16px 0', textAlign: 'center', color: '#a0aec0', fontSize: '13px', fontWeight: '500' }}>
+            <span>─ OR ─</span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setErrorMessage("Google Sign-In was aborted or failed.")}
+              useOneTap
+              uxMode="redirect"
+            />
+          </div>
+
         </div>
 
         {/* RIGHT PANEL: Gradient Info Display */}
@@ -256,7 +271,7 @@ export default function Login({onLoginSuccess, ...props}) { // Included props fa
             ))}
           </div>
 
-          {/* Carousel Controls */}
+          {/* Carousel Controllers */}
           <div className="carousel-controls-row">
             <button type="button" onClick={handlePrev} className="arrow-button"><ChevronLeft size={22} /></button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

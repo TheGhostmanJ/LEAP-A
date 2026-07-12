@@ -151,6 +151,73 @@ app.put('/api/profile/:employee_key', async (req, res) => {
   }
 });
 
+// --- GOOGLE SINGLE-SIGN-ON AUTHENTICATION ROUTE ---
+app.post('/api/login/google', async (req, res) => {
+  const { token } = req.body;
+
+  try {
+    // 1. Send token to Google's public token verification API
+    const googleVerifyUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${token}`;
+    const googleResponse = await fetch(googleVerifyUrl);
+    const googleUserData = await googleResponse.json();
+
+    if (!googleResponse.ok) {
+      return res.status(401).json({ success: false, message: "Invalid Google token payload validation." });
+    }
+
+    // Google returns the user's verified email address as 'email'
+    const googleEmail = googleUserData.email;
+
+    // 2. Check if this specific email address exists inside your public.dim_accounts database
+    const queryText = `
+      SELECT 
+        a.username, 
+        a.email, 
+        a.system_access_level,
+        a.contact_number,
+        e.employee_key,
+        e.full_name,
+        e.department,
+        e.position_title,
+        e.civil_status
+      FROM public.dim_accounts a
+      INNER JOIN public.dim_employee e ON a.employee_key = e.employee_key
+      WHERE a.email = $1
+    `;
+
+    const result = await pool.query(queryText, [googleEmail]);
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ 
+        success: false, 
+        message: `The Google account (${googleEmail}) is not linked to any active employee profile account records.` 
+      });
+    }
+
+    const activeUser = result.rows[0];
+
+    // 3. Return the exact same user object context format back to your React layout state engine!
+    res.status(200).json({
+      success: true,
+      message: 'Google login successful!',
+      user: {
+        username: activeUser.username,
+        email: activeUser.email,
+        contact_number: activeUser.contact_number,
+        employee_key: activeUser.employee_key,
+        full_name: activeUser.full_name,
+        department: activeUser.department,
+        role: activeUser.system_access_level,
+        civil_status: activeUser.civil_status
+      }
+    });
+
+  } catch (error) {
+    console.error("Google SSO route runtime error:", error);
+    res.status(500).json({ success: false, message: "Internal server error handling Google verification processing." });
+  }
+});
+
 // Start listening for API calls
 app.listen(PORT, () => {
   console.log(`Node.js server executing on http://localhost:${PORT}`);
