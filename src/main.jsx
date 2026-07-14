@@ -14,13 +14,13 @@ import CreditLedger from './features/ledger/creditledger.jsx';
 import TrainingRecords from './features/training/trainingrecords.jsx';
 import Profile from './features/profile/profile.jsx';
 import Support from './features/support/support.jsx';
+import LeaveApplication from './features/leave/leaveapplication.jsx';
 
 import './index.css';
 
 const GOOGLE_CLIENT_ID = '718581008344-0pr3hqb4867olblp5e3n27fvom9klrrh.apps.googleusercontent.com'
 
 function Root() {
-  // Core Session Initializer
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('active_user');
     return savedUser ? JSON.parse(savedUser) : null;
@@ -35,13 +35,20 @@ function Root() {
     }
   }, [currentUser]);
 
+  // 1. DEFINE IT HERE (in the main component scope)
+  const handleUserUpdate = (updatedUserData) => {
+    const newUser = { ...currentUser, ...updatedUserData };
+    setCurrentUser(newUser);
+    localStorage.setItem('active_user', JSON.stringify(newUser));
+  };
+
   const handleLoginSuccess = (userData) => {
     setCurrentUser(userData);
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
-    localStorage.clear(); // Wipe storage clean on explicit logout
+    localStorage.clear();
   };
 
   return (
@@ -75,11 +82,21 @@ function Root() {
       />
       <Route 
         path="/profile" 
-        element={currentUser ? <Profile onLogout={handleLogout} user={currentUser} /> : <Navigate to="/" />} 
+        element={currentUser ? (
+          <Profile 
+            onLogout={handleLogout} 
+            user={currentUser} 
+            onUserUpdate={handleUserUpdate} // Add this prop
+          />
+        ) : <Navigate to="/" />} 
       />
       <Route 
         path="/support" 
         element={currentUser ? <Support onLogout={handleLogout} user={currentUser} /> : <Navigate to="/" />} 
+      />
+      <Route 
+        path="/leaveapplication" 
+        element={currentUser ? <LeaveApplication user={currentUser} onNavigate={(path) => navigate(`/${path}`)} /> : <Navigate to="/" />} 
       />
 
       {/* FALLBACK CATCH-ALL */}

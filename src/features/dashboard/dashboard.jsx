@@ -10,7 +10,26 @@ import './dashboard.css';
 export default function Dashboard({ onLogout, user }) { 
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [recentLeaves, setRecentLeaves] = useState([]);
 
+  // Fetch data on component load
+  useEffect(() => {
+    const fetchRecentLeaves = async () => {
+      try {
+        const response = await fetch(`http://localhost:3001/api/leave/recent/${user.employee_key}`);
+        if (response.ok) {
+          const data = await response.json();
+          setRecentLeaves(data);
+        }
+      } catch (err) {
+        console.error("Error loading leave history:", err);
+      }
+    };
+
+    if (user?.employee_key) fetchRecentLeaves();
+  }, [user]);
+
+  // Clock timer
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -28,16 +47,17 @@ export default function Dashboard({ onLogout, user }) {
     <div className="dashboard-container">
       <Sidebar />
 
-      {/* MAIN INTERFACE LAYOUT */}
       <main className="dashboard-main-content">
         <header className="content-top-header">
-          <h2 className="welcome-heading">Welcome, <span className="highlight-name">Juan</span>!</h2>
+          <h2>Welcome, <span>{user?.first_name || 'Employee'}</span>!</h2>
           <div className="user-controls-cluster">
             <button className="icon-alert-btn"><Bell size={18} /><span className="badge-dot"></span></button>
             
             <div className="profile-identity-card" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>
               <div className="avatar-placeholder"><User size={16} /></div>
-              <span className="profile-name-label">Juan Dela Cruz</span>
+              <span className="profile-name-label">
+                {`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Employee Name'}
+              </span>
             </div>
             
             <button className="logout-action-btn" onClick={onLogout}>
@@ -160,17 +180,17 @@ export default function Dashboard({ onLogout, user }) {
             <input type="text" placeholder="Search filings..." className="utility-search-field" />
           </div>
 
-          <button className="primary-action-trigger-btn">
+          <button 
+            className="primary-action-trigger-btn" 
+            onClick={() => navigate('/leaveapplication')}
+          >
             <FilePlus size={16} />
             <span>File New Leave</span>
           </button>
         </section>
 
-        {/* GRID RECORDINGS DATA TABLE STRUCTURE */}
         <section className="data-table-container-card">
-          <div className="table-header-title-banner">
-            Recent Leave Application Table
-          </div>
+          <div className="table-header-title-banner">Recent Leave Application Table</div>
           <div className="responsive-table-overflow-scroller">
             <table className="record-grid-system">
               <thead>
@@ -178,24 +198,28 @@ export default function Dashboard({ onLogout, user }) {
                   <th>Date Filed</th>
                   <th>Leave Type</th>
                   <th>Status</th>
-                  <th>File</th>
                   <th>Remarks</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>May 16, 2026</td>
-                  <td>Sick Leave</td>
-                  <td>
-                    <span className="status-badge status-pending">Pending</span>
-                  </td>
-                  <td>
-                    <a href="#view" className="table-action-link-anchor">
-                      View File <ExternalLink size={12} style={{ display: 'inline', marginLeft: '2px' }} />
-                    </a>
-                  </td>
-                  <td className="dimmed-empty-cell">...</td>
-                </tr>
+                {recentLeaves.length > 0 ? (
+                  recentLeaves.map((leave, index) => (
+                    <tr key={index}>
+                      <td>{leave.date_key}</td>
+                      <td>{leave.leave_type}</td>
+                      <td>
+                        <span className={`status-badge status-${leave.status.toLowerCase()}`}>
+                          {leave.status}
+                        </span>
+                      </td>
+                      <td className="dimmed-empty-cell">{leave.remarks || 'N/A'}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '20px' }}>No recent applications found.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
