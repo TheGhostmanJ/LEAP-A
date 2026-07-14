@@ -1,73 +1,79 @@
 /* ==========================================================================
-   TRAINING RECORDS DASHBOARD DECORATORS (image_189c39.png)
+   HR HOSTED FEATURED EVENT CARD STYLING (Coordinated brand styling)
    ========================================================================== */
 
-/* Accented bottom structural borders matching the prototype rules */
-.tr-card-accent-maroon {
-  border-bottom: 5px solid #4a080e !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04) !important;
+/* Event Display Header Image Placeholder */
+.tr-event-image-banner {
+  height: 120px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  /* subtle diagonal stripe graphic background */
+  background-image: linear-gradient(135deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%, transparent);
+  background-size: 30px 30px;
+  box-shadow: inset 0 -20px 40px rgba(0,0,0,0.3);
 }
 
-.tr-card-accent-gold {
-  border-bottom: 5px solid #a16207 !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04) !important;
+.tr-event-badge-live {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: #ca8a04; /* Matches Gold theme definitions */
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* Prototype typography mapping: [Number] [Label text] */
-.tr-center-big-display {
+/* Event Details Panel */
+.tr-details-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+}
+
+.tr-detail-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-size: 38px;
-  font-weight: 800;
-  color: #2d3748;
-  margin: 28px 0;
-  line-height: 1;
-  width: 100%;
+  gap: 8px;
+  font-size: 12px;
+  color: #4a5568;
 }
 
-.tr-text-lbl-maroon {
-  font-size: 24px;
-  font-weight: 700;
-  color: #4a080e;
+.tr-detail-icon {
+  color: #718096;
+  flex-shrink: 0;
 }
 
-.tr-text-lbl-gold {
-  font-size: 24px;
-  font-weight: 700;
-  color: #ca8a04;
-}
-
-/* Horizontal matrix split container system */
-.tr-split-tables-container {
-  display: flex;
-  gap: 24px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.tr-matrix-flex-box {
-  flex: 1;
-  min-width: 0; /* Prevents overflow collapse inside a flex environment */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04) !important;
-}
-
-/* Scheduled status pill indicator matching design language definitions */
-.tr-status-pill-gold {
-  background-color: #fef3c7;
-  color: #b45309;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 4px 12px;
+/* Base button styling matching brand */
+.tr-submit-button {
+  background-color: #4a080e;
+  color: #ffffff;
+  border: none;
   border-radius: 6px;
-  border: 1px solid #fde68a;
-  display: inline-block;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
 }
 
-/* Uniform transparent empty cells padding layout builder */
-.tr-empty-spacer-cell {
-  padding: 18px 12px !important;
-  border-bottom: 1px solid #edf2f7;
-  background-color: transparent;
+.tr-submit-button:hover {
+  background-color: #350509;
+}
+
+/* Disabled Join Button once selected */
+.joined-inactive-btn {
+  background-color: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+  border: 1px solid #cbd5e1;
 }

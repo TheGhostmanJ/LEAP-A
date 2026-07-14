@@ -14,30 +14,58 @@ import {
     Award,
     Calendar,
     CheckCircle2,
-    AlertCircle
+    AlertCircle,
+    PlusCircle,
+    Briefcase,
+    MapPin,
+    Users
 } from 'lucide-react';
 import Sidebar from '../../components/sidebar.jsx';
+import './trainingrecords.css'; // Importing your CSS file
 
 export default function TrainingRecords({ onNavigate, onLogout }) {
     const [currentTime, setCurrentTime] = useState(new Date());
+    
+    // Dynamic list for upcoming trainings
+    const [upcomingTrainings, setUpcomingTrainings] = useState([
+        { id: 1, name: 'Cybersecurity Seminar', date: 'July 5, 2026', duration: '2 Days', sponsor: 'DICT', status: 'Scheduled' }
+    ]);
+
+    // Simulated "Active Event" posted by HR Head that the employee can join
+    const [hrPostedEvent, setHrPostedEvent] = useState({
+        id: 202,
+        name: 'Cloud Security Fundamentals',
+        date: 'August 12, 2026',
+        duration: '1 Day',
+        sponsor: 'City HR Department',
+        location: 'Main Training Hall / Hybrid',
+        slotsLeft: 14,
+        imagePlaceholderColor: '#610c04' // Coordinated brand color
+    });
+
+    const [hasJoined, setHasJoined] = useState(false);
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
-    const formattedDate = currentTime.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
+    // Action to Join the HR-Posted Event
+    const handleJoinHrEvent = () => {
+        if (hasJoined) return;
 
-    const formattedTime = currentTime.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true
-    });
+        const joinedItem = {
+            id: hrPostedEvent.id,
+            name: hrPostedEvent.name,
+            date: hrPostedEvent.date,
+            duration: hrPostedEvent.duration,
+            sponsor: hrPostedEvent.sponsor,
+            status: 'Scheduled'
+        };
+
+        setUpcomingTrainings([...upcomingTrainings, joinedItem]);
+        setHasJoined(true);
+    };
 
     return (
         <div className="dashboard-container" style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f7f9fa', fontFamily: 'system-ui, sans-serif' }}>
@@ -46,7 +74,7 @@ export default function TrainingRecords({ onNavigate, onLogout }) {
             {/* MAIN CORE VIEW WINDOW */}
             <main className="dashboard-main-content" style={{ flex: 1, padding: '32px', boxSizing: 'border-box', overflowY: 'auto' }}>
 
-                {/* UPPER HEADER - ALIGNED WITH PREVIOUS PAGES */}
+                {/* UPPER HEADER */}
                 <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '28px' }}>
                     <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px' }}>
                         <GraduationCap size={22} style={{ color: '#7a0000', display: 'flex', alignItems: 'center' }} />
@@ -106,7 +134,7 @@ export default function TrainingRecords({ onNavigate, onLogout }) {
                             <span>Upcoming Trainings</span>
                         </div>
                         <div style={{ fontSize: '36px', fontWeight: '800', textAlign: 'center', color: '#4a080e', margin: '24px 0', lineHeight: 1, display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: '10px' }}>
-                            1 <span style={{ fontSize: '24px', fontWeight: '700', color: '#4a080e' }}>Event</span>
+                            {upcomingTrainings.length} <span style={{ fontSize: '24px', fontWeight: '700', color: '#4a080e' }}>Event{upcomingTrainings.length !== 1 ? 's' : ''}</span>
                         </div>
                     </div>
                 </section>
@@ -122,11 +150,75 @@ export default function TrainingRecords({ onNavigate, onLogout }) {
                     </div>
                 </section>
 
-                {/* SIDE-BY-SIDE MATRIX LAYOUT FOR TABLES */}
-                <section style={{ display: 'flex', gap: '24px', width: '100%', boxSizing: 'border-box' }}>
+                {/* 3-COLUMN WORKSPACE: FIXED PRE-POSTED EVENT + UPCOMING TABLES + COMPLETED TABLES */}
+                <section style={{ display: 'grid', gridTemplateColumns: '320px 1fr 1fr', gap: '24px', width: '100%', boxSizing: 'border-box', alignItems: 'start' }}>
                     
-                    {/* LEFT SYSTEM: UPCOMING TRAININGS */}
-                    <div style={{ flex: 1, background: '#ffffff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.04)' }}>
+                    {/* COLUMN 1: NEW "JOIN PUBLIC HR EVENT" CARD DESIGN */}
+                    <div style={{ background: '#ffffff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.04)', border: '1px solid #e2e8f0' }}>
+                        <div style={{ backgroundColor: '#4a080e', padding: '14px 20px', fontWeight: '700', fontSize: '14px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Calendar size={15} />
+                            <span>Available Training Event</span>
+                        </div>
+                        
+                        {/* Event Visual Cover Block */}
+                        <div className="tr-event-image-banner" style={{ backgroundColor: hrPostedEvent.imagePlaceholderColor }}>
+                            <GraduationCap size={44} color="#ffffff" style={{ opacity: 0.8 }} />
+                            <span className="tr-event-badge-live">New Event</span>
+                        </div>
+
+                        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <span style={{ fontSize: '11px', fontWeight: '700', color: '#ca8a04', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    Featured Program
+                                </span>
+                                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#1a202c' }}>
+                                    {hrPostedEvent.name}
+                                </h3>
+                            </div>
+
+                            {/* Non-editable details panel */}
+                            <div className="tr-details-panel">
+                                <div className="tr-detail-item">
+                                    <Calendar size={14} className="tr-detail-icon" />
+                                    <span><strong>Date:</strong> {hrPostedEvent.date}</span>
+                                </div>
+                                <div className="tr-detail-item">
+                                    <Clock size={14} className="tr-detail-icon" />
+                                    <span><strong>Duration:</strong> {hrPostedEvent.duration}</span>
+                                </div>
+                                <div className="tr-detail-item">
+                                    <Briefcase size={14} className="tr-detail-icon" />
+                                    <span><strong>Sponsor:</strong> {hrPostedEvent.sponsor}</span>
+                                </div>
+                                <div className="tr-detail-item">
+                                    <MapPin size={14} className="tr-detail-icon" />
+                                    <span><strong>Venue:</strong> {hrPostedEvent.location}</span>
+                                </div>
+                            </div>
+
+                            <hr style={{ border: 0, borderTop: '1px solid #edf2f7', margin: '4px 0' }} />
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#718096', fontSize: '12px' }}>
+                                    <Users size={14} />
+                                    <span>{hasJoined ? hrPostedEvent.slotsLeft - 1 : hrPostedEvent.slotsLeft} Slots remaining</span>
+                                </div>
+                            </div>
+
+                            {/* Dynamic state join trigger */}
+                            <button 
+                                onClick={handleJoinHrEvent} 
+                                disabled={hasJoined}
+                                className={`tr-submit-button ${hasJoined ? 'joined-inactive-btn' : ''}`}
+                                style={{ width: '100%', margin: 0 }}
+                            >
+                                {hasJoined ? '✓ Joined Successfully' : 'Join Training Event'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* COLUMN 2: UPCOMING TRAININGS */}
+                    <div style={{ background: '#ffffff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.04)' }}>
                         <div style={{ backgroundColor: '#4a080e', padding: '14px 20px', fontWeight: '700', fontSize: '14px', color: '#fff' }}>
                             Upcoming Trainings
                         </div>
@@ -142,26 +234,33 @@ export default function TrainingRecords({ onNavigate, onLogout }) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr style={{ borderBottom: '1px solid #edf2f7' }}>
-                                        <td style={{ padding: '14px 12px', fontSize: '13px', color: '#2d3748' }}>Cybersecurity Seminar</td>
-                                        <td style={{ padding: '14px 12px', fontSize: '13px', color: '#2d3748' }}>July 5, 2026</td>
-                                        <td style={{ padding: '14px 12px', fontSize: '13px', color: '#2d3748' }}>2 Days</td>
-                                        <td style={{ padding: '14px 12px', fontSize: '13px', color: '#2d3748' }}>DICT</td>
-                                        <td style={{ padding: '14px 12px' }}>
-                                            <span style={{ backgroundColor: '#fef3c7', color: '#b45309', fontSize: '11px', fontWeight: '700', padding: '4px 12px', borderRadius: '6px', border: '1px solid #fde68a', display: 'inline-block' }}>
-                                                ● Scheduled
-                                            </span>
-                                        </td>
-                                    </tr>
-                                    <tr style={{ borderBottom: '1px solid #edf2f7' }}><td colSpan="5" style={{ padding: '20px' }}>&nbsp;</td></tr>
-                                    <tr style={{ borderBottom: '1px solid #edf2f7' }}><td colSpan="5" style={{ padding: '20px' }}>&nbsp;</td></tr>
+                                    {upcomingTrainings.map((item) => (
+                                        <tr key={item.id} style={{ borderBottom: '1px solid #edf2f7' }}>
+                                            <td style={{ padding: '14px 12px', fontSize: '13px', color: '#2d3748', fontWeight: '500' }}>{item.name}</td>
+                                            <td style={{ padding: '14px 12px', fontSize: '13px', color: '#2d3748' }}>{item.date}</td>
+                                            <td style={{ padding: '14px 12px', fontSize: '13px', color: '#2d3748' }}>{item.duration}</td>
+                                            <td style={{ padding: '14px 12px', fontSize: '13px', color: '#2d3748' }}>{item.sponsor}</td>
+                                            <td style={{ padding: '14px 12px' }}>
+                                                <span className="tr-status-pill-gold">
+                                                    ● {item.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {/* Static visual placeholders if items are low */}
+                                    {upcomingTrainings.length < 2 && (
+                                        <>
+                                            <tr><td colSpan="5" className="tr-empty-spacer-cell">&nbsp;</td></tr>
+                                            <tr><td colSpan="5" className="tr-empty-spacer-cell">&nbsp;</td></tr>
+                                        </>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
-                    {/* RIGHT SYSTEM: COMPLETED TRAININGS */}
-                    <div style={{ flex: 1, background: '#ffffff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.04)' }}>
+                    {/* COLUMN 3: COMPLETED TRAININGS */}
+                    <div style={{ background: '#ffffff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.04)' }}>
                         <div style={{ backgroundColor: '#4a080e', padding: '14px 20px', fontWeight: '700', fontSize: '14px', color: '#fff' }}>
                             Completed Trainings
                         </div>
@@ -177,9 +276,13 @@ export default function TrainingRecords({ onNavigate, onLogout }) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr style={{ borderBottom: '1px solid #edf2f7' }}><td colSpan="5" style={{ padding: '20px' }}>&nbsp;</td></tr>
-                                    <tr style={{ borderBottom: '1px solid #edf2f7' }}><td colSpan="5" style={{ padding: '20px' }}>&nbsp;</td></tr>
-                                    <tr style={{ borderBottom: '1px solid #edf2f7' }}><td colSpan="5" style={{ padding: '20px' }}>&nbsp;</td></tr>
+                                    <tr style={{ borderBottom: '1px solid #edf2f7' }}>
+                                        <td colSpan="5" style={{ padding: '24px 12px', fontSize: '13px', color: '#718096', textAlign: 'center', fontStyle: 'italic' }}>
+                                            No completed trainings on record
+                                        </td>
+                                    </tr>
+                                    <tr><td colSpan="5" className="tr-empty-spacer-cell">&nbsp;</td></tr>
+                                    <tr><td colSpan="5" className="tr-empty-spacer-cell">&nbsp;</td></tr>
                                 </tbody>
                             </table>
                         </div>
