@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { User, Bell } from 'lucide-react';
+
+// 1. IMPORT ALL SIDEBAR VARIATIONS
 import Sidebar from '../../components/sidebar.jsx';
+import HodSidebar from '../../components/hod-sidebar.jsx';
+import HrSidebar from '../../components/hr-sidebar.jsx';
+import ItSidebar from '../../components/it-sidebar.jsx';
+
 import './profile.css';
 
 export default function MyProfile({ onLogout, user, onUserUpdate }) {
@@ -86,14 +92,29 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
         fontFamily: 'inherit'
     };
 
-    // UPDATED: Helper dynamically builds the display name using ONLY First and Last name
     const formatFullName = (first, last) => {
         return `${first || ''} ${last || ''}`.trim() || 'Employee Name';
     };
 
+    // 2. DYNAMIC SIDEBAR HELPER FUNCTION
+    const renderSidebar = () => {
+        switch (user?.role) {
+            case 'Super Admin':
+                return <ItSidebar />;
+            case 'HR Admin':
+                return <HrSidebar />;
+            case 'Department Head':
+                return <HodSidebar />;
+            default:
+                return <Sidebar />; // Standard employee fallback
+        }
+    };
+
     return (
         <div className="dashboard-container" style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f4f4f4', fontFamily: 'system-ui, sans-serif' }}>
-            <Sidebar />
+            
+            {/* 3. INJECT THE DYNAMIC SIDEBAR HERE */}
+            {renderSidebar()}
 
             <main className="dashboard-main-content" style={{ flex: 1, padding: '32px', boxSizing: 'border-box', overflowY: 'auto' }}>
                 

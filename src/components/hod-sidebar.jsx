@@ -51,7 +51,7 @@ export default function HodSidebar() {
         <li className={getMenuClass('/department-reports')} onClick={() => navigate('/department-reports')} style={{ cursor: 'pointer' }}>
           <FileText size={16} /> Department Reports
         </li>
-        <li className={getMenuClass('/hod-profile')} onClick={() => navigate('/hod-profile')} style={{ cursor: 'pointer' }}>
+        <li className={getMenuClass('/profile')} onClick={() => navigate('/profile')}>
           <User size={16} /> My Profile
         </li>
       </ul>

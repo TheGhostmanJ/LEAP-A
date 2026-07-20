@@ -20,10 +20,10 @@ import LeaveApprovals from './features/leave/leave-approvals.jsx';
 import WorkforceForecast from './features/workforce/workforce-forecast.jsx';
 import AnomalyAlert from './features/anomaly/anomaly-alert.jsx';
 import DepartmentReports from './features/reports/department-reports.jsx';
-import HodProfile from './features/profile/hod-profile.jsx';
 import SystemConfig from './features/admin/system-config.jsx';
-// Import the new Access Denied page we are about to create
 import AccessDenied from './features/auth/access-denied.jsx';
+import HrDashboard from './features/dashboard/hr-dashboard.jsx';
+import ProfileRequests from './features/hr/profile-requests.jsx';
 
 import './index.css';
 
@@ -32,8 +32,9 @@ const GOOGLE_CLIENT_ID = '718581008344-0pr3hqb4867olblp5e3n27fvom9klrrh.apps.goo
 // 1. SMART REDIRECT HELPER: Determines where a user should land upon login
 const getRoleBasedHome = (role) => {
   if (role === 'Super Admin') return "/system-config";
-  if (['Department Head', 'HR Admin'].includes(role)) return "/hod-dashboard";
-  return "/dashboard"; // Default for Employee Self-Service
+  if (role === 'HR Admin') return "/hr-dashboard"; // <--- Route HR here
+  if (role === 'Department Head') return "/hod-dashboard"; 
+  return "/dashboard"; 
 };
 
 // 2. THE GATEKEEPER COMPONENT: Protects routes based on user role
@@ -173,9 +174,14 @@ export default function Root() {
           <DepartmentReports onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
-      <Route path="/hod-profile" element={
-        <ProtectedRoute user={currentUser} allowedRoles={MANAGEMENT_ROLES}>
-          <HodProfile onLogout={handleLogout} user={currentUser} onUserUpdate={handleUserUpdate} />
+      <Route path="/hr-dashboard" element={
+        <ProtectedRoute user={currentUser} allowedRoles={['HR Admin', 'Super Admin']}>
+          <HrDashboard onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
+      <Route path="/profile-requests" element={
+        <ProtectedRoute user={currentUser} allowedRoles={['HR Admin', 'Super Admin']}>
+          <ProfileRequests onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
 

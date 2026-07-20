@@ -1,12 +1,51 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; 
+import {
+  Home, UserCheck, History, CreditCard, GraduationCap,
+  User, HelpCircle, Clock, Bell, Search, FilePlus, ExternalLink
+} from 'lucide-react';
 /* =========================================================
    🛠️ IMPORT THE NEW CUSTOM HOD SIDEBAR
    ========================================================= */
 import HodSidebar from "../../components/hod-sidebar";
-import { Bell } from 'lucide-react';
 import './hod-dashboard.css'; 
 
 export default function HodDashboard({ onLogout, user }) {
+  const navigate = useNavigate();
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [recentLeaves, setRecentLeaves] = useState([]);
+
+    // Fetch data on component load
+      useEffect(() => {
+        const fetchRecentLeaves = async () => {
+          try {
+            const response = await fetch(`http://localhost:3001/api/leave/recent/${user.employee_key}`);
+            if (response.ok) {
+              const data = await response.json();
+              setRecentLeaves(data);
+            }
+          } catch (err) {
+            console.error("Error loading leave history:", err);
+          }
+        };
+    
+        if (user?.employee_key) fetchRecentLeaves();
+      }, [user]);
+    
+      // Clock timer
+      useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+      }, []);
+    
+      const formattedDate = currentTime.toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric'
+      });
+    
+      const formattedTime = currentTime.toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+      });
+
   return (
     <div className="dashboard-container hod-view-wrapper">
       {/* Renders your brand new isolated HOD menu layout safely */}
@@ -27,9 +66,11 @@ export default function HodDashboard({ onLogout, user }) {
               <span className="bell-badge"></span>
             </button>
             
-            <div className="user-profile-badge">
-              <span className="profile-icon-avatar">👤</span>
-              <span className="profile-name-string">{`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'HOD Name'}</span>
+            <div className="profile-identity-card" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>
+              <div className="avatar-placeholder"><User size={16} /></div>
+              <span className="profile-name-label">
+                {`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Head Name'}
+              </span>
             </div>
             
             {/* 🚪 CONNECTED LOGOUT BUTTON ACTION */}

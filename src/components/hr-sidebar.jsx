@@ -38,11 +38,8 @@ export default function HrSidebar() {
       <ul className="sidebar-menu">
         <div className="sidebar-section-label">Management Analytics</div>
         
-        <li className={getMenuClass('/hod-dashboard')} onClick={() => navigate('/hod-dashboard')}>
-          <Home size={16} /> Global Dashboard
-        </li>
-        <li className={getMenuClass('/leave-approvals')} onClick={() => navigate('/leave-approvals')}>
-          <CheckSquare size={16} /> Master Leave Approvals
+        <li className={getMenuClass('/hr-dashboard')} onClick={() => navigate('/hr-dashboard')}>
+            <Home size={16} /> Global Dashboard
         </li>
         <li className={getMenuClass('/workforce-forecast')} onClick={() => navigate('/workforce-forecast')}>
           <BarChart3 size={16} /> Workforce Forecast
@@ -65,11 +62,14 @@ export default function HrSidebar() {
         <li className={getMenuClass('/payroll')} onClick={() => navigate('/payroll')}>
           <Banknote size={16} /> Payroll & Ledger
         </li>
+        <li className={getMenuClass('/profile-requests')} onClick={() => navigate('/profile-requests')}>
+            <User size={16} /> Profile Edit Requests
+        </li>
         
         <div className="sidebar-section-label">Account</div>
 
-        <li className={getMenuClass('/hod-profile')} onClick={() => navigate('/hod-profile')}>
-          <User size={16} /> My Profile
+        <li className={getMenuClass('/profile')} onClick={() => navigate('/profile')}>
+            <User size={16} /> My Profile
         </li>
       </ul>
 

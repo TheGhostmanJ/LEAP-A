@@ -1,13 +1,26 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom'; 
 import HodSidebar from '../../components/hod-sidebar'; 
-import { Bell, BarChart3, Info, AlertTriangle, AlertCircle, SlidersHorizontal } from 'lucide-react';
+import HrSidebar from '../../components/hr-sidebar'; 
+import { User, Bell, BarChart3, Info, AlertTriangle, AlertCircle, SlidersHorizontal } from 'lucide-react';
 import './workforce-forecast.css';
 
 export default function WorkforceForecast({ onLogout, user }) {
+  const navigate = useNavigate();
+
+  const renderSidebar = () => {
+            switch (user?.role) {
+                case 'HR Admin':
+                    return <HrSidebar />;
+                case 'Department Head':
+                    return <HodSidebar />;
+            }
+        };
+
   return (
     <div className="dashboard-container hod-view-wrapper">
       {/* Persistent Left Navigation Column */}
-      <HodSidebar />
+      {renderSidebar()}
 
       {/* Main Viewport Content Surface */}
       <div className="dashboard-main-content">
@@ -28,9 +41,11 @@ export default function WorkforceForecast({ onLogout, user }) {
               <span className="bell-badge"></span>
             </button>
             
-            <div className="user-profile-badge">
-              <span className="profile-icon-avatar">👤</span>
-              <span className="profile-name-string">{`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Employee'}</span>
+            <div className="profile-identity-card" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>
+              <div className="avatar-placeholder"><User size={16} /></div>
+              <span className="profile-name-label">
+                {`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Employee Name'}
+              </span>
             </div>
             
             <button className="logout-action-btn" onClick={onLogout}>Log Out</button>

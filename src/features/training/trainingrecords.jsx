@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Home,
+import {Home,
     UserCheck,
     History,
     CreditCard,
@@ -18,12 +17,16 @@ import {
     PlusCircle,
     Briefcase,
     MapPin,
-    Users
-} from 'lucide-react';
+    Users,
+    UserPlus} from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; 
 import Sidebar from '../../components/sidebar.jsx';
 import './trainingrecords.css'; // Importing your CSS file
 
-export default function TrainingRecords({ onNavigate, onLogout }) {
+
+export default function TrainingRecords({ onNavigate, onLogout, user }) {
+    const navigate = useNavigate();
+
     const [currentTime, setCurrentTime] = useState(new Date());
     
     // Dynamic list for upcoming trainings
@@ -89,13 +92,12 @@ export default function TrainingRecords({ onNavigate, onLogout }) {
                             <span className="badge-dot"></span>
                         </button>
 
-                        <div className="profile-identity-card">
-                            <div className="avatar-placeholder">
-                                <User size={16} />
-                            </div>
-                            <span className="profile-name-label">{`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Employee'}</span>
-                        </div>
-
+                       <div className="profile-identity-card" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>
+                                                   <div className="avatar-placeholder"><User size={16} /></div>
+                                                   <span className="profile-name-label">
+                                                       {`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Employee Name'}
+                                                   </span>
+                                               </div>
                         <button className="logout-action-btn" onClick={onLogout}>
                             Log Out
                         </button>

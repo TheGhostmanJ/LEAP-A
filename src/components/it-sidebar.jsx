@@ -55,8 +55,8 @@ export default function ItSidebar() {
 
         <div className="sidebar-section-label">Account</div>
         
-        <li className={getMenuClass('/it-profile')} onClick={() => navigate('/it-profile')}>
-          <User size={16} /> My IT Profile
+        <li className={getMenuClass('/profile')} onClick={() => navigate('/profile')}>
+            <User size={16} /> My Profile
         </li>
       </ul>
 

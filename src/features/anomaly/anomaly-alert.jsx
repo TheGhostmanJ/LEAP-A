@@ -1,13 +1,27 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom'; 
+import HrSidebar from '../../components/hr-sidebar';
 import HodSidebar from '../../components/hod-sidebar';
-import { Bell, AlertOctagon, ShieldAlert, CheckCircle, Calendar, Search, SlidersHorizontal } from 'lucide-react';
+import { User, Bell, FileText, ChevronDown, AlertOctagon, ShieldAlert, CheckCircle, Calendar, Search, SlidersHorizontal } from 'lucide-react';
 import './anomaly-alert.css';
 
+
 export default function AnomalyAlert({ onLogout, user }) {
+  const navigate = useNavigate();
+
+  const renderSidebar = () => {
+          switch (user?.role) {
+              case 'HR Admin':
+                  return <HrSidebar />;
+              case 'Department Head':
+                  return <HodSidebar />;
+          }
+      };
+
   return (
     <div className="dashboard-container hod-view-wrapper">
       {/* Persistent Left Navigation Column */}
-      <HodSidebar />
+      {renderSidebar()}
 
       {/* Main Viewport Content Surface */}
       <div className="dashboard-main-content">
