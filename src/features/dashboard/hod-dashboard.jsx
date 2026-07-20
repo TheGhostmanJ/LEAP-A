@@ -18,7 +18,7 @@ export default function HodDashboard({ onLogout, user }) {
         {/* MATCHED GLOBAL HEADER FROM FIGMA & EMPLOYEE */}
         <header className="dashboard-global-header">
           <div className="welcome-greeting">
-            Welcome, <span className="highlight-name">{user?.name ? user.name.split(' ')[0] : 'Mario'}</span>!
+            Welcome, <span className="highlight-name">{user?.first_name || 'Head'}</span>!
           </div>
           
           <div className="header-actions">
@@ -29,7 +29,7 @@ export default function HodDashboard({ onLogout, user }) {
             
             <div className="user-profile-badge">
               <span className="profile-icon-avatar">👤</span>
-              <span className="profile-name-string">{user?.name || 'Mario Santos'}</span>
+              <span className="profile-name-string">{`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'HOD Name'}</span>
             </div>
             
             {/* 🚪 CONNECTED LOGOUT BUTTON ACTION */}

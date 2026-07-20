@@ -1,0 +1,109 @@
+/* src/features/auth/access-denied.css */
+
+/* Locks the wrapper to the full viewport, matching dashboard-container */
+.access-denied-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  background-color: #f3f4f6; /* Matches dashboard-main-content background */
+  font-family: system-ui, -apple-system, sans-serif;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+/* Matches the analytics-visual-card and data-table-container-card */
+.access-denied-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  padding: 40px;
+  max-width: 480px;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border-top: 6px solid #7a0000; /* LEAP-A Maroon branding */
+}
+
+.alert-icon-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.shield-icon {
+  color: #7a0000;
+  background-color: #f0eee9; /* Matches hover state of sidebar items */
+  padding: 16px;
+  border-radius: 50%;
+}
+
+.access-title {
+  color: #111827; /* Matches welcome-heading */
+  font-size: 24px;
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.access-description {
+  color: #4b5563; /* Matches metric-title-label */
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.access-advisory-box {
+  background-color: #f9fafb;
+  border-left: 4px solid #cbd5e1;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 13px;
+  color: #374151; /* Matches sidebar-item color */
+  margin-bottom: 32px;
+  border-radius: 0 6px 6px 0;
+}
+
+.access-action-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.btn-flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Matches logout-action-btn */
+.action-btn-investigate {
+  background-color: white;
+  border: 1px solid #d1d5db;
+  color: #374151;
+}
+
+.action-btn-investigate:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* Matches primary-action-trigger-btn */
+.action-btn-red {
+  background-color: #5a0000;
+  color: white;
+  border: none;
+  box-shadow: 0 2px 4px rgba(90, 0, 0, 0.2);
+}
+
+.action-btn-red:hover {
+  background-color: #420000;
+}

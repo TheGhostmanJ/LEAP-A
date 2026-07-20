@@ -29,7 +29,7 @@ export default function HodProfile({ onLogout, user }) {
             
             <div className="user-profile-badge">
               <span className="profile-icon-avatar">👤</span>
-              <span className="profile-name-string">{user?.name || 'Mario Santos'}</span>
+              <span className="profile-name-string">{`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'HOD Name'}</span>
             </div>
             
             <button className="logout-action-btn" onClick={onLogout}>Log Out</button>
@@ -48,7 +48,7 @@ export default function HodProfile({ onLogout, user }) {
               </div>
             </div>
             <div className="profile-hero-text">
-              <h1>{user?.name || 'Mario Santos'}</h1>
+              <h1>{`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'HOD Name'}</h1>
               <h3>Head</h3>
               <p>{user?.department || 'City Budget Office'}</p>
             </div>
@@ -61,25 +61,25 @@ export default function HodProfile({ onLogout, user }) {
             <div className="metadata-column-section">
               <h4>Personal Information</h4>
               <ul className="metadata-fields-list">
-                <li><span className="field-label">Employee ID:</span> <span className="field-value"></span></li>
-                <li><span className="field-label">Full Name:</span> <span className="field-value"></span></li>
-                <li><span className="field-label">Date of Birth:</span> <span className="field-value"></span></li>
-                <li><span className="field-label">Gender:</span> <span className="field-value"></span></li>
-                <li><span className="field-label">Civil Status:</span> <span className="field-value"></span></li>
-                <li><span className="field-label">Contact No.:</span> <span className="field-value"></span></li>
-                <li><span className="field-label">Email:</span> <span className="field-value"></span></li>
+                <li><span className="field-label">Employee ID:</span> <span className="field-value">{user?.employee_id || 'N/A'}</span></li>
+                <li><span className="field-label">Full Name:</span> <span className="field-value">{`${user?.first_name || ''} ${user?.middle_name || ''} ${user?.last_name || ''}`.trim()}</span></li>
+                <li><span className="field-label">Date of Birth:</span> <span className="field-value">{user?.date_of_birth ? new Date(user.date_of_birth).toLocaleDateString() : 'N/A'}</span></li>
+                <li><span className="field-label">Gender:</span> <span className="field-value">{user?.gender || 'N/A'}</span></li>
+                <li><span className="field-label">Civil Status:</span> <span className="field-value">{user?.civil_status || 'N/A'}</span></li>
+                <li><span className="field-label">Contact No.:</span> <span className="field-value">{user?.contact_number || 'N/A'}</span></li>
+                <li><span className="field-label">Email:</span> <span className="field-value">{user?.email || 'N/A'}</span></li>
               </ul>
             </div>
 
             <div className="metadata-column-section">
               <h4>Employment Information</h4>
               <ul className="metadata-fields-list">
-                <li><span className="field-label">Position:</span> <span className="field-value"></span></li>
-                <li><span className="field-label">Department:</span> <span className="field-value"></span></li>
-                <li><span className="field-label">Salary Grade:</span> <span className="field-value"></span></li>
-                <li><span className="field-label">Employment Type:</span> <span className="field-value"></span></li>
-                <li><span className="field-label">Date Hired:</span> <span className="field-value"></span></li>
-                <li><span className="field-label">Years of Service:</span> <span className="field-value"></span></li>
+                <li><span className="field-label">Position:</span> <span className="field-value">{user?.position_title || 'N/A'}</span></li>
+                <li><span className="field-label">Department:</span> <span className="field-value">{user?.department || 'N/A'}</span></li>
+                <li><span className="field-label">Salary Grade:</span> <span className="field-value">{user?.salary_grade || 'N/A'}</span></li>
+                <li><span className="field-label">Employment Type:</span> <span className="field-value">{user?.employment_type || 'N/A'}</span></li>
+                <li><span className="field-label">Date Hired:</span> <span className="field-value">{user?.hire_date ? new Date(user.hire_date).toLocaleDateString() : 'N/A'}</span></li>
+                <li><span className="field-label">Years of Service:</span> <span className="field-value">{user?.years_of_service || '0'} Years</span></li>
               </ul>
             </div>
           </div>

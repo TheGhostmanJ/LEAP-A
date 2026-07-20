@@ -1,3 +1,4 @@
+/* sidebar.css */
 /* ==========================================================================
    GLOBAL APP SHELL SETTINGS
    ========================================================================== */
@@ -33,7 +34,7 @@ body,
   border-right: 1px solid #e5e7eb;
   flex-shrink: 0;
   box-sizing: border-box;
-  overflow-y: auto; /* Handles shorter browser window viewports gracefully */
+  overflow-y: auto;
 }
 
 /* SIDEBAR HEADER BLOCK / BRAND LOGO AREA */
@@ -56,6 +57,16 @@ body,
   list-style: none;
   padding: 0 16px;
   margin: 0;
+}
+
+/* 🌟 NEW: Section Label for HR / IT advanced tools */
+.sidebar-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 16px 0 4px 12px;
 }
 
 /* INDIVIDUAL ITEM ROW LAYOUT */

@@ -35,7 +35,7 @@ export default function AnomalyAlert({ onLogout, user }) {
             
             <div className="user-profile-badge">
               <span className="profile-icon-avatar">👤</span>
-              <span className="profile-name-string">{user?.name || 'Mario Santos'}</span>
+              <span className="profile-name-string">{`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'HOD Name'}</span>
             </div>
             
             <button className="logout-action-btn" onClick={onLogout}>Log Out</button>

@@ -1,12 +1,12 @@
-// src/components/hod-sidebar.jsx
+// src/components/it-sidebar.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Home, CheckSquare, BarChart3, AlertTriangle, FileText, User, Clock
+  Server, Shield, Database, Terminal, User, Clock, Settings
 } from 'lucide-react';
-import './sidebar.css'; // Reuses their exact same sidebar styling layout!
+import './sidebar.css'; 
 
-export default function HodSidebar() {
+export default function ItSidebar() {
   const navigate = useNavigate();
   const location = useLocation(); 
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -34,25 +34,29 @@ export default function HodSidebar() {
         <img src="/leaplogo.png" alt="LEAP-A Logo" style={{ height: '65px', width: 'auto', objectFit: 'contain' }} />
       </div>
 
-      {/* 🌟 HOD EXCLUSIVE SIDEBAR MENU */}
       <ul className="sidebar-menu">
-        <li className={getMenuClass('/hod-dashboard')} onClick={() => navigate('/hod-dashboard')} style={{ cursor: 'pointer' }}>
-          <Home size={16} /> Dashboard
+        <div className="sidebar-section-label">IT Operations</div>
+        
+        <li className={getMenuClass('/system-config')} onClick={() => navigate('/system-config')}>
+          <Server size={16} /> System Config
         </li>
-        <li className={getMenuClass('/leave-approvals')} onClick={() => navigate('/leave-approvals')} style={{ cursor: 'pointer' }}>
-          <CheckSquare size={16} /> Leave Approvals
+        <li className={getMenuClass('/role-management')} onClick={() => navigate('/role-management')}>
+          <Shield size={16} /> Role Management (RBAC)
         </li>
-        <li className={getMenuClass('/workforce-forecast')} onClick={() => navigate('/workforce-forecast')} style={{ cursor: 'pointer' }}>
-          <BarChart3 size={16} /> Workforce Forecast
+        <li className={getMenuClass('/database-metrics')} onClick={() => navigate('/database-metrics')}>
+          <Database size={16} /> Database Metrics
         </li>
-        <li className={getMenuClass('/anomaly-alerts')} onClick={() => navigate('/anomaly-alerts')} style={{ cursor: 'pointer' }}>
-          <AlertTriangle size={16} /> Anomaly Alerts
+        <li className={getMenuClass('/api-gateway')} onClick={() => navigate('/api-gateway')}>
+          <Terminal size={16} /> API Gateway Log
         </li>
-        <li className={getMenuClass('/department-reports')} onClick={() => navigate('/department-reports')} style={{ cursor: 'pointer' }}>
-          <FileText size={16} /> Department Reports
+        <li className={getMenuClass('/system-settings')} onClick={() => navigate('/system-settings')}>
+          <Settings size={16} /> Global Settings
         </li>
-        <li className={getMenuClass('/hod-profile')} onClick={() => navigate('/hod-profile')} style={{ cursor: 'pointer' }}>
-          <User size={16} /> My Profile
+
+        <div className="sidebar-section-label">Account</div>
+        
+        <li className={getMenuClass('/it-profile')} onClick={() => navigate('/it-profile')}>
+          <User size={16} /> My IT Profile
         </li>
       </ul>
 

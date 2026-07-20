@@ -18,7 +18,7 @@ export default function DepartmentReports({ onLogout, user }) {
             <FileText size={22} className="title-icon-svg" /> 
             <div className="title-text-group">
               <h2>Department Reports</h2>
-              <p className="subtitle-department">Department: <span className="highlight-maroon">City Budget Office</span></p>
+              <p className="subtitle-department">Department: <span className="highlight-maroon">{user?.department || 'Unassigned'}</span></p>
             </div>
           </div>
           
@@ -30,7 +30,7 @@ export default function DepartmentReports({ onLogout, user }) {
             
             <div className="user-profile-badge">
               <span className="profile-icon-avatar">👤</span>
-              <span className="profile-name-string">{user?.name || 'Mario Santos'}</span>
+              <span className="profile-name-string">{`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Employee'}</span>
             </div>
             
             <button className="logout-action-btn" onClick={onLogout}>Log Out</button>

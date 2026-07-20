@@ -1,0 +1,249 @@
+/* src/features/admin/system-config.css */
+
+/* ==========================================================================
+   GLOBAL HEADER (Adapting dashboard.css top-header)
+   ========================================================================== */
+.dashboard-global-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.page-title-layout {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.title-icon-svg {
+  color: #7a0000;
+  background-color: #f0eee9;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.title-text-group h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.subtitle-department {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.highlight-maroon {
+  color: #7a0000;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Reuse dashboard.css icon-alert-btn logic */
+.notification-bell-btn {
+  background: #7a0000;
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.user-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 6px 14px;
+  border-radius: 20px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.profile-icon-avatar {
+  font-size: 14px;
+}
+
+/* ==========================================================================
+   METRICS ROW (Matches leave-summary-metrics-bar)
+   ========================================================================== */
+.forecast-summary-metrics-row {
+  display: flex;
+  gap: 24px;
+  flex-shrink: 0;
+}
+
+.forecast-stat-card {
+  flex: 1;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #cbd5e1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-left-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-main-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-subtext-label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.inline-icon {
+  color: #7a0000;
+}
+
+.stat-right-numbers {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.text-green-value { color: #059669; }
+.text-dark-value { color: #111827; }
+
+/* ==========================================================================
+   GRID LAYOUT & DATA CARDS (Matches data-table-container-card)
+   ========================================================================== */
+.forecast-grid-split {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 24px;
+}
+
+.forecast-left-column, .forecast-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.content-data-box {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+/* Matches table-header-title-banner */
+.box-header-title-maroon-bar {
+  background-color: #5a0000;
+  color: white;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+}
+
+/* Transparent Header Variant */
+.box-header-title {
+  padding: 16px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.alert-list-wrapper {
+  padding: 0;
+}
+
+.alert-item-row {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.alert-item-row:last-child {
+  border-bottom: none;
+}
+
+/* ==========================================================================
+   BUTTONS
+   ========================================================================== */
+.action-btn-green {
+  background-color: #059669;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.action-btn-green:hover {
+  background-color: #047857;
+}
+
+/* Using dashboard.css primary action trigger style directly */
+.primary-action-trigger-btn {
+  background-color: #5a0000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(90, 0, 0, 0.2);
+}
+
+.primary-action-trigger-btn:hover {
+  background-color: #420000;
+}
+
+/* Outline button */
+.action-btn-investigate {
+  background-color: white;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.action-btn-investigate:hover {
+  background-color: #f9fafb;
+}

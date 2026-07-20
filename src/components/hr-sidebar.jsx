@@ -1,12 +1,13 @@
-// src/components/hod-sidebar.jsx
+// src/components/hr-sidebar.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Home, CheckSquare, BarChart3, AlertTriangle, FileText, User, Clock
+  Home, CheckSquare, BarChart3, AlertTriangle, FileText, 
+  User, Clock, Users, Building2, Banknote
 } from 'lucide-react';
-import './sidebar.css'; // Reuses their exact same sidebar styling layout!
+import './sidebar.css'; 
 
-export default function HodSidebar() {
+export default function HrSidebar() {
   const navigate = useNavigate();
   const location = useLocation(); 
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -34,24 +35,40 @@ export default function HodSidebar() {
         <img src="/leaplogo.png" alt="LEAP-A Logo" style={{ height: '65px', width: 'auto', objectFit: 'contain' }} />
       </div>
 
-      {/* 🌟 HOD EXCLUSIVE SIDEBAR MENU */}
       <ul className="sidebar-menu">
-        <li className={getMenuClass('/hod-dashboard')} onClick={() => navigate('/hod-dashboard')} style={{ cursor: 'pointer' }}>
-          <Home size={16} /> Dashboard
+        <div className="sidebar-section-label">Management Analytics</div>
+        
+        <li className={getMenuClass('/hod-dashboard')} onClick={() => navigate('/hod-dashboard')}>
+          <Home size={16} /> Global Dashboard
         </li>
-        <li className={getMenuClass('/leave-approvals')} onClick={() => navigate('/leave-approvals')} style={{ cursor: 'pointer' }}>
-          <CheckSquare size={16} /> Leave Approvals
+        <li className={getMenuClass('/leave-approvals')} onClick={() => navigate('/leave-approvals')}>
+          <CheckSquare size={16} /> Master Leave Approvals
         </li>
-        <li className={getMenuClass('/workforce-forecast')} onClick={() => navigate('/workforce-forecast')} style={{ cursor: 'pointer' }}>
+        <li className={getMenuClass('/workforce-forecast')} onClick={() => navigate('/workforce-forecast')}>
           <BarChart3 size={16} /> Workforce Forecast
         </li>
-        <li className={getMenuClass('/anomaly-alerts')} onClick={() => navigate('/anomaly-alerts')} style={{ cursor: 'pointer' }}>
+        <li className={getMenuClass('/anomaly-alerts')} onClick={() => navigate('/anomaly-alerts')}>
           <AlertTriangle size={16} /> Anomaly Alerts
         </li>
-        <li className={getMenuClass('/department-reports')} onClick={() => navigate('/department-reports')} style={{ cursor: 'pointer' }}>
-          <FileText size={16} /> Department Reports
+        <li className={getMenuClass('/department-reports')} onClick={() => navigate('/department-reports')}>
+          <FileText size={16} /> Global Reports
         </li>
-        <li className={getMenuClass('/hod-profile')} onClick={() => navigate('/hod-profile')} style={{ cursor: 'pointer' }}>
+
+        <div className="sidebar-section-label">HR Operations</div>
+        
+        <li className={getMenuClass('/onboarding')} onClick={() => navigate('/onboarding')}>
+          <Users size={16} /> Employee Onboarding
+        </li>
+        <li className={getMenuClass('/departments')} onClick={() => navigate('/departments')}>
+          <Building2 size={16} /> Department Setup
+        </li>
+        <li className={getMenuClass('/payroll')} onClick={() => navigate('/payroll')}>
+          <Banknote size={16} /> Payroll & Ledger
+        </li>
+        
+        <div className="sidebar-section-label">Account</div>
+
+        <li className={getMenuClass('/hod-profile')} onClick={() => navigate('/hod-profile')}>
           <User size={16} /> My Profile
         </li>
       </ul>

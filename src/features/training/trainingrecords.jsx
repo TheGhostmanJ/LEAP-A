@@ -93,7 +93,7 @@ export default function TrainingRecords({ onNavigate, onLogout }) {
                             <div className="avatar-placeholder">
                                 <User size={16} />
                             </div>
-                            <span className="profile-name-label">Juan Dela Cruz</span>
+                            <span className="profile-name-label">{`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Employee'}</span>
                         </div>
 
                         <button className="logout-action-btn" onClick={onLogout}>
