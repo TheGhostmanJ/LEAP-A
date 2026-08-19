@@ -23,6 +23,9 @@ import DepartmentReports from './features/reports/department-reports.jsx';
 import SystemConfig from './features/admin/system-config.jsx';
 import AccessDenied from './features/auth/access-denied.jsx';
 import HrDashboard from './features/dashboard/hr-dashboard.jsx';
+import Onboarding from './features/hr/onboarding.jsx';
+import Departments from './features/hr/departments.jsx';
+import Payroll from './features/hr/payroll.jsx';
 import ProfileRequests from './features/hr/profile-requests.jsx';
 
 import './index.css';
@@ -177,6 +180,23 @@ export default function Root() {
       <Route path="/hr-dashboard" element={
         <ProtectedRoute user={currentUser} allowedRoles={['HR Admin', 'Super Admin']}>
           <HrDashboard onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
+      <Route path="/onboarding" element={
+        <ProtectedRoute user={currentUser} allowedRoles={['HR Admin', 'Super Admin']}>
+          <Onboarding onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/departments" element={
+        <ProtectedRoute user={currentUser} allowedRoles={['HR Admin', 'Super Admin']}>
+          <Departments onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/payroll" element={
+        <ProtectedRoute user={currentUser} allowedRoles={['HR Admin', 'Super Admin']}>
+          <Payroll onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
       <Route path="/profile-requests" element={
