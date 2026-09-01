@@ -20,13 +20,17 @@ import LeaveApprovals from './features/leave/leave-approvals.jsx';
 import WorkforceForecast from './features/workforce/workforce-forecast.jsx';
 import AnomalyAlert from './features/anomaly/anomaly-alert.jsx';
 import DepartmentReports from './features/reports/department-reports.jsx';
-import SystemConfig from './features/admin/system-config.jsx';
 import AccessDenied from './features/auth/access-denied.jsx';
 import HrDashboard from './features/dashboard/hr-dashboard.jsx';
 import Onboarding from './features/hr/onboarding.jsx';
 import Departments from './features/hr/departments.jsx';
 import Payroll from './features/hr/payroll.jsx';
 import ProfileRequests from './features/hr/profile-requests.jsx';
+import SystemConfig from './features/admin/system-config.jsx'; // Or wherever you saved this one!
+import RoleManagement from './features/it/role-management.jsx';
+import DatabaseMetrics from './features/it/database-metrics.jsx';
+import ApiGateway from './features/it/api-gateway.jsx';
+import SystemSettings from './features/it/system-settings.jsx';
 
 import './index.css';
 
@@ -204,15 +208,40 @@ export default function Root() {
           <ProfileRequests onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
-
-      {/* ========================================================
-          IT DEPARTMENT ROUTES (Super Admin)
-          ======================================================== */}
+{/* ==========================================
+          IT OPERATIONS ROUTES (Super Admin Only)
+          ========================================== */}
+      
       <Route path="/system-config" element={
-        <ProtectedRoute user={currentUser} allowedRoles={IT_ROLES}>
+        <ProtectedRoute user={currentUser} allowedRoles={['Super Admin']}>
           <SystemConfig onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
+
+      <Route path="/role-management" element={
+        <ProtectedRoute user={currentUser} allowedRoles={['Super Admin']}>
+          <RoleManagement onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/database-metrics" element={
+        <ProtectedRoute user={currentUser} allowedRoles={['Super Admin']}>
+          <DatabaseMetrics onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/api-gateway" element={
+        <ProtectedRoute user={currentUser} allowedRoles={['Super Admin']}>
+          <ApiGateway onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/system-settings" element={
+        <ProtectedRoute user={currentUser} allowedRoles={['Super Admin']}>
+          <SystemSettings onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
+
 
       {/* ACCESS DENIED ROUTE */}
       <Route 

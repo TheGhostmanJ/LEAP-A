@@ -406,6 +406,69 @@ app.post('/api/salary/update', async (req, res) => {
     }
 });
 
+// Add this to your Express backend routes
+app.get('/api/departments', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                d.department_id AS id,
+                d.department_name AS name,
+                COALESCE(e.first_name || ' ' || e.last_name, 'Unassigned') AS head,
+                d.max_capacity AS max,
+                -- Subquery to dynamically count active employees assigned to this department
+                (
+                    SELECT COUNT(*)::integer 
+                    FROM dim_employee e2 
+                    WHERE e2.department_id = d.department_id 
+                    AND e2.is_active = true
+                ) AS headcount
+            FROM public.dim_department d
+            LEFT JOIN public.dim_employee e ON d.department_head_key = e.employee_key
+            ORDER BY d.department_id ASC;
+        `;
+        
+        const result = await pool.query(query); // Assuming you are using 'pg' pool
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Error fetching departments:", err);
+        res.status(500).json({ error: "Internal server error retrieving organizational structure." });
+    }
+});
+
+// POST: Create a new department
+app.post('/api/departments', async (req, res) => {
+    const { department_id, department_name, max_capacity } = req.body;
+
+    // Basic validation
+    if (!department_id || !department_name || !max_capacity) {
+        return res.status(400).json({ error: "Department code, name, and capacity are required." });
+    }
+
+    try {
+        const query = `
+            INSERT INTO public.dim_department 
+            (department_id, department_name, max_capacity) 
+            VALUES ($1, $2, $3) 
+            RETURNING *;
+        `;
+        
+        const values = [department_id.toUpperCase(), department_name, parseInt(max_capacity)];
+        const result = await pool.query(query, values);
+        
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error("Error creating department:", err);
+        // Catch PostgreSQL unique constraint violation (duplicate ID or Name)
+        if (err.code === '23505') {
+            return res.status(409).json({ error: "A department with this Code or Name already exists." });
+        }
+        res.status(500).json({ error: "Internal server error while creating department." });
+    }
+});
+
+
+
+
 // Start listening for API calls
 app.listen(PORT, () => {
   console.log(`Node.js server executing on http://localhost:${PORT}`);

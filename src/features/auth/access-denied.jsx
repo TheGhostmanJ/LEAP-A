@@ -6,6 +6,12 @@ import './access-denied.css';
 export default function AccessDenied({ onLogout }) {
   const navigate = useNavigate();
 
+  // Create a helper function to handle both actions
+  const handleLogoutClick = () => {
+    if (onLogout) onLogout(); // Clear the user session
+    navigate('/', { replace: true }); // Force the router back to the login page
+  };
+
   return (
     <div className="access-denied-wrapper">
       <div className="access-denied-card card-shadow-wrap">
@@ -25,11 +31,9 @@ export default function AccessDenied({ onLogout }) {
         </div>
 
         <div className="access-action-row">
-          <button className="action-btn-investigate btn-flex" onClick={() => navigate(-1)}>
-            <ArrowLeft size={16} /> Go Back
-          </button>
           
-          <button className="action-btn-red btn-flex" onClick={onLogout}>
+          {/* Update the onClick handler here */}
+          <button className="action-btn-red btn-flex" onClick={handleLogoutClick}>
             <LogOut size={16} /> Log Out
           </button>
         </div>
