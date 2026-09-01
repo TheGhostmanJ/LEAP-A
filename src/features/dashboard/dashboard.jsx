@@ -16,7 +16,8 @@ export default function Dashboard({ onLogout, user }) {
   useEffect(() => {
     const fetchRecentLeaves = async () => {
       try {
-        const response = await fetch(`http://localhost:3001/api/leave/recent/${user.employee_key}`);
+        const apiUrl = import.meta.env.VITE_API_URL;
+            const response = await fetch(`${apiUrl}/api/leave/recent/${user.employee_key}`);
         if (response.ok) {
           const data = await response.json();
           setRecentLeaves(data);

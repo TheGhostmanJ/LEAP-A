@@ -41,7 +41,8 @@ export default function Departments({ onLogout, user }) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/departments', {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${apiUrl}/api/departments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

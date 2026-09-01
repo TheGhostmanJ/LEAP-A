@@ -62,11 +62,15 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
         }
 
         try {
-            const response = await fetch(`http://localhost:3001/api/profile/${user.employee_key}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
+    // 1. Grab the live URL from your environment variables (with a local fallback)
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    
+    // 2. Inject it into the fetch call using string interpolation
+    const response = await fetch(`${apiUrl}/api/profile/${user.employee_key}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+    });
             
             if (response.ok) {
                 onUserUpdate(formData);
