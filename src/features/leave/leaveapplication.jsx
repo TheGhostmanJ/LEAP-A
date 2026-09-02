@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, UserCheck, History, CreditCard, GraduationCap, User, HelpCircle, Clock, Bell, Calendar } from 'lucide-react';
-import './LeaveApplication.css';
+import './leaveapplication.css';
 
 export default function LeaveApplication({ user, onLogout }) {
   const navigate = useNavigate();

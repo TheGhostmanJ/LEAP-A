@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API = axios.create({ baseURL: 'http://localhost:3001/api' });
+// 1. Define the dynamic base URL just like in authService
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+// 2. Inject it into the Axios instance
+const API = axios.create({ baseURL: `${API_BASE_URL}/api` });
 
 const attendanceService = {
   getAttendanceMetrics: async (employeeKey) => {

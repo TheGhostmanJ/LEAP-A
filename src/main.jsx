@@ -6,7 +6,7 @@ import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 // Import features
-import Login from "./features/auth/Login.jsx"; 
+import Login from "./features/auth/login.jsx"; 
 import Dashboard from './features/dashboard/dashboard.jsx'; 
 import Attendance from './features/attendance/attendance.jsx'; 
 import LeaveHistory from './features/leave/leavehistory.jsx'; 
