@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import HodSidebar from '../../components/hod-sidebar'; // Matches your lowercase file name
-import { Bell, Search, Calendar, ChevronDown } from 'lucide-react';
+import HodSidebar from '../../components/hod-sidebar';
+import Header from '../../components/Header';
+import { Search, Calendar, ChevronDown, CheckSquare, Check, X, Eye } from 'lucide-react';
 import './leave-approvals.css';
 
 export default function LeaveApprovals({ onLogout, user }) {
-  // State for mock request records to allow instantaneous UI feedback
   const [requests, setRequests] = useState([
     { id: 1, name: 'Juan Dela Cruz', type: 'Sick Leave', status: 'Pending', date: 'May 16, 2026' },
     { id: 2, name: 'Susan Reyes', type: 'Vacation Leave', status: 'Pending', date: 'May 10, 2026' },
@@ -17,36 +17,29 @@ export default function LeaveApprovals({ onLogout, user }) {
 
   return (
     <div className="dashboard-container hod-view-wrapper">
-      {/* Persistent Left Navigation Column */}
+      {/* Navigation Column */}
       <HodSidebar />
 
-      {/* Main Viewport Content Surface */}
-      <div className="dashboard-main-content">
+      {/* Main Viewport Content Surface with entrance animation */}
+      <main className="dashboard-main-content fade-in-up">
         
-        {/* UNIFORM GLOBAL HEADER */}
+        {/* STANDARDIZED GLOBAL HEADER */}
         <header className="dashboard-global-header">
           <div className="welcome-greeting page-title-layout">
-            <span className="title-icon">☑</span> <h2>Leave Approvals</h2>
+            <CheckSquare size={24} className="tr-icon-maroon" />
+            <h2>
+              <span className="cl-title-dark">Leave</span> <span className="cl-title-maroon">Approvals</span>
+            </h2>
           </div>
           
-          <div className="header-actions">
-            <button className="notification-bell-btn">
-              <Bell size={18} fill="#ffffff" color="#ffffff" />
-              <span className="bell-badge"></span>
-            </button>
-            
-            <div className="user-profile-badge">
-              <span className="profile-icon-avatar">👤</span>
-              <span className="profile-name-string">{`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'HOD Name'}</span>
-            </div>
-            
-            <button className="logout-action-btn" onClick={onLogout}>Log Out</button>
-          </div>
+          <Header user={user} onLogout={onLogout} />
         </header>
 
-        {/* 🔍 FILTER OPTIONS BOX BLOCK */}
+        {/* FILTER OPTIONS BLOCK */}
         <section className="filter-options-block">
-          <span className="filter-block-legend">Filter Options</span>
+          <span className="filter-block-legend">
+            <span className="cl-badge-dot"></span> Filter Options
+          </span>
           <div className="filter-inputs-row">
             
             <div className="filter-field-group">
@@ -61,7 +54,7 @@ export default function LeaveApprovals({ onLogout, user }) {
               <label>Department/Office</label>
               <div className="input-with-icon">
                 <select defaultValue="">
-                  <option value="" disabled hidden></option>
+                  <option value="" disabled hidden>Select department...</option>
                   <option value="team-a">Team A</option>
                   <option value="team-b">Team B</option>
                   <option value="team-c">Team C</option>
@@ -74,7 +67,7 @@ export default function LeaveApprovals({ onLogout, user }) {
               <label>Leave Type Filter</label>
               <div className="input-with-icon">
                 <select defaultValue="">
-                  <option value="" disabled hidden></option>
+                  <option value="" disabled hidden>Select type...</option>
                   <option value="sick">Sick Leave</option>
                   <option value="vacation">Vacation Leave</option>
                   <option value="maternity">Maternity Leave</option>
@@ -87,64 +80,65 @@ export default function LeaveApprovals({ onLogout, user }) {
               <label>Search Bar</label>
               <div className="input-with-icon">
                 <Search size={16} className="field-icon-left" />
-                <input type="text" placeholder="" className="has-left-icon" />
+                <input type="text" placeholder="Search employee or ID..." className="has-left-icon" />
               </div>
             </div>
 
           </div>
         </section>
 
-        {/* 📋 MAIN LEAVE REQUESTS DISPLAY BOARD */}
+        {/* MAIN LEAVE REQUESTS DISPLAY BOARD */}
         <section className="content-data-box leave-requests-master-container">
-          <div className="box-header-title">Leave Requests</div>
+          <div className="box-header-title">Pending Leave Requests</div>
           
           <div className="table-responsive-scroll">
-            <table className="data-display-table centered-header-table">
+            <table className="data-display-table">
               <thead>
                 <tr>
                   <th>Employee</th>
                   <th>Leave Type</th>
-                  <th>Status</th>
+                  <th className="text-center">Status</th>
                   <th>Date</th>
-                  <th colSpan="3"></th> {/* Blank space aligned for View/Approve/Reject layout */}
+                  <th className="text-center">Details</th>
+                  <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {requests.map((request) => (
                   <tr key={request.id}>
-                    <td>{request.name}</td>
+                    <td className="font-semibold">{request.name}</td>
                     <td>{request.type}</td>
-                    <td>
+                    <td className="text-center">
                       <span className={`status-pill-badge status-${request.status.toLowerCase()}`}>
                         ● {request.status}
                       </span>
                     </td>
                     <td>{request.date}</td>
-                    <td className="link-cell action-column-view">
-                      <span className="view-more-trigger">View More</span>
+                    <td className="text-center">
+                      <button type="button" className="view-more-trigger">
+                        <Eye size={14} /> View Details
+                      </button>
                     </td>
-                    <td className="action-column-btn">
+                    <td className="text-center">
                       {request.status === 'Pending' ? (
-                        <button 
-                          className="action-btn-green" 
-                          onClick={() => handleAction(request.id, 'Approved')}
-                        >
-                          Approved
-                        </button>
+                        <div className="action-buttons-group">
+                          <button 
+                            className="action-btn-green" 
+                            onClick={() => handleAction(request.id, 'Approved')}
+                          >
+                            <Check size={14} /> Approve
+                          </button>
+                          <button 
+                            className="action-btn-red" 
+                            onClick={() => handleAction(request.id, 'Rejected')}
+                          >
+                            <X size={14} /> Reject
+                          </button>
+                        </div>
                       ) : (
-                        <span className="action-finalized-text text-green">{request.status}</span>
-                      )}
-                    </td>
-                    <td className="action-column-btn">
-                      {request.status === 'Pending' ? (
-                        <button 
-                          className="action-btn-red" 
-                          onClick={() => handleAction(request.id, 'Rejected')}
-                        >
-                          Reject
-                        </button>
-                      ) : (
-                        request.status === 'Rejected' && <span className="action-finalized-text text-red">Rejected</span>
+                        <span className={`action-finalized-text text-${request.status === 'Approved' ? 'green' : 'red'}`}>
+                          {request.status}
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -154,7 +148,7 @@ export default function LeaveApprovals({ onLogout, user }) {
           </div>
         </section>
 
-      </div>
+      </main>
     </div>
   );
 }

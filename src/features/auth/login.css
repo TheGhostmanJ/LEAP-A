@@ -46,6 +46,11 @@ body {
   background-color: #ffffff;
 }
 
+.login-header-wrapper {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
 .login-header {
   font-size: 34px;
   font-weight: 700;
@@ -62,6 +67,19 @@ body {
   max-width: 220px;
   margin: 0 auto;
   line-height: 1.5;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #991b1b;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-size: 14px;
 }
 
 .form-element {
@@ -85,12 +103,24 @@ body {
   align-items: center;
 }
 
+.password-input-wrapper {
+  position: relative;
+}
+
 .input-icon {
   position: absolute;
   left: 14px;
   color: #9ca3af;
   display: flex;
   align-items: center;
+}
+
+.icon-svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
 }
 
 .text-input {
@@ -103,6 +133,10 @@ body {
   color: #333333;
   outline: none;
   transition: all 0.2s ease-in-out;
+}
+
+.text-input-password {
+  padding-right: 40px;
 }
 
 .text-input:focus {
@@ -159,7 +193,6 @@ body {
   transition: color 0.2s ease;
 }
 
-/* Subtle hover interaction */
 .password-toggle-btn:hover {
   color: #4b5563;
 }
@@ -180,6 +213,10 @@ body {
 
 .legal-link:hover {
   text-decoration: underline;
+}
+
+.submit-button-wrapper {
+  margin-top: 16px;
 }
 
 .submit-button {
@@ -206,6 +243,25 @@ body {
   transform: scale(0.995);
 }
 
+.submit-button-disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.divider-text {
+  margin: 24px 0 16px 0;
+  text-align: center;
+  color: #a0aec0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.google-login-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
 /* RIGHT PANEL COMPONENTS */
 .right-panel {
   position: relative;
@@ -222,24 +278,31 @@ body {
   box-shadow: 0px 10px 30px rgba(0,0,0,0.15);
 }
 
+.logo-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 36px;
+}
+
 .logo-image {
-  height: 90px;             /* 🎯 Increased from 65px to make it a bit bigger and bolder */
-  width: auto;              /* Keeps the aspect ratio perfectly intact */
+  height: 90px;
+  width: auto;
   object-fit: contain;
-  transform: none;          
-  margin-top: 20px;         
-  margin-bottom: 0px;       
+  transform: none;
+  margin-top: 20px;
+  margin-bottom: 0px;
 }
 
 .glass-slider-box {
   position: relative;
   width: 100%;
-  max-width: 460px;       /* Slightly widened the maximum card boundary */
+  max-width: 460px;
   background-color: rgba(0, 0, 0, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 28px;
   padding: 28px 24px;
-  min-height: 220px;      /* Increased height profile to accommodate larger illustrations */
+  min-height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -247,13 +310,48 @@ body {
   overflow: hidden;
 }
 
+.carousel-slide {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 20px;
+  transition: all 0.7s ease-in-out;
+}
+
+.carousel-slide.active {
+  opacity: 1;
+  transform: scale(1);
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.carousel-slide.inactive {
+  opacity: 0;
+  transform: scale(0.96);
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .carousel-image-wrapper {
-  width: 38%;             /* Allocated more layout grid width (up from 32%) */
+  width: 38%;
   flex-shrink: 0;
-  height: 130px;          /* Allowed vertical expansion from 96px */
+  height: 130px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.carousel-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.carousel-text {
+  width: 68%;
+  text-align: left;
 }
 
 .carousel-title {
@@ -264,14 +362,14 @@ body {
   color: #ffffff;
   text-transform: uppercase;
   margin: 0;
-  text-align: center;         /* 🎯 Centers the title text */
+  text-align: center;
 }
 
 .carousel-divider {
   width: 100%;
   height: 1px;
   background-color: rgba(255, 255, 255, 0.2);
-  margin: 8px auto;           /* 🎯 Added "auto" to center the line divider itself */
+  margin: 8px auto;
 }
 
 .carousel-description {
@@ -281,7 +379,7 @@ body {
   line-height: 1.7;
   letter-spacing: 0.02em;
   margin: 0;
-  text-align: center;         /* 🎯 Centers the description text */
+  text-align: center;
 }
 
 .carousel-controls-row {
@@ -292,6 +390,28 @@ body {
   justify-content: space-between;
   padding: 0 8px;
   margin-bottom: 16px;
+}
+
+.carousel-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.carousel-dot {
+  height: 3px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.3s ease;
+  width: 8px;
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+.carousel-dot.active {
+  width: 20px;
+  background-color: #ffffff;
 }
 
 .arrow-button {
@@ -306,4 +426,224 @@ body {
 
 .arrow-button:hover {
   color: #ffffff;
+}
+
+/* ============================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================ */
+
+/* Tablet and below: stack panels vertically */
+@media (max-width: 900px) {
+  .main-card {
+    flex-direction: column;
+    border-radius: 24px;
+  }
+
+  .left-panel {
+    width: 100%;
+    padding: 40px 32px;
+  }
+
+  .right-panel {
+    width: 100%;
+    margin: 0;
+    border-radius: 0 0 24px 24px;
+  }
+}
+
+/* Mobile: tighten spacing, stack carousel image above text */
+@media (max-width: 600px) {
+  .screen-container {
+    padding: 12px;
+  }
+
+  .main-card {
+    border-radius: 20px;
+  }
+
+  .left-panel {
+    padding: 32px 20px;
+  }
+
+  .login-header {
+    font-size: 26px;
+  }
+
+  .right-panel {
+    padding: 20px;
+  }
+
+  .glass-slider-box {
+    min-height: auto;
+    padding: 20px 16px;
+  }
+
+  .carousel-slide {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .carousel-image-wrapper {
+    width: 100%;
+    height: 90px;
+  }
+
+  .carousel-text {
+    width: 100%;
+    text-align: center;
+  }
+
+  .carousel-title {
+    font-size: 15px;
+  }
+
+  .carousel-description {
+    font-size: 11px;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 380px) {
+  .left-panel {
+    padding: 24px 16px;
+  }
+
+  .login-header {
+    font-size: 22px;
+  }
+
+  .logo-image {
+    height: 60px;
+  }
+}
+
+/* ============================================================
+   TERMS & PRIVACY MODALS
+   ============================================================ */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-box {
+  background-color: #ffffff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0px 25px 60px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.25s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eef1f2;
+  flex-shrink: 0;
+}
+
+.modal-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #b11212;
+  margin: 0;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  color: #b11212;
+  background-color: #fef2f2;
+}
+
+.modal-body {
+  padding: 20px 24px 28px 24px;
+  overflow-y: auto;
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.7;
+}
+
+.modal-updated {
+  font-size: 11px;
+  color: #9ca3af;
+  font-style: italic;
+  margin: 0 0 16px 0;
+}
+
+.modal-body h3 {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 18px 0 6px 0;
+}
+
+.modal-body h3:first-of-type {
+  margin-top: 0;
+}
+
+.modal-body p {
+  margin: 0 0 4px 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Make legal-link buttons look like the original inline links */
+button.legal-link {
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* Mobile: modal takes more vertical space, tighter padding */
+@media (max-width: 600px) {
+  .modal-box {
+    max-height: 88vh;
+    border-radius: 16px;
+  }
+
+  .modal-header {
+    padding: 16px 18px;
+  }
+
+  .modal-body {
+    padding: 16px 18px 22px 18px;
+    font-size: 12.5px;
+  }
 }

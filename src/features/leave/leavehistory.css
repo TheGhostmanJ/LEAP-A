@@ -1,121 +1,416 @@
 /* ==========================================================================
-   LEAVE HISTORY DASHBOARD LAYOUT MODULES
+   LEAVE HISTORY MODULE STYLESHEET
    ========================================================================== */
 
-/* Unified Layout Header Structural Lock */
-.content-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
+/* TWO-COLUMN ANALYTICS GRID */
+.analytics-display-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
   margin-bottom: 24px;
   flex-shrink: 0;
-  box-sizing: border-box;
 }
 
-/* User Profile & Actions Right Side Cluster */
-.user-controls-cluster {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-left: auto;
-}
-
-/* Base layout settings for the Leave Balance & Used cards */
-.leave-metrics-card {
+.analytics-visual-card {
   background: #ffffff;
-  border-radius: 12px;
-  padding: 22px 26px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  border-bottom: 4px solid #4a080e;
+  padding: 20px 24px;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
   min-height: 220px;
   box-sizing: border-box;
-  border-bottom: 4px solid #4a1521; /* Dark maroon footer line matching image_18279c */
 }
 
-/* Card Section Header Line */
-.leave-card-title-bar {
+.lh-card-header {
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+}
+
+.card-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #2d3748;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 10px;
-  margin-bottom: 16px;
+  margin: 0;
+}
+
+.title-icon {
+  color: #7a0000;
+}
+
+.mock-graphic-frame {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+}
+
+/* DONUT CHART DISPLAY */
+.chart-flex-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 16px;
+}
+
+.donut-wrapper {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.donut-chart-svg {
   width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
 }
 
-/* ==========================================================================
-   FILTER OPTIONS CONTAINER (FIELDSET BOX)
-   ========================================================================== */
-.filter-options-box {
-  border: 1px solid #996666 !important; /* Muted reddish-brown border matching image_18279c */
-  border-radius: 6px;
-  padding: 18px 20px;
-  margin-bottom: 24px;
+.donut-center-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   background-color: #ffffff;
-  box-sizing: border-box;
+  border-radius: 50%;
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
-.filter-options-title {
+.donut-center-icon {
+  color: #7a0000;
+}
+
+/* LEGEND & METRIC STACK */
+.chart-legend-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lh-total-val-badge {
+  font-size: 24px;
+  font-weight: 800;
+  color: #d97706;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.legend-row-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.swatch-amber { background-color: #d97706; }
+.swatch-maroon { background-color: #680000; }
+.swatch-slate { background-color: #475569; }
+
+.legend-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+/* LEAVES USED PROGRESS BAR */
+.lh-stat-total-display {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.lh-stat-number {
+  font-size: 32px;
+  font-weight: 800;
+  color: #4a080e;
+  line-height: 1;
+}
+
+.lh-stat-unit {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.lh-progress-stacked-bar {
+  width: 100%;
+  height: 32px;
+  background-color: #e2e8f0;
+  border-radius: 8px;
+  display: flex;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.bar-segment {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.seg-sick {
+  background-color: #d97706;
+}
+
+.seg-vacation {
+  background-color: #4a080e;
+}
+
+.seg-empty {
+  background-color: transparent;
+}
+
+.segment-sub {
+  font-size: 9px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.lh-stacked-legend {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* FOOTER ACTIONS */
+.lh-card-footer-action {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.lh-see-more-btn {
+  background: transparent;
+  border: none;
+  color: #7a0000;
+  font-family: inherit;
   font-size: 12px;
   font-weight: 700;
-  color: #7a0000;
-  margin-bottom: 14px;
-  text-transform: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s ease;
 }
 
-/* Form input elements styling inside the grid */
-.filter-input-field {
-  width: 100%;
-  padding: 8px 12px;
-  font-size: 12px;
+.lh-see-more-btn:hover {
+  color: #b91c1c;
+  text-decoration: underline;
+}
+
+/* FILTER UTILITIES PANEL */
+.filter-utilities-panel {
+  background: #ffffff;
+  border-radius: 12px;
   border: 1px solid #cbd5e1;
-  border-radius: 4px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.filter-section-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #7a0000;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.filter-field-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-field-wrapper label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+}
+
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.field-icon-right {
+  position: absolute;
+  right: 10px;
+  color: #94a3b8;
+}
+
+.field-icon-left {
+  position: absolute;
+  left: 10px;
+  color: #94a3b8;
+}
+
+.pointer-events-none {
+  pointer-events: none;
+}
+
+.filter-input-element,
+.filter-select-element {
+  width: 100%;
+  height: 36px;
+  padding: 0 32px 0 12px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
   background-color: #ffffff;
-  color: #2d3748;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
   box-sizing: border-box;
   outline: none;
-  transition: border-color 0.2s ease;
+  appearance: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.filter-input-field:focus {
+.filter-input-element.has-left-icon {
+  padding-left: 32px;
+  padding-right: 12px;
+}
+
+.filter-input-element:focus,
+.filter-select-element:focus {
   border-color: #7a0000;
+  box-shadow: 0 0 0 3px rgba(122, 0, 0, 0.1);
 }
 
-/* ==========================================================================
-   DATA TABLE DESIGN SYSTEM COMPLIANCE
-   ========================================================================== */
-.leave-table-banner {
-  background-color: #4a080e !important; /* Deep red background matching image_18279c */
+/* DATA TABLE CARD & BANNER */
+.white-text-banner {
+  background-color: #4a080e !important;
   color: #ffffff !important;
-  font-size: 14px;
-  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 14px 20px;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
-  width: 100%;
-  box-sizing: border-box;
+  font-weight: 700;
+  font-size: 14px;
 }
 
-/* Action button to load view drawer modal details */
-.view-details-btn {
-  background-color: #680000;
+.light-caption {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.days-counter-label {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+/* STATUS BADGES */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-badge.status-pending {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+.status-badge.status-pending .status-dot {
+  background-color: #b45309;
+}
+
+.status-badge.status-approved {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+.status-badge.status-approved .status-dot {
+  background-color: #15803d;
+}
+
+.status-badge.status-rejected {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+.status-badge.status-rejected .status-dot {
+  background-color: #b91c1c;
+}
+
+/* TABLE ACTION BUTTON */
+.table-action-details-btn {
+  background-color: #4a080e;
   color: #ffffff;
   border: none;
-  border-radius: 4px;
-  padding: 6px 14px;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: inherit;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  transition: background-color 0.15s ease;
+  gap: 4px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
-.view-details-btn:hover {
-  background-color: #4a0000;
+.table-action-details-btn:hover {
+  background-color: #7a0000;
+  transform: translateY(-1px);
+}
+
+.empty-table-notice {
+  text-align: center;
+  padding: 32px;
+  color: #64748b;
+  font-weight: 500;
 }

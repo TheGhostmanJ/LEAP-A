@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import HrSidebar from '../../components/hr-sidebar';
-import { Bell, Search, Users, UserPlus, FileText, CheckCircle, Clock } from 'lucide-react';
+import HrSidebar from '../../components/hr-sidebar.jsx';
+import Header from '../../components/Header.jsx';
+import { Users, UserPlus, Search, FileText, CheckCircle, Clock } from 'lucide-react';
+import './onboarding.css';
 
 export default function Onboarding({ onLogout, user }) {
   // Mock data for new hires
@@ -18,27 +20,21 @@ export default function Onboarding({ onLogout, user }) {
         {/* GLOBAL HEADER */}
         <header className="dashboard-global-header">
           <div className="welcome-greeting page-title-layout">
-            <Users size={22} className="title-icon-svg" /> 
+            <div className="title-icon-badge">
+              <Users size={36} className="title-icon-svg" /> 
+            </div>
             <div className="title-text-group">
               <h2>Employee Onboarding</h2>
               <p className="subtitle-department">Portal: <span className="highlight-maroon">HR Operations</span></p>
             </div>
           </div>
           
-          <div className="header-actions">
-            <button className="notification-bell-btn">
-              <Bell size={18} fill="#ffffff" color="#ffffff" />
-            </button>
-            <div className="user-profile-badge">
-              <span className="profile-icon-avatar">👤</span>
-              <span className="profile-name-string">{`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'HR Admin'}</span>
-            </div>
-            <button className="logout-action-btn" onClick={onLogout}>Log Out</button>
-          </div>
+          {/* Shared Header Component */}
+          <Header user={user} onLogout={onLogout} />
         </header>
 
         {/* UTILITY BAR */}
-        <div className="table-filter-utilities-row" style={{ marginTop: '24px' }}>
+        <div className="table-filter-utilities-row onboarding-utility-bar">
           <div className="search-bar-input-wrapper">
             <Search size={16} className="search-lens-embed" />
             <input type="text" className="utility-search-field" placeholder="Search new hires..." />
@@ -49,7 +45,7 @@ export default function Onboarding({ onLogout, user }) {
         </div>
 
         {/* DATA TABLE */}
-        <section className="content-data-box table-box-margin card-shadow-wrap" style={{ marginTop: '24px' }}>
+        <section className="content-data-box table-box-margin card-shadow-wrap onboarding-table-card">
           <div className="box-header-title-maroon-bar">
             Recent Onboarding Records
           </div>
@@ -63,25 +59,24 @@ export default function Onboarding({ onLogout, user }) {
                   <th>Position</th>
                   <th>Target Start Date</th>
                   <th>Setup Status</th>
-                  <th style={{ textAlign: 'center' }}>Actions</th>
+                  <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {newHires.map((hire) => (
                   <tr key={hire.id}>
-                    <td style={{ fontWeight: '600', color: '#1f2937' }}>{hire.name}</td>
+                    <td className="hire-name-cell">{hire.name}</td>
                     <td>{hire.department}</td>
                     <td>{hire.role}</td>
                     <td>{hire.date}</td>
                     <td>
-                      <span className={`status-badge ${hire.status === 'Active' ? 'status-approved' : 'status-pending'}`} 
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span className={`status-badge ${hire.status === 'Active' ? 'status-approved' : 'status-pending'}`}>
                         {hire.status === 'Active' ? <CheckCircle size={12} /> : <Clock size={12} />}
                         {hire.status}
                       </span>
                     </td>
-                    <td style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      <button className="action-btn-investigate" style={{ padding: '6px 12px', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <td className="actions-cell">
+                      <button className="action-btn-investigate profile-action-btn">
                         <FileText size={14} /> Profile
                       </button>
                     </td>

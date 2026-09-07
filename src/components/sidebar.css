@@ -1,4 +1,5 @@
 /* sidebar.css */
+
 /* ==========================================================================
    GLOBAL APP SHELL SETTINGS
    ========================================================================== */
@@ -11,7 +12,6 @@ body,
   height: 100%;
 }
 
-/* OUTER SHELL — locks the whole page layout view layout so it never scrolls. */
 .dashboard-container {
   display: flex;
   flex-direction: row;
@@ -28,25 +28,82 @@ body,
 .dashboard-sidebar {
   width: 260px;
   height: 100vh;
-  background-color: #fcfcfc;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid #eaecf0;
   flex-shrink: 0;
   box-sizing: border-box;
   overflow-y: auto;
+  overflow-x: hidden;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-sidebar.collapsed {
+  width: 76px;
+  overflow-x: visible;
 }
 
 /* SIDEBAR HEADER BLOCK / BRAND LOGO AREA */
 .sidebar-brand {
-  background-color: #7a0000;
-  padding: 24px 16px;
+  height: 80px; 
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 0 16px;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+  flex-shrink: 0;
   position: relative;
-  margin-bottom: 24px;
+  overflow: hidden;
+
+  /* Rich linear gradient from deep crimson to dark maroon */
+  background: linear-gradient(135deg, #8b0000 0%, #4a0000 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-brand::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 12px 12px;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.sidebar-brand::after {
+  content: "";
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.dashboard-sidebar.collapsed .sidebar-brand {
+  padding: 0 12px;
+}
+
+.sidebar-logo-img {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.sidebar-logo-icon {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 /* SIDEBAR NAV LINKS LIST */
@@ -54,19 +111,22 @@ body,
   display: flex;
   flex-direction: column;
   gap: 4px;
-  list-style: none;
-  padding: 0 16px;
+  padding: 0 12px;
   margin: 0;
+  list-style: none;
 }
 
-/* 🌟 NEW: Section Label for HR / IT advanced tools */
+.dashboard-sidebar.collapsed .sidebar-menu {
+  padding: 0 12px;
+}
+
 .sidebar-section-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: #9ca3af;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 16px 0 4px 12px;
+  letter-spacing: 0.8px;
+  padding: 8px 16px 4px 16px;
 }
 
 /* INDIVIDUAL ITEM ROW LAYOUT */
@@ -74,52 +134,154 @@ body,
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
-  border-radius: 6px;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
   font-size: 13px;
-  color: #374151;
-  transition: all 0.2s ease;
+  color: #4b5563;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
-/* DYNAMIC SELECTED NAVIGATION STATES */
-.sidebar-item.active {
-  background-color: #5a0000;
-  color: #ffffff;
+.dashboard-sidebar.collapsed .sidebar-item {
+  justify-content: center;
+  padding: 0;
+  width: 100%;
 }
 
+.sidebar-item-icon {
+  flex-shrink: 0;
+}
+
+.sidebar-item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* HOVER & ACTIVE STATES */
 .sidebar-item:hover:not(.active) {
-  background-color: #f0eee9;
+  background-color: #f3f4f6;
+  color: #7a0000;
+  transform: translateX(3px);
+}
+
+.sidebar-item.active {
+  background-color: #fef2f2 !important;
+  color: #7a0000 !important;
+  font-weight: 700 !important;
+  border-left: 4px solid #7a0000 !important;
+  border-radius: 0 8px 8px 0 !important;
+}
+
+.sidebar-item.active .sidebar-item-icon {
+  color: #7a0000 !important;
+}
+
+/* TOOLTIP — only shows when collapsed, on hover */
+.sidebar-floating-tooltip {
+  position: fixed;
+  transform: translateY(-50%);
+  background-color: #1f2937;
+  color: #ffffff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 9999;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 /* ==========================================================================
-   BOTTOM DATE TIME DISPLAY BOX
+   BOTTOM DATE TIME DISPLAY BOX & TOGGLE
    ========================================================================== */
 .sidebar-footer {
   margin-top: auto;
-  padding: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.dashboard-sidebar.collapsed .sidebar-footer {
+  padding: 12px;
 }
 
 .datetime-box {
-  border: 1.5px solid #7a0000;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
-  padding: 12px;
+  height: 48px;
+  padding: 0 12px;
   background-color: #ffffff;
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #5a0000;
+  color: #374151;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-sizing: border-box;
+}
+
+.dashboard-sidebar.collapsed .datetime-box {
+  justify-content: center;
+  padding: 0;
+}
+
+.datetime-icon {
+  flex-shrink: 0;
+  color: #7a0000;
 }
 
 .datetime-text {
   display: flex;
   flex-direction: column;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
+  line-height: 1.2;
 }
 
 .datetime-text .time-label {
   font-weight: 500;
-  color: #374151;
+  color: #6b7280;
+}
+
+.time-value {
+  color: #7a0000;
+  font-weight: 700;
+}
+
+/* BOTTOM TOGGLE BUTTON STYLING */
+.sidebar-bottom-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.dashboard-sidebar.collapsed .sidebar-bottom-toggle-btn {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar-bottom-toggle-btn:hover {
+  background-color: #f3f4f6;
+  color: #7a0000;
+  border-color: #d1d5db;
 }

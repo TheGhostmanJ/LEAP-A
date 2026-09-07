@@ -1,0 +1,187 @@
+/* ==========================================================================
+   REUSABLE HEADER COMPONENT STYLES
+   ========================================================================== */
+
+/* Full Top Bar Header Container (Used when title prop is provided) */
+.app-top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.header-page-title h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* RIGHT-SIDE CONTROLS WRAPPER (Safely aligns inline or inside parent headers) */
+.header-user-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto; /* Automatically pushes controls to the far-right in flex layouts */
+}
+
+/* MINIMALIST NOTIFICATION BELL BUTTON */
+.header-icon-btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.header-icon-btn:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+  color: #680000;
+}
+
+.notification-badge-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  background-color: #dc2626;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+}
+
+/* UNIFIED PROFILE DROPDOWN CONTAINER */
+.header-profile-dropdown {
+  position: relative;
+}
+
+/* DROPDOWN TRIGGER BUTTON PILL */
+.profile-pill-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  padding: 4px 10px 4px 5px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.profile-pill-trigger:hover,
+.profile-pill-trigger.active {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.profile-avatar-sm {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: #680000;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-name-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.dropdown-chevron {
+  color: #6b7280;
+  transition: transform 0.2s ease;
+}
+
+.dropdown-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+/* OVERLAY DROPDOWN MENU */
+.profile-menu-overlay {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 180px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  padding: 6px 0;
+  z-index: 50;
+  animation: headerMenuFadeIn 0.15s ease-out;
+}
+
+@keyframes headerMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menu-user-details {
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-user-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.menu-user-role {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.menu-divider {
+  border: none;
+  border-top: 1px solid #f1f5f9;
+  margin: 4px 0;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background-color 0.15s ease;
+}
+
+.menu-item.logout-item {
+  color: #dc2626;
+}
+
+.menu-item.logout-item:hover {
+  background-color: #fef2f2;
+}

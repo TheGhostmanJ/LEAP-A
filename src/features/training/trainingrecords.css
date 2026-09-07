@@ -1,27 +1,310 @@
 /* ==========================================================================
-   HR HOSTED FEATURED EVENT CARD STYLING (Coordinated brand styling)
+   MY TRAINING RECORDS MODULE - CONSISTENT DESIGN SYSTEM
    ========================================================================== */
 
-/* Event Display Header Image Placeholder */
+.tr-dashboard-container {
+  display: flex;
+  height: 100vh; /* Lock height to full screen */
+  max-height: 100vh;
+  overflow: hidden; /* Stop global page scrolling */
+  background-color: #f4f5f7;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #1f2937;
+}
+
+.tr-dashboard-container > aside,
+.tr-dashboard-container > nav,
+.sidebar {
+  height: 100vh;
+  flex-shrink: 0;
+  overflow-y: auto; /* Allows sidebar to scroll on small vertical displays */
+}
+
+.tr-main-content {
+  flex: 1;
+  height: 100vh; /* Stretch to parent height */
+  padding: 28px 36px;
+  box-sizing: border-box;
+  overflow-y: auto; /* Enable independent scrolling here */
+}
+
+/* HEADER SECTION */
+.tr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 24px;
+}
+
+.tr-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #fde8e8;
+  border: 1px solid #fbd5d5;
+  color: #680000;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.tr-badge-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #10b981;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.tr-header-title h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.tr-title-dark {
+  color: #0f172a;
+}
+
+.tr-title-maroon {
+  color: #680000;
+}
+
+.tr-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tr-icon-alert-btn {
+  background: #680000;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tr-profile-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #680000;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tr-profile-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tr-logout-btn {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+}
+
+/* 3-COLUMN METRICS SECTION */
+.tr-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.tr-summary-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px 24px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+}
+
+.card-maroon-accent {
+  border-top: 4px solid #680000;
+}
+
+.card-amber-accent {
+  border-top: 4px solid #d97706;
+}
+
+.tr-card-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #6b7280;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.tr-icon-maroon {
+  color: #680000;
+}
+
+.tr-icon-amber {
+  color: #d97706;
+}
+
+.tr-metric-value {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+  margin: 12px 0 4px 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.tr-metric-value.tr-maroon {
+  color: #680000;
+}
+
+.tr-metric-value.tr-amber {
+  color: #d97706;
+}
+
+.tr-metric-unit {
+  font-size: 18px;
+  font-weight: 700;
+  color: #4b5563;
+}
+
+/* SEARCH & FILTER CONTROLS */
+.tr-controls-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.tr-search-wrapper {
+  position: relative;
+  width: 260px;
+}
+
+.tr-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+.tr-search-input {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  font-size: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #374151;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.tr-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tr-date-picker-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  cursor: pointer;
+}
+
+/* 3-COLUMN WORKSPACE GRID */
+.tr-workspace-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* FEATURED HR EVENT CARD */
+.tr-event-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+}
+
+.tr-card-title-bar {
+  background-color: #ffffff;
+  border-bottom: 1px solid #f3f4f6;
+  padding: 14px 20px;
+  font-weight: 800;
+  font-size: 13px;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .tr-event-image-banner {
-  height: 120px;
+  height: 110px;
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
-  /* subtle diagonal stripe graphic background */
-  background-image: linear-gradient(135deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%, transparent);
+  background-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.1) 75%,
+    transparent 75%,
+    transparent
+  );
   background-size: 30px 30px;
-  box-shadow: inset 0 -20px 40px rgba(0,0,0,0.3);
 }
 
 .tr-event-badge-live {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  background-color: #ca8a04; /* Matches Gold theme definitions */
+  top: 10px;
+  right: 10px;
+  background-color: #d97706;
   color: #ffffff;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   padding: 3px 8px;
   border-radius: 4px;
@@ -29,7 +312,28 @@
   letter-spacing: 0.5px;
 }
 
-/* Event Details Panel */
+.tr-event-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tr-event-category {
+  font-size: 10px;
+  font-weight: 800;
+  color: #d97706;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tr-event-title {
+  margin: 2px 0 0 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #1f2937;
+}
+
 .tr-details-panel {
   display: flex;
   flex-direction: column;
@@ -37,43 +341,132 @@
   background-color: #f8fafc;
   padding: 12px;
   border-radius: 8px;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed #e2e8f0;
 }
 
 .tr-detail-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  color: #4a5568;
+  font-size: 11px;
+  color: #4b5563;
 }
 
 .tr-detail-icon {
-  color: #718096;
+  color: #6b7280;
   flex-shrink: 0;
 }
 
-/* Base button styling matching brand */
+.tr-divider {
+  border: 0;
+  border-top: 1px solid #f3f4f6;
+  margin: 2px 0;
+}
+
+.tr-slots-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .tr-submit-button {
-  background-color: #4a080e;
+  background-color: #680000;
   color: #ffffff;
   border: none;
   border-radius: 6px;
-  padding: 11px 16px;
-  font-size: 13px;
+  padding: 10px 16px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s ease-in-out;
+  width: 100%;
+  transition: background-color 0.15s ease;
 }
 
 .tr-submit-button:hover {
-  background-color: #350509;
+  background-color: #4a0000;
 }
 
-/* Disabled Join Button once selected */
 .joined-inactive-btn {
-  background-color: #e2e8f0 !important;
-  color: #94a3b8 !important;
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
   cursor: not-allowed !important;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #e5e7eb;
+}
+
+/* TABLES STYLING */
+.tr-table-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+}
+
+.tr-table-wrapper {
+  overflow-x: auto;
+}
+
+.tr-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.tr-data-table th {
+  background-color: #ffffff;
+  color: #9ca3af;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.tr-data-table td {
+  padding: 14px 16px;
+  font-size: 12px;
+  color: #374151;
+  border-bottom: 1px solid #f9fafb;
+  vertical-align: middle;
+}
+
+.tr-td-bold {
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.tr-pill-status.scheduled {
+  background-color: #fef3c7;
+  color: #d97706;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tr-empty-state-cell {
+  padding: 24px 16px;
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: center;
+  font-style: italic;
+}
+
+.tr-empty-spacer-cell {
+  height: 28px;
+}
+
+/* FOOTER NOTICE */
+.tr-footer-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 28px;
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 500;
 }

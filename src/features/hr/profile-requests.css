@@ -1,0 +1,143 @@
+/* =========================================================
+   PROFILE REQUESTS PAGE SPECIFIC STYLES
+   ========================================================= */
+
+/* Header & Title Layout */
+.page-title-layout {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.title-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  background-color: rgba(128, 0, 32, 0.08); /* Maroon soft tint */
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.title-icon-svg {
+  color: #800020; /* Primary Maroon */
+  stroke-width: 2px;
+}
+
+.title-text-group h2 {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.2;
+}
+
+.subtitle-department {
+  margin: 2px 0 0 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.highlight-maroon {
+  color: #800020;
+  font-weight: 600;
+}
+
+/* Card & Title Bar */
+.profile-requests-card {
+  margin-top: 24px;
+}
+
+.flex-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bar-search-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.bar-search-field {
+  border: none;
+  outline: none;
+  margin-left: 6px;
+  font-size: 12px;
+}
+
+/* Table Cells */
+.text-center {
+  text-align: center;
+}
+
+.employee-name-cell {
+  font-weight: 600;
+}
+
+.old-value-cell {
+  color: #6b7280;
+  text-decoration: line-through;
+}
+
+.new-value-cell {
+  color: #059669;
+  font-weight: 500;
+}
+
+.attachment-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.attachment-link:hover {
+  text-decoration: underline;
+}
+
+.no-attachment-note {
+  color: #9ca3af;
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* Action Cell & Buttons */
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.action-btn-red {
+  padding: 8px;
+  border-radius: 8px;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.status-approved {
+  background-color: #d1fae5;
+  color: #059669;
+}
+
+.status-rejected {
+  background-color: #fee2e2;
+  color: #dc2626;
+}

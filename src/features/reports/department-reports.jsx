@@ -1,107 +1,95 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom'; 
 import HrSidebar from '../../components/hr-sidebar';
 import HodSidebar from '../../components/hod-sidebar';
-import { User, Bell, FileText, Calendar, ChevronDown, Search, SlidersHorizontal } from 'lucide-react';
+import Header from '../../components/Header';
+import { FileText, Calendar, ChevronDown, Search, SlidersHorizontal, Download } from 'lucide-react';
 import './department-reports.css';
 
 export default function DepartmentReports({ onLogout, user }) {
-  const navigate = useNavigate();
-
   const renderSidebar = () => {
-          switch (user?.role) {
-              case 'HR Admin':
-                  return <HrSidebar />;
-              case 'Department Head':
-                  return <HodSidebar />;
-          }
-      };
+    switch (user?.role) {
+      case 'HR Admin':
+        return <HrSidebar />;
+      case 'Department Head':
+      default:
+        return <HodSidebar />;
+    }
+  };
 
   return (
     <div className="dashboard-container hod-view-wrapper">
-      {/* Persistent Left Navigation Column */}
+      {/* Navigation Column */}
       {renderSidebar()}
 
-      {/* Main Viewport Content Surface */}
-      <div className="dashboard-main-content">
+      {/* Main Viewport Content Surface with entrance animation */}
+      <main className="dashboard-main-content fade-in-up">
         
-        {/* UNIFORM GLOBAL HEADER */}
+        {/* STANDARDIZED GLOBAL HEADER */}
         <header className="dashboard-global-header">
           <div className="welcome-greeting page-title-layout">
-            <FileText size={22} className="title-icon-svg" /> 
+            <FileText size={24} className="tr-icon-maroon" /> 
             <div className="title-text-group">
-              <h2>Department Reports</h2>
-              <p className="subtitle-department">Department: <span className="highlight-maroon">{user?.department || 'Unassigned'}</span></p>
+              <h2>
+                <span className="cl-title-dark">Department</span> <span className="cl-title-maroon">Reports</span>
+              </h2>
+              <p className="subtitle-department">
+                Department: <span className="highlight-maroon">{user?.department || 'Unassigned'}</span>
+              </p>
             </div>
           </div>
           
-          <div className="header-actions">
-            <button className="notification-bell-btn">
-              <Bell size={18} fill="#ffffff" color="#ffffff" />
-              <span className="bell-badge"></span>
-            </button>
-            
-            <div className="profile-identity-card" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>
-                            <div className="avatar-placeholder"><User size={16} /></div>
-                            <span className="profile-name-label">
-                                {`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Employee Name'}
-                            </span>
-                        </div>
-            
-            <button className="logout-action-btn" onClick={onLogout}>Log Out</button>
-          </div>
+          <Header user={user} onLogout={onLogout} />
         </header>
 
-        {/* 🛠️ FILTER OPTIONS TOOLBELT PANEL */}
+        {/* FILTER OPTIONS TOOLBELT PANEL */}
         <div className="filter-options-banner-box">
           <span className="filter-panel-title">Filter Options</span>
           <div className="filter-inputs-grid-row">
             <div className="filter-field-group">
-              <label>Date Range</label>
+              <label htmlFor="date-range-input">Date Range</label>
               <div className="input-with-icon-wrapper">
-                <input type="text" placeholder="Select date range..." readOnly />
-                <Calendar size={16} className="field-inner-icon" />
+                <input id="date-range-input" type="text" placeholder="Select date range..." readOnly />
+                <Calendar size={16} className="field-inner-icon right-icon" />
               </div>
             </div>
 
             <div className="filter-field-group">
-              <label>Report Type</label>
+              <label htmlFor="report-type-select">Report Type</label>
               <div className="input-with-icon-wrapper">
-                <select defaultValue="">
-                  <option value="" disabled hidden></option>
+                <select id="report-type-select" defaultValue="">
+                  <option value="" disabled hidden>Select report type...</option>
                   <option value="leave">Leave Report</option>
                   <option value="workforce">Workforce Forecast</option>
                   <option value="anomaly">Anomaly Alert</option>
                 </select>
-                <ChevronDown size={16} className="field-inner-icon pointer-events-none" />
+                <ChevronDown size={16} className="field-inner-icon right-icon pointer-events-none" />
               </div>
             </div>
 
             <div className="filter-field-group field-flex-grow">
-              <label>Search Bar</label>
+              <label htmlFor="report-search-input">Search Bar</label>
               <div className="input-with-icon-wrapper">
-                <Search size={16} className="field-inner-icon" />
-                <input type="text" className="padding-search-input" />
+                <Search size={16} className="field-inner-icon left-icon" />
+                <input id="report-search-input" type="text" placeholder="Search parameters..." className="padding-search-input" />
               </div>
             </div>
 
             <div className="filter-actions-group">
-              <button className="filter-sliders-btn">
+              <button type="button" className="filter-sliders-btn" aria-label="Toggle Advanced Filters">
                 <SlidersHorizontal size={18} />
               </button>
-              <button className="generate-report-submit-btn">Generate Report</button>
+              <button type="button" className="generate-report-submit-btn">Generate Report</button>
             </div>
           </div>
         </div>
 
-        {/* 📊 2x2 DATA VISUALIZATIONS GRID LAYOUT */}
+        {/* 2x2 DATA VISUALIZATIONS GRID LAYOUT */}
         <div className="reports-quad-visual-grid">
           
           {/* Card 1: Leave Distribution Type */}
           <div className="visual-report-box-card">
             <div className="visual-card-header-bar">Leave Distribution Type</div>
             <div className="visual-mock-graphic-body flex-center-content">
-              {/* This represents your pie chart layout block from image_91e083.png */}
               <div className="mock-pie-chart-placeholder-frame">
                 <div className="mock-pie-circle">
                   <div className="pie-segment segment-50"><span>50%</span></div>
@@ -123,10 +111,9 @@ export default function DepartmentReports({ onLogout, user }) {
           <div className="visual-report-box-card">
             <div className="visual-card-header-bar">Monthly Leave Trend</div>
             <div className="visual-mock-graphic-body">
-              {/* This represents your stacked bar trend from image_91e083.png */}
               <div className="mock-bar-chart-placeholder-frame">
                 <div className="y-axis-ticks">
-                  <span>0-50</span><span>40-40</span><span>30-30</span><span>20-20</span><span>10-10</span><span>0</span>
+                  <span>50</span><span>40</span><span>30</span><span>20</span><span>10</span><span>0</span>
                 </div>
                 <div className="bars-container-flex">
                   {['Jan', 'Feb', 'Mar', 'Apr', 'May'].map((month, idx) => (
@@ -148,7 +135,6 @@ export default function DepartmentReports({ onLogout, user }) {
           <div className="visual-report-box-card">
             <div className="visual-card-header-bar">Workforce Report</div>
             <div className="visual-mock-graphic-body">
-              {/* This represents your line graph path trends from image_91e083.png */}
               <div className="mock-line-chart-placeholder-frame">
                 <div className="mock-line-graph-trendline-svg">
                   <div className="critical-dip-marker-badge">Critical Availability Dip &lt;90%</div>
@@ -164,7 +150,6 @@ export default function DepartmentReports({ onLogout, user }) {
           <div className="visual-report-box-card">
             <div className="visual-card-header-bar">Anomaly Report</div>
             <div className="visual-mock-graphic-body">
-              {/* This represents your anomaly variance wave chart from image_91e083.png */}
               <div className="mock-anomaly-wave-placeholder-frame">
                 <div className="anomaly-stats-sub-row">
                   <span>Peak: <strong>95% Consistency</strong></span>
@@ -180,17 +165,18 @@ export default function DepartmentReports({ onLogout, user }) {
 
         </div>
 
-        {/* 📥 BOTTOM STICKY EXPORT ACTIONS FOOTER */}
+        {/* BOTTOM EXPORT ACTIONS FOOTER */}
         <div className="reports-view-bottom-export-row">
           <div className="export-dropdown-action-btn-wrapper">
-            <button className="export-action-main-trigger">
+            <button type="button" className="export-action-main-trigger">
+              <Download size={15} />
               <span>Export As</span>
               <ChevronDown size={14} />
             </button>
           </div>
         </div>
 
-      </div>
+      </main>
     </div>
   );
 }

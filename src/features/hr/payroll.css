@@ -1,0 +1,125 @@
+/* =========================================================
+   PAYROLL & LEDGER PAGE SPECIFIC STYLES
+   ========================================================= */
+
+/* Header & Title Layout */
+.page-title-layout {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.title-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  background-color: rgba(128, 0, 32, 0.08); /* Maroon soft tint */
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.title-icon-svg {
+  color: #800020; /* Primary Maroon */
+  stroke-width: 2px;
+}
+
+.title-text-group h2 {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.2;
+}
+
+.subtitle-department {
+  margin: 2px 0 0 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.highlight-maroon {
+  color: #800020;
+  font-weight: 600;
+}
+
+/* Metrics Row */
+.payroll-metrics-row {
+  margin-top: 24px;
+}
+
+.payroll-stat-card {
+  flex: 1;
+}
+
+.inline-icon {
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.text-green-value {
+  color: #059669;
+}
+
+.text-dark-value {
+  color: #1f2937;
+}
+
+/* Utility Row */
+.payroll-utility-row {
+  margin-top: 24px;
+}
+
+.export-btn {
+  background-color: #059669;
+}
+
+.export-btn:hover {
+  background-color: #047857;
+}
+
+/* Data Table */
+.payroll-table-card {
+  margin-top: 24px;
+}
+
+.ref-id-cell {
+  color: #6b7280;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.employee-name-cell {
+  font-weight: 600;
+}
+
+.amount-cell {
+  color: #059669;
+  font-weight: 700;
+}
+
+/* Dynamic Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.status-pending-review {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.status-approved {
+  background-color: #d1fae5;
+  color: #059669;
+}
+
+.status-credited {
+  background-color: #e0f2fe;
+  color: #0284c7;
+}

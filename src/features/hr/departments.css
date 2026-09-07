@@ -1,0 +1,247 @@
+/* =========================================================
+   DEPARTMENT SETUP PAGE SPECIFIC STYLES
+   ========================================================= */
+
+.dept-wrapper-relative {
+  position: relative;
+}
+
+/* Header & Title Layout */
+.page-title-layout {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.title-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  background-color: rgba(128, 0, 32, 0.08); /* Maroon soft tint */
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.title-icon-svg {
+  color: #800020; /* Primary Maroon */
+  stroke-width: 2px;
+}
+
+.title-text-group h2 {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.2;
+}
+
+.subtitle-department {
+  margin: 2px 0 0 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.highlight-maroon {
+  color: #800020;
+  font-weight: 600;
+}
+
+/* Utility Bar */
+.dept-utility-row {
+  margin-top: 24px;
+}
+
+/* Table Section & Cells */
+.dept-table-section {
+  margin-top: 24px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.table-status-cell {
+  text-align: center;
+  padding: 24px;
+}
+
+.info-text {
+  color: #6b7280;
+}
+
+.error-text {
+  color: #dc2626;
+}
+
+.dept-code-cell {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.dept-name-cell {
+  font-weight: 700;
+  color: #1a202c;
+}
+
+.headcount-count-flex {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.configure-action-btn {
+  padding: 6px 12px;
+}
+
+/* Capacity Progress Bar */
+.capacity-bar-track {
+  width: 100%;
+  height: 6px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.capacity-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.normal-capacity {
+  background-color: #7a0000;
+}
+
+.over-capacity {
+  background-color: #dc2626;
+}
+
+/* Modal Overlay & Card */
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 32px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  padding: 0;
+}
+
+/* Modal Form Controls */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-field-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-field-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.required-star {
+  color: #dc2626;
+}
+
+.modal-form-input {
+  padding: 8px 12px;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  font-size: 14px;
+  color: #111827;
+  margin-top: 6px;
+}
+
+.modal-form-input:focus {
+  outline: none;
+  border-color: #800020;
+}
+
+.modal-actions-row {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.modal-cancel-btn {
+  padding: 8px 16px;
+  background: #e2e8f0;
+  color: #4a5568;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.modal-submit-btn {
+  padding: 8px 16px;
+  background: #5a0000;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.modal-submit-btn:not(:disabled) {
+  cursor: pointer;
+}
+
+.modal-submit-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}

@@ -1,220 +1,186 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
-    Home,
-    UserCheck,
-    History,
-    CreditCard,
-    GraduationCap,
-    User,
-    HelpCircle,
-    Clock,
-    Bell,
+    Calendar,
     Search,
-    SlidersHorizontal,
-    Plus,
-    Minus,
-    Scale,
-    Coins,
-    AlertCircle
+    ChevronRight,
+    BookOpen
 } from 'lucide-react';
 import Sidebar from '../../components/sidebar.jsx';
+import Header from '../../components/Header.jsx';
+import './creditledger.css';
 
-export default function CreditLedger({ onNavigate, onLogout }) {
-    const [currentTime, setCurrentTime] = useState(new Date());
-
-    useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
-
-    const formattedDate = currentTime.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
-
-    const formattedTime = currentTime.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true
-    });
-
+export default function CreditLedger({ onLogout, user }) {
     return (
-        <div className="dashboard-container" style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f7f9fa', fontFamily: 'system-ui, sans-serif' }}>
+        <div className="cl-dashboard-container">
             <Sidebar />
 
-            {/* MAIN CONTENT CONTAINER */}
-            <main className="dashboard-main-content" style={{ flex: 1, padding: '32px', boxSizing: 'border-box', overflowY: 'auto' }}>
-
-                {/* HEADER ARCHITECTURE */}
-                <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '28px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px' }}>
-                        <CreditCard size={22} style={{ color: '#7a0000', display: 'flex', alignItems: 'center' }} />
-                        <h2 style={{ margin: 0, padding: 0, fontSize: '24px', fontWeight: 700, color: '#1a202c', lineHeight: 1 }}>
-                            My Credit Ledger
+            {/* Added 'fade-in-up' class for entrance transition */}
+            <main className="cl-main-content fade-in-up">
+                {/* HEADER SECTION */}
+                <header className="cl-header">
+                    <div className="cl-header-title">
+                        <span className="cl-header-badge">
+                            <span className="cl-badge-dot"></span> CREDIT LEDGER RECORDS
+                        </span>
+                        <h2>
+                            <span className="cl-title-dark">My </span>
+                            <span className="cl-title-maroon">Credit Ledger</span>
                         </h2>
                     </div>
 
-                    <div className="user-controls-cluster" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <button className="icon-alert-btn">
-                            <Bell size={18} />
-                            <span className="badge-dot"></span>
-                        </button>
-
-                        <div className="profile-identity-card">
-                            <div className="avatar-placeholder">
-                                <User size={16} />
-                            </div>
-                            <span className="profile-name-label">Juan Dela Cruz</span>
-                        </div>
-
-                        <button className="logout-action-btn" onClick={onLogout}>
-                            Log Out
-                        </button>
-                    </div>
+                    {/* Shared Header Component */}
+                    <Header user={user} onLogout={onLogout} />
                 </header>
 
-                {/* 3-COLUMN SUMMARY METRIC CARDS TRACK (EXACT PROTOTYPE VISUALS) */}
-                <section style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '24px' }}>
-                    
-                    {/* CARD 1: Total Earned Credits */}
-                    <div style={{ background: '#ffffff', borderRadius: '12px', padding: '18px 24px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)', borderBottom: '5px solid #4a080e', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', position: 'relative' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '600', color: '#1f2937', borderBottom: '1px solid #f3f4f6', paddingBottom: '8px', marginBottom: '14px' }}>
-                            <Plus size={14} style={{ color: '#800000' }} />
-                            <span>Total Earned Credits</span>
+                {/* 2-COLUMN METRIC SECTION */}
+                <section className="cl-metrics-two-col">
+                    {/* LEFT CARD: Remaining Balance */}
+                    <div className="cl-summary-card card-amber-accent hover-lift">
+                        <div className="cl-card-label-row">
+                            <Calendar size={16} className="cl-icon-amber" />
+                            <span>REMAINING CREDIT BALANCE</span>
                         </div>
-                        <div style={{ fontSize: '36px', fontWeight: '800', textAlign: 'center', color: '#850000', margin: '12px 0 6px 0', lineHeight: 1 }}>
-                            16.5 <span style={{ fontSize: '24px', fontWeight: '700', color: '#850000' }}>Days</span>
-                        </div>
-                        {/* Segmented Color Bar */}
-                        <div style={{ width: '100%', height: '10px', borderRadius: '999px', overflow: 'hidden', display: 'flex', backgroundColor: '#e5e7eb', margin: '8px 0 4px 0' }}>
-                            <div style={{ width: '73%', backgroundColor: '#bd1c1c' }}></div>
-                            <div style={{ width: '27%', backgroundColor: '#f87171' }}></div>
-                        </div>
-                        {/* Segment Value Labels */}
-                        <div style={{ position: 'relative', width: '100%', height: '14px', marginBottom: '12px' }}>
-                            <div style={{ position: 'absolute', left: '55%', fontSize: '11px', fontWeight: '600', color: '#4b5563' }}>12 Days</div>
-                            <div style={{ position: 'absolute', right: '0', fontSize: '11px', fontWeight: '600', color: '#4b5563' }}>4.5 Days</div>
-                        </div>
-                        {/* Legend Containers */}
-                        <div style={{ display: 'flex', gap: '14px', marginTop: 'auto' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '600', color: '#4b5563' }}>
-                                <span style={{ width: '10px', height: '10px', backgroundColor: '#bd1c1c', borderRadius: '2px' }}></span>Current Year Earned
+
+                        <div className="cl-donut-content">
+                            <div className="cl-donut-ring">
+                                <div className="cl-donut-center">
+                                    <BookOpen size={20} />
+                                </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '600', color: '#4b5563' }}>
-                                <span style={{ width: '10px', height: '10px', backgroundColor: '#f87171', borderRadius: '2px' }}></span>Carryover
+
+                            <div className="cl-donut-info">
+                                <div className="cl-donut-value">
+                                    12.5 <span className="cl-unit">Days</span>
+                                </div>
+                                <div className="cl-legend-list">
+                                    <div className="cl-legend-entry">
+                                        <span className="cl-legend-square cl-square-amber"></span>
+                                        Sick Leave (6.25 days)
+                                    </div>
+                                    <div className="cl-legend-entry">
+                                        <span className="cl-legend-square cl-square-maroon"></span>
+                                        Vacation Leave (3.75 days)
+                                    </div>
+                                    <div className="cl-legend-entry">
+                                        <span className="cl-legend-square cl-square-slate"></span>
+                                        Monetizable (2.5 days)
+                                    </div>
+                                </div>
                             </div>
+                        </div>
+
+                        <div className="cl-card-footer-subtext">
+                            <a href="#details">See Details →</a>
                         </div>
                     </div>
 
-                    {/* CARD 2: Total Credits Used */}
-                    <div style={{ background: '#ffffff', borderRadius: '12px', padding: '18px 24px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)', borderBottom: '5px solid #a16207', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', position: 'relative' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '600', color: '#1f2937', borderBottom: '1px solid #f3f4f6', paddingBottom: '8px', marginBottom: '14px' }}>
-                            <Minus size={14} style={{ color: '#b45309' }} />
-                            <span>Total Credits Used</span>
+                    {/* RIGHT CARD: Credits Used / Monetized */}
+                    <div className="cl-summary-card card-maroon-accent hover-lift">
+                        <div className="cl-card-label-row">
+                            <BookOpen size={16} className="cl-icon-maroon" />
+                            <span>CREDITS USED & MONETIZED</span>
                         </div>
-                        <div style={{ fontSize: '36px', fontWeight: '800', textAlign: 'center', color: '#374151', margin: '12px 0 6px 0', lineHeight: 1 }}>
-                            2 <span style={{ fontSize: '24px', fontWeight: '700', color: '#ca8a04' }}>Days</span>
-                        </div>
-                        {/* Segmented Color Bar */}
-                        <div style={{ width: '100%', height: '10px', borderRadius: '999px', overflow: 'hidden', display: 'flex', backgroundColor: '#e5e7eb', margin: '8px 0 4px 0' }}>
-                            <div style={{ width: '75%', backgroundColor: '#b45309' }}></div>
-                            <div style={{ width: '25%', backgroundColor: '#9ca3af' }}></div>
-                        </div>
-                        {/* Segment Value Labels */}
-                        <div style={{ position: 'relative', width: '100%', height: '14px', marginBottom: '12px' }}>
-                            <div style={{ position: 'absolute', left: '55%', fontSize: '11px', fontWeight: '600', color: '#4b5563' }}>3 Days</div>
-                            <div style={{ position: 'absolute', right: '0', fontSize: '11px', fontWeight: '600', color: '#4b5563' }}>1 Day</div>
-                        </div>
-                        {/* Legend Containers */}
-                        <div style={{ display: 'flex', gap: '14px', marginTop: 'auto' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '600', color: '#4b5563' }}>
-                                <span style={{ width: '10px', height: '10px', backgroundColor: '#b45309', borderRadius: '2px' }}></span>Vacation
+
+                        <div className="cl-progress-card-content">
+                            <div className="cl-large-num">
+                                5 <span className="cl-unit">Days Used This Year</span>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '600', color: '#4b5563' }}>
-                                <span style={{ width: '10px', height: '10px', backgroundColor: '#9ca3af', borderRadius: '2px' }}></span>Sick
+
+                            <div className="cl-multi-bar">
+                                <div className="cl-bar-sec-1">
+                                    <span>2 days</span>
+                                    <span className="cl-bar-subtext">Sick Leave</span>
+                                </div>
+                                <div className="cl-bar-sec-2">
+                                    <span>3 days</span>
+                                    <span className="cl-bar-subtext">Vacation</span>
+                                </div>
+                                <div className="cl-bar-sec-3"></div>
+                            </div>
+
+                            <div className="cl-sub-bar-text">
+                                <span>Used: 5 days</span>
+                                <span>Available: 2.5 days</span>
                             </div>
                         </div>
-                    </div>
 
-                    {/* CARD 3: Remaining Balance */}
-                    <div style={{ background: '#ffffff', borderRadius: '12px', padding: '18px 24px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)', borderBottom: '5px solid #4a080e', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '600', color: '#1f2937', borderBottom: '1px solid #f3f4f6', paddingBottom: '8px', marginBottom: '14px' }}>
-                            <Scale size={14} style={{ color: '#800000' }} />
-                            <span>Remaining Balance</span>
-                        </div>
-                        <div style={{ fontSize: '36px', fontWeight: '800', textAlign: 'center', color: '#850000', margin: '26px 0 20px 0', lineHeight: 1 }}>
-                            12.5 Days
-                        </div>
-                        <div style={{ width: '100%', height: '10px', borderRadius: '999px', backgroundColor: '#e5e7eb', marginTop: 'auto', marginBottom: '4px' }}></div>
-                    </div>
-                </section>
-
-                {/* LEAVE MONETIZATION RIBBON BANNER */}
-                <section style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '14px 20px', marginBottom: '24px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <Coins size={18} style={{ color: '#680000' }} />
-                        <span style={{ fontSize: '15px', fontWeight: '700', color: '#4a080e' }}>Leave Monetization Availability</span>
-                        <span style={{ backgroundColor: '#38a169', color: '#ffffff', fontSize: '11px', fontWeight: '700', padding: '3px 14px', borderRadius: '999px' }}>Eligible</span>
-                    </div>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                        <span style={{ fontSize: '13px', color: '#4b5563' }}>
-                            Credits Available: <strong style={{ fontSize: '14px', color: '#000' }}>12.5 <span style={{ color: '#7a0000' }}>Days</span></strong>
-                        </span>
-                        
-                        <button style={{ background: 'linear-gradient(135deg, #a16207 0%, #78350f 100%)', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 22px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1.2, boxShadow: '0 4px 6px rgba(0,0,0,0.06)' }}>
-                            <span style={{ fontWeight: '700', fontSize: '12px' }}>Process 5 Days Monetization</span>
-                            <span style={{ fontSize: '10px', opacity: 0.9 }}>(Estimated: ₱ 15, 250.00)</span>
-                        </button>
-                    </div>
-                </section>
-
-                {/* CONTROLS SEARCH ROW */}
-                <section style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <SlidersHorizontal size={18} style={{ color: '#4a5568', cursor: 'pointer' }} />
-                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                            <Search size={14} style={{ position: 'absolute', left: '10px', color: '#a0aec0' }} />
-                            <input type="text" placeholder="Search..." style={{ width: '220px', padding: '6px 12px 6px 32px', fontSize: '13px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
+                        <div className="cl-card-footer-subtext">
+                            <a href="#breakdown">See Breakdown →</a>
                         </div>
                     </div>
                 </section>
 
-                {/* ARCHITECTURE TRANSACTION TABLE */}
-                <section className="data-table-container-card" style={{ background: '#ffffff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                    <div style={{ backgroundColor: '#4a080e', padding: '14px 20px', fontWeight: '700', fontSize: '14px', color: '#fff' }}>
-                        Leave Monetization Table
+                {/* CONTROLS & FILTER ROW */}
+                <section className="cl-controls-row">
+                    <div className="cl-search-wrapper">
+                        <Search size={14} className="cl-search-icon" />
+                        <input
+                            type="text"
+                            placeholder="Search date, status, transaction type..."
+                            className="cl-search-input"
+                        />
                     </div>
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+
+                    <div className="cl-filter-actions">
+                        <div className="cl-date-picker-btn">
+                            <Calendar size={14} />
+                            <span>May 2026</span>
+                        </div>
+                    </div>
+                </section>
+
+                {/* LEDGER TABLE CARD */}
+                <section className="cl-table-card">
+                    <div className="cl-table-header">
+                        <h3>Credit Ledger Table</h3>
+                        <span className="cl-table-counter">Logs updated in real-time</span>
+                    </div>
+
+                    <div className="cl-table-wrapper">
+                        <table className="cl-data-table">
                             <thead>
-                                <tr style={{ backgroundColor: '#cbd5e1' }}>
-                                    <th style={{ color: '#4a5568', fontWeight: '600', padding: '12px', fontSize: '13px' }}>Date</th>
-                                    <th style={{ color: '#4a5568', fontWeight: '600', padding: '12px', fontSize: '13px' }}>Transaction Type</th>
-                                    <th style={{ color: '#4a5568', fontWeight: '600', padding: '12px', fontSize: '13px' }}>Credit Charges</th>
-                                    <th style={{ color: '#4a5568', fontWeight: '600', padding: '12px', fontSize: '13px' }}>Running Balance</th>
+                                <tr>
+                                    <th>Date Filed</th>
+                                    <th>Transaction Type</th>
+                                    <th>Status</th>
+                                    <th>Days</th>
+                                    <th>Approver</th>
+                                    <th className="cl-th-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr style={{ borderBottom: '1px solid #edf2f7' }}>
-                                    <td style={{ padding: '14px 12px', fontSize: '13px', color: '#2d3748' }}>May 18, 2026</td>
-                                    <td style={{ padding: '14px 12px', fontSize: '13px', color: '#2d3748' }}>Approved Leave Monetization</td>
-                                    <td style={{ padding: '14px 12px', fontSize: '13px', color: '#e53e3e', fontWeight: '600' }}>-5.000</td>
-                                    <td style={{ padding: '14px 12px', fontSize: '13px', color: '#38a169', fontWeight: '600' }}>14.500</td>
+                                <tr>
+                                    <td className="cl-td-bold">May 18, 2026</td>
+                                    <td>Approved Leave Monetization</td>
+                                    <td>
+                                        <span className="cl-pill-status approved">Approved</span>
+                                    </td>
+                                    <td className="cl-td-bold">5 Days</td>
+                                    <td>Mario C.</td>
+                                    <td className="cl-td-right">
+                                        <button className="cl-action-btn">
+                                            View Details <ChevronRight size={12} />
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="cl-td-bold">May 16, 2026</td>
+                                    <td>Sick Leave</td>
+                                    <td>
+                                        <span className="cl-pill-status pending">Pending</span>
+                                    </td>
+                                    <td className="cl-td-bold">3 Days</td>
+                                    <td>Mario C.</td>
+                                    <td className="cl-td-right">
+                                        <button className="cl-action-btn">
+                                            View Details <ChevronRight size={12} />
+                                        </button>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </section>
-
-                {/* FOOTER SYSTEM NOTICE */}
-                <footer style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '24px', color: '#718096', fontSize: '12px' }}>
-                    <AlertCircle size={14} />
-                    <span>Monetization is subject to approval based on CSC guidelines.</span>
-                </footer>
-
             </main>
         </div>
     );

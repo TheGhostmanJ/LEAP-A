@@ -1,6 +1,8 @@
 import React from 'react';
-import HrSidebar from '../../components/hr-sidebar';
-import { Bell, Banknote, Search, FileDown, TrendingUp, DollarSign } from 'lucide-react';
+import HrSidebar from '../../components/hr-sidebar.jsx';
+import Header from '../../components/Header.jsx';
+import { Banknote, Search, FileDown, TrendingUp, DollarSign } from 'lucide-react';
+import './payroll.css';
 
 export default function Payroll({ onLogout, user }) {
   const monetizations = [
@@ -14,37 +16,32 @@ export default function Payroll({ onLogout, user }) {
       <HrSidebar />
 
       <div className="dashboard-main-content">
+        {/* GLOBAL HEADER */}
         <header className="dashboard-global-header">
           <div className="welcome-greeting page-title-layout">
-            <Banknote size={22} className="title-icon-svg" /> 
+            <div className="title-icon-badge">
+              <Banknote size={36} className="title-icon-svg" /> 
+            </div>
             <div className="title-text-group">
               <h2>Payroll & Ledger</h2>
               <p className="subtitle-department">Portal: <span className="highlight-maroon">HR Operations</span></p>
             </div>
           </div>
           
-          <div className="header-actions">
-            <button className="notification-bell-btn">
-              <Bell size={18} fill="#ffffff" color="#ffffff" />
-            </button>
-            <div className="user-profile-badge">
-              <span className="profile-icon-avatar">👤</span>
-              <span className="profile-name-string">{`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'HR Admin'}</span>
-            </div>
-            <button className="logout-action-btn" onClick={onLogout}>Log Out</button>
-          </div>
+          {/* Shared Header Component */}
+          <Header user={user} onLogout={onLogout} />
         </header>
 
-        {/* METRICS ROW (Reusing the forecast-summary styling) */}
-        <section className="forecast-summary-metrics-row" style={{ marginTop: '24px' }}>
-          <div className="forecast-stat-card" style={{ flex: 1 }}>
+        {/* METRICS ROW */}
+        <section className="forecast-summary-metrics-row payroll-metrics-row">
+          <div className="forecast-stat-card payroll-stat-card">
             <div className="stat-left-labels">
               <span className="stat-main-label"><DollarSign size={16} className="inline-icon" /> Monetization Disbursed</span>
               <span className="stat-subtext-label">Current Month (July)</span>
             </div>
             <div className="stat-right-numbers text-green-value">₱ 142.5K</div>
           </div>
-          <div className="forecast-stat-card" style={{ flex: 1 }}>
+          <div className="forecast-stat-card payroll-stat-card">
             <div className="stat-left-labels">
               <span className="stat-main-label"><TrendingUp size={16} className="inline-icon" /> Pending Requests</span>
               <span className="stat-subtext-label">Awaiting HR Review</span>
@@ -53,17 +50,19 @@ export default function Payroll({ onLogout, user }) {
           </div>
         </section>
 
-        <div className="table-filter-utilities-row" style={{ marginTop: '24px' }}>
+        {/* UTILITY BAR */}
+        <div className="table-filter-utilities-row payroll-utility-row">
           <div className="search-bar-input-wrapper">
             <Search size={16} className="search-lens-embed" />
             <input type="text" className="utility-search-field" placeholder="Search employee or ref ID..." />
           </div>
-          <button className="primary-action-trigger-btn" style={{ backgroundColor: '#059669' }}>
+          <button className="primary-action-trigger-btn export-btn">
             <FileDown size={16} /> Export Master Ledger
           </button>
         </div>
 
-        <section className="content-data-box table-box-margin card-shadow-wrap" style={{ marginTop: '24px' }}>
+        {/* DATA TABLE */}
+        <section className="content-data-box table-box-margin card-shadow-wrap payroll-table-card">
           <div className="box-header-title-maroon-bar">
             Leave Monetization Requests
           </div>
@@ -84,14 +83,14 @@ export default function Payroll({ onLogout, user }) {
               <tbody>
                 {monetizations.map((req) => (
                   <tr key={req.id}>
-                    <td style={{ color: '#6b7280', fontFamily: 'monospace', fontWeight: '600' }}>{req.id}</td>
-                    <td style={{ fontWeight: '600' }}>{req.employee}</td>
+                    <td className="ref-id-cell">{req.id}</td>
+                    <td className="employee-name-cell">{req.employee}</td>
                     <td>{req.department}</td>
                     <td>{req.type}</td>
                     <td><strong>{req.days}</strong> Days</td>
-                    <td style={{ color: '#059669', fontWeight: '700' }}>{req.amount}</td>
+                    <td className="amount-cell">{req.amount}</td>
                     <td>
-                      <span className={`status-badge status-${req.status.replace(' ', '-').toLowerCase()}`}>
+                      <span className={`status-badge status-${req.status.replace(/\s+/g, '-').toLowerCase()}`}>
                         {req.status}
                       </span>
                     </td>

@@ -1,238 +1,345 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-    Home,
-    UserCheck,
-    History,
-    CreditCard,
-    GraduationCap,
-    User,
-    HelpCircle,
-    Clock,
-    Bell,
-    Calendar,
-    ChevronDown,
-    Search
+  Calendar,
+  Filter,
+  Search,
+  ChevronDown,
+  ChevronRight,
+  FileText
 } from 'lucide-react';
-import Sidebar from '../../components/sidebar.jsx';
-import './leavehistory.css'; // Uses your existing main layout stylesheet
+import Sidebar from '../../components/Sidebar.jsx';
+import Header from '../../components/Header.jsx'; // Imported Header component
+import './leavehistory.css';
 
-export default function LeaveHistory({ onNavigate, onLogout }) {
-    const [currentTime, setCurrentTime] = useState(new Date());
+export default function LeaveHistory({ onNavigate, onLogout, user }) {
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
+  // Filter States
+  const [dateRange, setDateRange] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [leaveTypeFilter, setLeaveTypeFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
 
-    const formattedDate = currentTime.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
+  // Mock Table Data
+  const [leaveRecords, setLeaveRecords] = useState([
+    {
+      id: 1,
+      dateFiled: 'May 16, 2026',
+      leaveType: 'Sick Leave',
+      status: 'Pending',
+      days: '3 Days',
+      approver: 'Mario C.',
+      remarks: 'Fever and Flu'
+    },
+    {
+      id: 2,
+      dateFiled: 'Apr 02, 2026',
+      leaveType: 'Vacation Leave',
+      status: 'Approved',
+      days: '2 Days',
+      approver: 'Mario C.',
+      remarks: 'Family Outing'
+    },
+    {
+      id: 3,
+      dateFiled: 'Jan 15, 2026',
+      leaveType: 'Emergency Leave',
+      status: 'Approved',
+      days: '1 Day',
+      approver: 'Sarah L.',
+      remarks: 'Home Repair'
+    }
+  ]);
 
-    const formattedTime = currentTime.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true
-    });
+  // Client-side filtering logic
+  const filteredRecords = leaveRecords.filter((record) => {
+    const matchesStatus = statusFilter === 'All' || record.status === statusFilter;
+    const matchesType = leaveTypeFilter === 'All' || record.leaveType === leaveTypeFilter;
+    const matchesSearch =
+      record.leaveType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      record.approver.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      record.dateFiled.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return (
-        <div className="dashboard-container">
-            <Sidebar />
+    return matchesStatus && matchesType && matchesSearch;
+  });
 
-            {/* MAIN SYSTEM WRAPPER */}
-            <main className="dashboard-main-content">
+  return (
+    <div className="dashboard-container">
+      <Sidebar />
 
-                {/* CONTENT TOP HEADER BAR (CONSISTENT WITH ATTENDANCE) */}
-                <header className="content-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '24px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px' }}>
-                        <History size={22} style={{ color: '#7a0000', display: 'flex', alignItems: 'center' }} />
-                        <h2 style={{ margin: 0, padding: 0, fontSize: '22px', fontWeight: 700, color: '#1a202c', lineHeight: 1, whiteSpace: 'nowrap' }}>
-                            My Leave History
-                        </h2>
-                    </div>
+      {/* MAIN SYSTEM WRAPPER WITH FADE-IN ANIMATION */}
+      <main className="dashboard-main-content fade-in-up">
+        {/* UNIFIED TOP HEADER BAR */}
+        <header className="content-top-header">
+          <div className="welcome-banner-group">
+            <div className="welcome-subtitle-badge">
+              <span className="badge-pulse"></span> Leave Application Records
+            </div>
+            <h1 className="welcome-heading">
+              My <span className="highlight-name">Leave History</span>
+            </h1>
+          </div>
 
-                    <div className="user-controls-cluster">
-                        <button className="icon-alert-btn">
-                            <Bell size={18} />
-                            <span className="badge-dot"></span>
+          {/* Reusable Header Control Dropdown */}
+          <Header user={user} onLogout={onLogout} />
+        </header>
+
+        {/* TWO COLUMN METRIC PANEL */}
+        <section className="analytics-display-grid">
+          {/* Card 1: Remaining Leave Balance */}
+          <div className="analytics-visual-card hover-lift">
+            <div className="lh-card-header">
+              <h3 className="card-section-title">
+                <Calendar size={16} className="title-icon" /> Remaining Leave Balance
+              </h3>
+            </div>
+
+            <div className="mock-graphic-frame">
+              <div className="chart-flex-container">
+                {/* SVG Donut */}
+                <div className="donut-wrapper">
+                  <svg viewBox="0 0 36 36" className="donut-chart-svg">
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="15.915"
+                      fill="none"
+                      stroke="#680000"
+                      strokeWidth="4"
+                      strokeDasharray="30 70"
+                      strokeDashoffset="0"
+                    />
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="15.915"
+                      fill="none"
+                      stroke="#475569"
+                      strokeWidth="4"
+                      strokeDasharray="20 80"
+                      strokeDashoffset="-30"
+                    />
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="15.915"
+                      fill="none"
+                      stroke="#d97706"
+                      strokeWidth="4"
+                      strokeDasharray="50 50"
+                      strokeDashoffset="-50"
+                    />
+                  </svg>
+                  <div className="donut-center-badge">
+                    <Calendar size={18} className="donut-center-icon" />
+                  </div>
+                </div>
+
+                {/* Legend */}
+                <div className="chart-legend-stack">
+                  <div className="lh-total-val-badge">12.5 Days</div>
+                  <div className="legend-row-item">
+                    <span className="legend-swatch swatch-amber"></span>
+                    <span className="legend-text">Sick Leave (6.25 days)</span>
+                  </div>
+                  <div className="legend-row-item">
+                    <span className="legend-swatch swatch-maroon"></span>
+                    <span className="legend-text">Vacation Leave (3.75 days)</span>
+                  </div>
+                  <div className="legend-row-item">
+                    <span className="legend-swatch swatch-slate"></span>
+                    <span className="legend-text">Emergency Leave (2.5 days)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lh-card-footer-action">
+                <button
+                  className="lh-see-more-btn"
+                  onClick={() => navigate('/leaveledger')}
+                >
+                  See Details →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Leaves Used Block Progress Tracking */}
+          <div className="analytics-visual-card hover-lift">
+            <div className="lh-card-header">
+              <h3 className="card-section-title">
+                <FileText size={16} className="title-icon" /> Leaves Used
+              </h3>
+            </div>
+
+            <div className="mock-graphic-frame">
+              <div className="lh-stat-total-display">
+                <span className="lh-stat-number">5</span>
+                <span className="lh-stat-unit">Days Used This Year</span>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="lh-progress-stacked-bar">
+                <div className="bar-segment seg-sick" style={{ width: '40%' }}>
+                  <span>2 days</span>
+                  <span className="segment-sub">Sick Leave</span>
+                </div>
+                <div className="bar-segment seg-vacation" style={{ width: '40%' }}>
+                  <span>3 days</span>
+                  <span className="segment-sub">Vacation</span>
+                </div>
+                <div className="bar-segment seg-empty" style={{ width: '20%' }}></div>
+              </div>
+
+              <div className="lh-stacked-legend">
+                <span>Used: <strong>5 days</strong></span>
+                <span>Available: <strong>2.5 days</strong></span>
+              </div>
+
+              <div className="lh-card-footer-action">
+                <button
+                  className="lh-see-more-btn"
+                  onClick={() => navigate('/leaveledger')}
+                >
+                  See Breakdown →
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FILTER CONTROLS FIELDSET ROW */}
+        <section className="filter-utilities-panel">
+          <div className="filter-section-title">
+            <Filter size={15} color="#7a0000" /> Filter Options
+          </div>
+
+          <div className="filter-controls-grid">
+            {/* Date Range */}
+            <div className="filter-field-wrapper">
+              <label>Date Range</label>
+              <div className="input-with-icon">
+                <input
+                  type="text"
+                  placeholder="Select dates..."
+                  value={dateRange}
+                  onChange={(e) => setDateRange(e.target.value)}
+                  className="filter-input-element"
+                />
+                <Calendar size={15} className="field-icon-right" />
+              </div>
+            </div>
+
+            {/* Status Filter */}
+            <div className="filter-field-wrapper">
+              <label>Status</label>
+              <div className="input-with-icon">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="filter-select-element"
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+                <ChevronDown size={15} className="field-icon-right pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Leave Type Filter */}
+            <div className="filter-field-wrapper">
+              <label>Leave Type</label>
+              <div className="input-with-icon">
+                <select
+                  value={leaveTypeFilter}
+                  onChange={(e) => setLeaveTypeFilter(e.target.value)}
+                  className="filter-select-element"
+                >
+                  <option value="All">All Types</option>
+                  <option value="Sick Leave">Sick Leave</option>
+                  <option value="Vacation Leave">Vacation Leave</option>
+                  <option value="Emergency Leave">Emergency Leave</option>
+                </select>
+                <ChevronDown size={15} className="field-icon-right pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Keyword Search Field */}
+            <div className="filter-field-wrapper">
+              <label>Search Keywords</label>
+              <div className="input-with-icon">
+                <Search size={15} className="field-icon-left" />
+                <input
+                  type="text"
+                  placeholder="Type keywords..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="filter-input-element has-left-icon"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CORE DATA TABLE CONTAINER */}
+        <section className="data-table-container-card">
+          <div className="table-header-title-banner white-text-banner">
+            <span>Leave Application Table</span>
+            <span className="table-header-caption light-caption">
+              Showing {filteredRecords.length} entries
+            </span>
+          </div>
+
+          <div className="responsive-table-overflow-scroller">
+            <table className="record-grid-system">
+              <thead>
+                <tr>
+                  <th>Date Filed</th>
+                  <th>Leave Type</th>
+                  <th>Status</th>
+                  <th>Days</th>
+                  <th>Approver</th>
+                  <th style={{ textAlign: 'right' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRecords.length > 0 ? (
+                  filteredRecords.map((item) => (
+                    <tr key={item.id}>
+                      <td className="font-semibold">{item.dateFiled}</td>
+                      <td>{item.leaveType}</td>
+                      <td>
+                        <span className={`status-badge status-${item.status.toLowerCase()}`}>
+                          <span className="status-dot"></span>
+                          {item.status}
+                        </span>
+                      </td>
+                      <td>
+                        <strong className="days-counter-label">{item.days}</strong>
+                      </td>
+                      <td>{item.approver}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button className="table-action-details-btn">
+                          View Details <ChevronRight size={14} />
                         </button>
-
-                        <div className="profile-identity-card">
-                            <div className="avatar-placeholder">
-                                <User size={16} />
-                            </div>
-                            <span className="profile-name-label">Juan Dela Cruz</span>
-                        </div>
-
-                        <button className="logout-action-btn" onClick={onLogout}>
-                            Log Out
-                        </button>
-                    </div>
-                </header>
-
-                {/* TWO COLUMN METRIC PANEL AS SEEN IN image_18279c.png */}
-                <section style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '24px' }}>
-                    
-                    {/* Card 1: Remaining Leave Balance Chart Section */}
-                    <div className="attendance-metric-card" style={{ borderBottom: '4px solid #4a1521', padding: '20px', minHeight: '220px', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '600', color: '#2d3748', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '12px' }}>
-                            <Calendar size={16} style={{ color: '#7a0000' }} />
-                            <span>Remaining [Leave] Balance</span>
-                        </div>
-                        
-                        <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'space-around' }}>
-                            {/* Mock SVG Pie Chart representation from the original layout */}
-                            <div style={{ position: 'relative', width: '110px', height: '110px' }}>
-                                <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
-                                    <circle cx="18" cy="18" r="15.915" fill="none" stroke="#680000" strokeWidth="4.2" strokeDasharray="30 70" strokeDashoffset="0" />
-                                    <circle cx="18" cy="18" r="15.915" fill="none" stroke="#4A5568" strokeWidth="4.2" strokeDasharray="20 80" strokeDashoffset="-30" />
-                                    <circle cx="18" cy="18" r="15.915" fill="none" stroke="#B78103" strokeWidth="4.2" strokeDasharray="50 50" strokeDashoffset="-50" />
-                                </svg>
-                                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: '#fff', borderRadius: '50%', width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)' }}>
-                                    <Calendar size={20} style={{ color: '#5a1216' }} />
-                                </div>
-                            </div>
-
-                            {/* Chart Data Value Labels Cluster */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <div style={{ fontSize: '24px', fontWeight: '800', color: '#B78103', textAlign: 'center', marginBottom: '4px' }}>12.5 Days</div>
-                                <div style={{ fontSize: '11px', color: '#4a5568', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ display: 'inline-block', width: '8px', height: '8px', backgroundColor: '#B78103', borderRadius: '2px' }}></span>
-                                    <span>Sick Leave (6.25 days)</span>
-                                </div>
-                                <div style={{ fontSize: '11px', color: '#4a5568', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ display: 'inline-block', width: '8px', height: '8px', backgroundColor: '#680000', borderRadius: '2px' }}></span>
-                                    <span>Vacation Leave (3.75 days)</span>
-                                </div>
-                                <div style={{ fontSize: '11px', color: '#4a5568', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ display: 'inline-block', width: '8px', height: '8px', backgroundColor: '#4A5568', borderRadius: '2px' }}></span>
-                                    <span>Emergency Leave (2.5 days)</span>
-                                </div>
-                            </div>
-                        </div>
-                        <span style={{ alignSelf: 'flex-end', fontSize: '11px', color: '#7a0000', fontWeight: '600', cursor: 'pointer', marginTop: 'auto' }}>See More →</span>
-                    </div>
-
-                    {/* Card 2: Leaves Used Block Progress Tracking Section */}
-                    <div className="attendance-metric-card" style={{ borderBottom: '4px solid #4a1521', padding: '20px', minHeight: '220px', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '600', color: '#2d3748', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '12px' }}>
-                            <Calendar size={16} style={{ color: '#7a0000' }} />
-                            <span>Leaves Used</span>
-                        </div>
-
-                        <div style={{ display: 'flex', flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <h3 style={{ fontSize: '32px', fontWeight: '800', color: '#4a1116', margin: '0 0 16px 0' }}>5 Days</h3>
-                            
-                            {/* Horizontal Linear Metric Bar Split Group */}
-                            <div style={{ width: '80%', height: '32px', backgroundColor: '#cbd5e1', borderRadius: '6px', display: 'flex', overflow: 'hidden' }}>
-                                <div style={{ width: '40%', backgroundColor: '#B78103', color: '#fff', fontSize: '10px', fontWeight: '700', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', lineHeight: 1.1 }}>
-                                    <span>2 days</span><span style={{ fontSize: '8px', fontWeight: '400' }}>Sick Leave</span>
-                                </div>
-                                <div style={{ width: '40%', backgroundColor: '#4a1116', color: '#fff', fontSize: '10px', fontWeight: '700', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', lineHeight: 1.1 }}>
-                                    <span>3 days</span><span style={{ fontSize: '8px', fontWeight: '400' }}>Vacation Leave</span>
-                                </div>
-                                <div style={{ width: '20%' }}></div>
-                            </div>
-
-                            <div style={{ width: '80%', display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#718096', marginTop: '10px', fontWeight: '500' }}>
-                                <span>Used: 5 days</span>
-                                <span>Available: 2.5 days</span>
-                            </div>
-                        </div>
-                        <span style={{ alignSelf: 'flex-end', fontSize: '11px', color: '#7a0000', fontWeight: '600', cursor: 'pointer', marginTop: 'auto' }}>See More →</span>
-                    </div>
-                </section>
-
-                {/* FILTER CONTROLS FIELDSET ROW */}
-                <section style={{ border: '1px solid #996666', borderRadius: '6px', padding: '16px', marginBottom: '24px', backgroundColor: '#fff' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#7a0000', marginBottom: '12px', marginTop: '-4px' }}>Filter Options</div>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#4a5568', marginBottom: '4px' }}>Date Range</label>
-                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                <input type="text" placeholder="Select dates..." style={{ width: '100%', padding: '6px 12px', fontSize: '12px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-                                <Calendar size={14} style={{ position: 'absolute', right: '10px', color: '#a0aec0' }} />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#4a5568', marginBottom: '4px' }}>Status Filter</label>
-                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                <select style={{ width: '100%', padding: '6px 12px', fontSize: '12px', border: '1px solid #cbd5e1', borderRadius: '4px', appearance: 'none', backgroundColor: '#fff' }}>
-                                    <option value="">All Statuses</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="approved">Approved</option>
-                                </select>
-                                <ChevronDown size={14} style={{ position: 'absolute', right: '10px', color: '#a0aec0', pointerEvents: 'none' }} />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#4a5568', marginBottom: '4px' }}>Leave Type Filter</label>
-                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                <select style={{ width: '100%', padding: '6px 12px', fontSize: '12px', border: '1px solid #cbd5e1', borderRadius: '4px', appearance: 'none', backgroundColor: '#fff' }}>
-                                    <option value="">All Types</option>
-                                    <option value="sick">Sick Leave</option>
-                                    <option value="vacation">Vacation Leave</option>
-                                </select>
-                                <ChevronDown size={14} style={{ position: 'absolute', right: '10px', color: '#a0aec0', pointerEvents: 'none' }} />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#4a5568', marginBottom: '4px' }}>Search Bar</label>
-                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                <input type="text" placeholder="Type keywords..." style={{ width: '100%', padding: '6px 12px 6px 28px', fontSize: '12px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-                                <Search size={14} style={{ position: 'absolute', left: '10px', color: '#a0aec0' }} />
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* CORE SYSTEM DATA GRID ARCHITECTURE */}
-                <section className="data-table-container-card" style={{ boxShadow: '0 4px 10px rgba(0,0,0,0.06)' }}>
-                    <div className="table-header-title-banner" style={{ backgroundColor: '#4a080e', padding: '14px 20px', fontWeight: '700' }}>
-                        Leave Application Table
-                    </div>
-                    <div className="responsive-table-overflow-scroller">
-                        <table className="record-grid-system">
-                            <thead>
-                                <tr style={{ backgroundColor: '#cbd5e1' }}>
-                                    <th style={{ color: '#4a5568', fontWeight: '600' }}>Date Filed</th>
-                                    <th style={{ color: '#4a5568', fontWeight: '600' }}>Leave Type</th>
-                                    <th style={{ color: '#4a5568', fontWeight: '600' }}>Status</th>
-                                    <th style={{ color: '#4a5568', fontWeight: '600' }}>Days</th>
-                                    <th style={{ color: '#4a5568', fontWeight: '600' }}>Approver</th>
-                                    <th style={{ color: '#4a5568', fontWeight: '600', textTransform: 'none' }}></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>May 16, 2026</td>
-                                    <td>Sick Leave</td>
-                                    <td>
-                                        <span style={{ backgroundColor: '#FEF3C7', color: '#D97706', padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                            <span style={{ width: '6px', height: '6px', backgroundColor: '#D97706', borderRadius: '50%' }}></span>
-                                            Pending
-                                        </span>
-                                    </td>
-                                    <td>3 Days</td>
-                                    <td>Mario C.</td>
-                                    <td style={{ textAlign: 'right' }}>
-                                        <button style={{ backgroundColor: '#680000', color: '#fff', border: 'none', borderRadius: '4px', padding: '6px 14px', fontSize: '11px', fontWeight: '500', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
-                                            View Details →
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-            </main>
-        </div>
-    );
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="empty-table-notice">
+                      No leave history records match your criteria.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
 }

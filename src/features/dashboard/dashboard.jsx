@@ -1,23 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
 import {
-  Home, UserCheck, History, CreditCard, GraduationCap,
-  User, HelpCircle, Clock, Bell, Search, FilePlus, ExternalLink
+  UserCheck, History, Search, FilePlus
 } from 'lucide-react';
 import Sidebar from '../../components/sidebar.jsx';
+import Header from '../../components/Header.jsx';
 import './dashboard.css';
 
-export default function Dashboard({ onLogout, user }) { 
+export default function Dashboard({ onLogout, user }) {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [recentLeaves, setRecentLeaves] = useState([]);
+  
+  // Quick local search state for filtering the recent table
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch data on component load
+  // Fetch recent leave history
   useEffect(() => {
     const fetchRecentLeaves = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL;
-            const response = await fetch(`${apiUrl}/api/leave/recent/${user.employee_key}`);
+        const response = await fetch(`${apiUrl}/api/leave/recent/${user.employee_key}`);
         if (response.ok) {
           const data = await response.json();
           setRecentLeaves(data);
@@ -44,54 +47,63 @@ export default function Dashboard({ onLogout, user }) {
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
   });
 
+  // Client-side text search over recent items
+  const filteredLeaves = recentLeaves.filter((leave) => {
+    return (
+      (leave.leave_type || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (leave.status || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (leave.remarks || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
+
   return (
     <div className="dashboard-container">
       <Sidebar />
 
-      <main className="dashboard-main-content">
+      {/* Added 'fade-in-up' class for smooth entrance animation */}
+      <main className="dashboard-main-content fade-in-up">
         <header className="content-top-header">
-          <h2>Welcome, <span>{user?.first_name || 'Employee'}</span>!</h2>
-          <div className="user-controls-cluster">
-            <button className="icon-alert-btn"><Bell size={18} /><span className="badge-dot"></span></button>
-            
-            <div className="profile-identity-card" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>
-              <div className="avatar-placeholder"><User size={16} /></div>
-              <span className="profile-name-label">
-                {`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Employee Name'}
-              </span>
+          <div className="welcome-banner-group">
+            <div className="welcome-subtitle-badge">
+              <span className="badge-pulse"></span> Employee Dashboard
             </div>
-            
-            <button className="logout-action-btn" onClick={onLogout}>
-              Log Out
-            </button>
+            <h1 className="welcome-heading">
+              Welcome back, <span className="highlight-name">{user?.first_name || 'Employee'}</span>! 
+            </h1>
           </div>
+
+          {/* Unified Top-Right Header Component */}
+          <Header user={user} onLogout={onLogout} />
         </header>
 
         {/* LEAVE METRICS ROW CARD */}
         <section className="leave-summary-metrics-bar">
-          <div className="metric-cell">
-            <span className="metric-title-label">Sick Leave:</span>
+          <div className="metric-cell hover-lift">
+            <span className="metric-title-label">Sick Leave</span>
             <span className="metric-numeric-value">8.0 Days</span>
           </div>
-          <div className="metric-cell">
-            <span className="metric-title-label">Vacation Leave:</span>
+          <div className="metric-cell hover-lift">
+            <span className="metric-title-label">Vacation Leave</span>
             <span className="metric-numeric-value">12.5 Days</span>
           </div>
-          <div className="metric-cell">
-            <span className="metric-title-label">Emergency Leave:</span>
+          <div className="metric-cell hover-lift">
+            <span className="metric-title-label">Emergency Leave</span>
             <span className="metric-numeric-value">3.0 Days</span>
           </div>
-          <div className="metric-cell action-cell">
-            <span className="see-more-hyperlink" onClick={() => navigate('/leavehistory')} style={{ cursor: 'pointer' }}>
+          <div 
+            className="metric-cell action-cell hover-lift" 
+            onClick={() => navigate('/leavehistory')}
+          >
+            <span className="see-more-hyperlink">
               See More →
             </span>
           </div>
         </section>
 
-        {/* MIDDLE CHARTS / DIAGRAMS SIMULATION REGION */}
+        {/* MIDDLE CHARTS / DIAGRAMS REGION */}
         <section className="analytics-display-grid">
           {/* Card 1: My Leave Application */}
-          <div className="analytics-visual-card">
+          <div className="analytics-visual-card hover-lift">
             <h3 className="card-section-title">
               <History size={16} style={{ color: '#7a0000' }} /> My Leave Application
             </h3>
@@ -108,21 +120,21 @@ export default function Dashboard({ onLogout, user }) {
                     <span className="legend-swatch color-primary"></span>
                     <div>
                       <p className="legend-label">Vacation Leave</p>
-                      <p className="legend-sub-label">(#680000)</p>
+                      <p className="legend-sub-label">8.0 Days Used</p>
                     </div>
                   </div>
                   <div className="legend-row-item">
                     <span className="legend-swatch color-secondary"></span>
                     <div>
                       <p className="legend-label">Sick Leave</p>
-                      <p className="legend-sub-label">(#E7B103)</p>
+                      <p className="legend-sub-label">12.5 Days Used</p>
                     </div>
                   </div>
                   <div className="legend-row-item">
                     <span className="legend-swatch color-tertiary"></span>
                     <div>
                       <p className="legend-label">Emergency Leave</p>
-                      <p className="legend-sub-label">(#4A5568)</p>
+                      <p className="legend-sub-label">3.0 Days Used</p>
                     </div>
                   </div>
                 </div>
@@ -132,7 +144,7 @@ export default function Dashboard({ onLogout, user }) {
           </div>
 
           {/* Card 2: My Attendance Tracking */}
-          <div className="analytics-visual-card" onClick={() => navigate('/attendance')} style={{ cursor: 'pointer' }}>
+          <div className="analytics-visual-card hover-lift" onClick={() => navigate('/attendance')} style={{ cursor: 'pointer' }}>
             <h3 className="card-section-title">
               <UserCheck size={16} style={{ color: '#7a0000' }} /> My Attendance
             </h3>
@@ -174,15 +186,21 @@ export default function Dashboard({ onLogout, user }) {
           </div>
         </section>
 
-        {/* SEARCH AND INTERACTIVE TRIGGER ACTIONS CONTROLS */}
+        {/* SEARCH AND PRIMARY ACTION BAR */}
         <section className="table-filter-utilities-row">
           <div className="search-bar-input-wrapper">
             <Search size={16} className="search-lens-embed" />
-            <input type="text" placeholder="Search filings..." className="utility-search-field" />
+            <input 
+              type="text" 
+              placeholder="Search recent filings..." 
+              className="utility-search-field"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
 
-          <button 
-            className="primary-action-trigger-btn" 
+          <button
+            className="primary-action-trigger-btn"
             onClick={() => navigate('/leaveapplication')}
           >
             <FilePlus size={16} />
@@ -190,6 +208,7 @@ export default function Dashboard({ onLogout, user }) {
           </button>
         </section>
 
+        {/* DATA TABLE DISPLAY */}
         <section className="data-table-container-card">
           <div className="table-header-title-banner">Recent Leave Application Table</div>
           <div className="responsive-table-overflow-scroller">
@@ -203,13 +222,13 @@ export default function Dashboard({ onLogout, user }) {
                 </tr>
               </thead>
               <tbody>
-                {recentLeaves.length > 0 ? (
-                  recentLeaves.map((leave, index) => (
+                {filteredLeaves.length > 0 ? (
+                  filteredLeaves.map((leave, index) => (
                     <tr key={index}>
                       <td>{leave.date_key}</td>
                       <td>{leave.leave_type}</td>
                       <td>
-                        <span className={`status-badge status-${leave.status.toLowerCase()}`}>
+                        <span className={`status-badge status-${leave.status ? leave.status.toLowerCase() : ''}`}>
                           {leave.status}
                         </span>
                       </td>
@@ -218,7 +237,9 @@ export default function Dashboard({ onLogout, user }) {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" style={{ textAlign: 'center', padding: '20px' }}>No recent applications found.</td>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
+                      No recent filings found matching your search.
+                    </td>
                   </tr>
                 )}
               </tbody>

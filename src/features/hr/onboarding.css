@@ -1,0 +1,87 @@
+/* =========================================================
+   ONBOARDING PAGE SPECIFIC STYLES
+   ========================================================= */
+
+/* Header & Title Layout */
+.page-title-layout {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.title-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  background-color: rgba(128, 0, 32, 0.08); /* Maroon soft tint */
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.title-icon-svg {
+  color: #800020; /* Primary Maroon */
+  stroke-width: 2px;
+}
+
+.title-text-group h2 {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.2;
+}
+
+.subtitle-department {
+  margin: 2px 0 0 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.highlight-maroon {
+  color: #800020;
+  font-weight: 600;
+}
+
+/* Utilities Row */
+.onboarding-utility-bar {
+  margin-top: 24px;
+}
+
+/* Card & Table Layout */
+.onboarding-table-card {
+  margin-top: 24px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.hire-name-cell {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.profile-action-btn {
+  padding: 6px 12px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}

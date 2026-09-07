@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import {
-  Home, UserCheck, History, CreditCard, GraduationCap,
-  User, HelpCircle, Clock, Bell, Search, FilePlus, ExternalLink
+  Users,
+  Calendar,
+  AlertTriangle,
+  Ban,
+  ArrowRight
 } from 'lucide-react';
+
 /* =========================================================
-   🛠️ IMPORT THE NEW CUSTOM HOD SIDEBAR
+   🛠️ IMPORT THE NEW CUSTOM HOD SIDEBAR & HEADER
    ========================================================= */
 import HodSidebar from "../../components/hod-sidebar";
+import Header from '../../components/Header.jsx';
 import './hod-dashboard.css'; 
 
 export default function HodDashboard({ onLogout, user }) {
@@ -15,75 +20,54 @@ export default function HodDashboard({ onLogout, user }) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [recentLeaves, setRecentLeaves] = useState([]);
 
-    // Fetch data on component load
-      useEffect(() => {
-        const fetchRecentLeaves = async () => {
-          try {
-            const apiUrl = import.meta.env.VITE_API_URL;
-            const response = await fetch(`${apiUrl}/api/leave/recent/${user.employee_key}`);
-            if (response.ok) {
-              const data = await response.json();
-              setRecentLeaves(data);
-            }
-          } catch (err) {
-            console.error("Error loading leave history:", err);
-          }
-        };
-    
-        if (user?.employee_key) fetchRecentLeaves();
-      }, [user]);
-    
-      // Clock timer
-      useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(timer);
-      }, []);
-    
-      const formattedDate = currentTime.toLocaleDateString('en-US', {
-        month: 'short', day: 'numeric', year: 'numeric'
-      });
-    
-      const formattedTime = currentTime.toLocaleTimeString('en-US', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
-      });
+  // Fetch data on component load
+  useEffect(() => {
+    const fetchRecentLeaves = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL;
+        const response = await fetch(`${apiUrl}/api/leave/recent/${user.employee_key}`);
+        if (response.ok) {
+          const data = await response.json();
+          setRecentLeaves(data);
+        }
+      } catch (err) {
+        console.error("Error loading leave history:", err);
+      }
+    };
+
+    if (user?.employee_key) fetchRecentLeaves();
+  }, [user]);
+
+  // Clock timer
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="dashboard-container hod-view-wrapper">
-      {/* Renders your brand new isolated HOD menu layout safely */}
+      {/* Renders isolated HOD menu layout */}
       <HodSidebar />
 
-      {/* Main viewport area */}
-      <div className="dashboard-main-content">
+      {/* Main viewport area with entrance animation */}
+      <main className="dashboard-main-content fade-in-up">
         
-        {/* MATCHED GLOBAL HEADER FROM FIGMA & EMPLOYEE */}
+        {/* STANDARDIZED GLOBAL HEADER */}
         <header className="dashboard-global-header">
           <div className="welcome-greeting">
             Welcome, <span className="highlight-name">{user?.first_name || 'Head'}</span>!
           </div>
-          
-          <div className="header-actions">
-            <button className="notification-bell-btn">
-              <Bell size={18} fill="#ffffff" color="#ffffff" />
-              <span className="bell-badge"></span>
-            </button>
-            
-            <div className="profile-identity-card" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>
-              <div className="avatar-placeholder"><User size={16} /></div>
-              <span className="profile-name-label">
-                {`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Head Name'}
-              </span>
-            </div>
-            
-            {/* 🚪 CONNECTED LOGOUT BUTTON ACTION */}
-            <button className="logout-action-btn" onClick={onLogout}>Log Out</button>
-          </div>
+
+          {/* Shared Header Component */}
+          <Header user={user} onLogout={onLogout} />
         </header>
 
         {/* METRICS TOP ROW GRID */}
         <section className="metrics-summary-row">
-          <div className="metric-card-block">
+          <div className="metric-card-block hover-lift">
             <div className="card-title-bar">
-              <span>👥 Total Employees</span>
+              <Users size={16} className="tr-icon-maroon" />
+              <span>Total Employees</span>
             </div>
             <div className="card-main-stat">250</div>
             <div className="team-distribution-subtext">
@@ -94,9 +78,10 @@ export default function HodDashboard({ onLogout, user }) {
             </div>
           </div>
 
-          <div className="metric-card-block">
+          <div className="metric-card-block hover-lift">
             <div className="card-title-bar">
-              <span>📅 Pending Approvals</span>
+              <Calendar size={16} className="tr-icon-amber" />
+              <span>Pending Approvals</span>
             </div>
             <div className="card-main-stat">15</div>
             <div className="approval-breakdown-subtext">
@@ -106,9 +91,10 @@ export default function HodDashboard({ onLogout, user }) {
             </div>
           </div>
 
-          <div className="metric-card-block">
+          <div className="metric-card-block hover-lift">
             <div className="card-title-bar">
-              <span>⚠️ Anomaly Alerts</span>
+              <AlertTriangle size={16} className="tr-icon-maroon" />
+              <span>Anomaly Alerts</span>
             </div>
             <div className="card-main-stat text-alert-red">4</div>
             <div className="anomaly-breakdown-pills">
@@ -161,7 +147,7 @@ export default function HodDashboard({ onLogout, user }) {
               </table>
             </div>
             <div className="box-footer-action-link">
-              <span>View All Request →</span>
+              <span>View All Requests <ArrowRight size={12} style={{ display: 'inline', marginLeft: '4px' }} /></span>
             </div>
           </div>
 
@@ -177,17 +163,17 @@ export default function HodDashboard({ onLogout, user }) {
                 <div className="wave-placeholder-line"></div>
               </div>
               <div className="chart-footer-caption">
-                <span>View Full Forecast →</span>
+                <span>View Full Forecast <ArrowRight size={12} style={{ display: 'inline', marginLeft: '4px' }} /></span>
               </div>
             </div>
           </div>
         </section>
 
         {/* BOTTOM SECTION Staffing Risk Banner */}
-        <section className="staffing-risk-alert-banner">
+        <section className="staffing-risk-alert-banner hover-lift">
           <div className="alert-banner-inner">
             <div className="alert-icon-title">
-              <span className="banner-icon">🚫</span>
+              <Ban size={20} className="tr-icon-maroon" />
               <h4>Staffing Risk Alert</h4>
             </div>
             <p className="alert-description-text">
@@ -198,7 +184,7 @@ export default function HodDashboard({ onLogout, user }) {
           </div>
         </section>
 
-      </div>
+      </main>
     </div>
   );
 }
