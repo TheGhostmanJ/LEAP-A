@@ -15,6 +15,9 @@ export default function ProfileRequests({ onLogout, user }) {
   const [isEmpLoading, setIsEmpLoading] = useState(true);
   const [empError, setEmpError] = useState(null);
 
+  // Search State for Employee Roster
+  const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
+
   const [isEmpModalOpen, setIsEmpModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingEmpKey, setEditingEmpKey] = useState(null);
@@ -95,6 +98,16 @@ export default function ProfileRequests({ onLogout, user }) {
     }
   };
 
+  // Filter employees based on search query
+  const filteredEmployees = employees.filter((emp) => {
+    const fullName = `${emp.first_name} ${emp.last_name}`.toLowerCase();
+    const empId = (emp.employee_id || '').toLowerCase();
+    const dept = (emp.department || '').toLowerCase();
+    const query = employeeSearchTerm.toLowerCase();
+
+    return fullName.includes(query) || empId.includes(query) || dept.includes(query);
+  });
+
   // ==========================================
   // PROFILE EDIT REQUESTS STATE & LOGIC
   // ==========================================
@@ -156,7 +169,6 @@ export default function ProfileRequests({ onLogout, user }) {
             </div>
           </div>
 
-          {/* CHANGED: Swapped to full-height wrapper */}
           <div className="table-full-height-wrapper">
             <table className="record-grid-system left-aligned-table">
               <thead>
@@ -224,7 +236,13 @@ export default function ProfileRequests({ onLogout, user }) {
         <div className="table-filter-utilities-row dept-utility-row" style={{ marginTop: '32px' }}>
           <div className="search-bar-input-wrapper">
             <Search size={16} className="search-lens-embed" />
-            <input type="text" className="utility-search-field" placeholder="Search employees..." />
+            <input 
+              type="text" 
+              className="utility-search-field" 
+              placeholder="Search by name, ID, or department..." 
+              value={employeeSearchTerm}
+              onChange={(e) => setEmployeeSearchTerm(e.target.value)}
+            />
           </div>
           <button className="primary-action-trigger-btn" onClick={handleOpenCreateModal}>
             <UserPlus size={16} /> Onboard Employee
@@ -233,10 +251,9 @@ export default function ProfileRequests({ onLogout, user }) {
 
         <section className="content-data-box table-box-margin card-shadow-wrap dept-table-section">
           <div className="box-header-title-maroon-bar">
-            Active Employee Roster
+            Active Employee Roster ({filteredEmployees.length} found)
           </div>
 
-          {/* CHANGED: Swapped to full-height wrapper */}
           <div className="table-full-height-wrapper">
             <table className="record-grid-system">
               <thead>
@@ -257,12 +274,12 @@ export default function ProfileRequests({ onLogout, user }) {
                   <tr>
                     <td colSpan="5" className="table-status-cell error-text">Error: {empError}</td>
                   </tr>
-                ) : employees.length === 0 ? (
+                ) : filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="table-status-cell info-text">No active employees found.</td>
+                    <td colSpan="5" className="table-status-cell info-text">No matching employees found.</td>
                   </tr>
                 ) : (
-                  employees.map((emp) => (
+                  filteredEmployees.map((emp) => (
                     <tr key={emp.employee_key}>
                       <td className="dept-code-cell">{emp.employee_id}</td>
                       <td style={{ fontWeight: '600', color: '#1a202c' }}>
