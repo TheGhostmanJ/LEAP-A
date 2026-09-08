@@ -553,6 +553,15 @@ app.post('/api/employees', async (req, res) => {
         `;
         const accValues = [newEmployeeKey, employee_id.toLowerCase(), defaultPassword];
         await client.query(accQuery, accValues);
+        // 3. Generate the Onboarding Checklist in fact_onboarding
+        const onboardQuery = `
+            INSERT INTO public.fact_onboarding 
+            (employee_key, target_start_date, setup_status, it_provisioning_done, documents_submitted) 
+            VALUES ($1, CURRENT_DATE + INTERVAL '14 days', 'Pending Setup', false, false);
+        `;
+        await client.query(onboardQuery, [newEmployeeKey]);
+
+        await client.query('COMMIT');
 
         await client.query('COMMIT'); 
         res.status(201).json({ success: true, message: "Employee onboarded successfully." });
@@ -570,6 +579,7 @@ app.post('/api/employees', async (req, res) => {
         client.release();
     }
 });
+
 
 // PUT: Update an existing employee profile
 app.put('/api/employees/:key', async (req, res) => {
@@ -652,6 +662,60 @@ app.put('/api/profile-requests/:id', async (req, res) => {
     } catch (error) {
         console.error("Error updating request status:", error);
         res.status(500).json({ error: "Failed to update request status." });
+    }
+});
+
+// ==========================================
+// ONBOARDING TRACKER ROUTES
+// ==========================================
+
+// GET: Fetch all active onboarding checklists
+app.get('/api/onboarding', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                o.onboarding_id, 
+                e.first_name || ' ' || e.last_name AS employee_name, 
+                e.department, 
+                e.position_title, 
+                o.target_start_date, 
+                o.setup_status, 
+                o.it_provisioning_done, 
+                o.documents_submitted 
+            FROM public.fact_onboarding o
+            JOIN public.dim_employee e ON o.employee_key = e.employee_key
+            ORDER BY o.onboarding_id DESC;
+        `;
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching onboarding records:", error);
+        res.status(500).json({ error: "Failed to fetch onboarding tracker data." });
+    }
+});
+
+// PUT: Update the checklist status
+app.put('/api/onboarding/:id', async (req, res) => {
+    const { id } = req.params;
+    const { it_provisioning_done, documents_submitted, setup_status } = req.body;
+
+    try {
+        const query = `
+            UPDATE public.fact_onboarding 
+            SET it_provisioning_done = $1, documents_submitted = $2, setup_status = $3 
+            WHERE onboarding_id = $4 
+            RETURNING *;
+        `;
+        const values = [it_provisioning_done, documents_submitted, setup_status, id];
+        const result = await pool.query(query, values);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Onboarding record not found." });
+        }
+        res.status(200).json({ success: true, message: "Checklist updated successfully." });
+    } catch (error) {
+        console.error("Error updating checklist:", error);
+        res.status(500).json({ error: "Failed to update checklist." });
     }
 });
 

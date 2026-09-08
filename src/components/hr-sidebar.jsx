@@ -50,10 +50,10 @@ export default function HrSidebar() {
   ];
 
   const operationsMenuItems = [
-    { path: '/onboarding', icon: Users, label: 'Employee Onboarding' },
+    { path: '/onboarding', icon: ClipboardList, label: 'Employee Onboarding' },
     { path: '/departments', icon: Building2, label: 'Department Setup' },
     { path: '/payroll', icon: Banknote, label: 'Payroll & Ledger' },
-    { path: '/profile-requests', icon: User, label: 'Profile Management' },
+    { path: '/profile-requests', icon: Users, label: 'Profile Management' },
   ];
 
   const accountMenuItems = [
