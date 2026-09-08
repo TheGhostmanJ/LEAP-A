@@ -278,7 +278,7 @@ app.post('/api/leave/apply', async (req, res) => {
         const date_key = parseInt(safeFilingDate.replace(/-/g, ''), 10);
 
         const queryText = `
-            INSERT INTO public.fact_leave_application 
+            INSERT INTO public.dim_leave_application 
             (
                 employee_key, date_key, leave_type, start_date, end_date, 
                 remarks, working_days, department, position, salary, status
