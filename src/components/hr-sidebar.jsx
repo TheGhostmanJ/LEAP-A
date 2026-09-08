@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, BarChart3, AlertTriangle, FileText, 
   User, Clock, Users, Building2, Banknote,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, ClipboardList
 } from 'lucide-react';
 import './sidebar.css'; 
 
