@@ -1,7 +1,7 @@
 // src/features/leave/LeaveApplication.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, UserCheck, Plane, Stethoscope, GraduationCap, Layers, Send, Eye } from 'lucide-react';
+import { ArrowLeft, FileText, UserCheck, Plane, Stethoscope, GraduationCap, Layers, Send, Eye, Loader2 } from 'lucide-react';
 import Sidebar from '../../components/sidebar.jsx';
 import LeavePreviewModal from "./leave-preview-modal";
 import './leaveapplication.css';
@@ -9,6 +9,7 @@ import './leaveapplication.css';
 export default function LeaveApplication({ user, onLogout }) {
   const navigate = useNavigate();
   const [showPreview, setShowPreview] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // New loading state
 
   const LEAVE_TYPES = [
     'Vacation Leave',
@@ -53,6 +54,7 @@ export default function LeaveApplication({ user, onLogout }) {
   };
 
   const submitApplication = async () => {
+    setIsSubmitting(true);
     const payload = {
       employee_key: user?.employee_key,
       department: user?.department,
@@ -84,16 +86,23 @@ export default function LeaveApplication({ user, onLogout }) {
 
       if (response.ok) {
         alert('Application submitted successfully.');
-        navigate('/dashboard');
+        navigate('/dashboard'); // Head back to the user's dashboard after success
+      } else {
+        const errorData = await response.json();
+        alert(`Submission failed: ${errorData.message || 'Unknown error'}`);
       }
     } catch (err) {
-      alert('Submission failed.');
+      alert('Submission failed. Please check your connection.');
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  // CHANGED: Now properly executes the backend fetch instead of the preview modal
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    setShowPreview(true);
+    submitApplication();
   };
 
   const showVacationSpl = formData.leaveType === 'Vacation Leave' || formData.leaveType === 'Special Privilege Leave';
@@ -397,8 +406,9 @@ export default function LeaveApplication({ user, onLogout }) {
                 >
                   <Eye size={16} /> Preview
                 </button>
-                <button type="submit" className="form-btn-submit">
-                  <Send size={16} /> Submit Application
+                <button type="submit" className="form-btn-submit" disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 size={16} className="spinner" /> : <Send size={16} />} 
+                  {isSubmitting ? 'Submitting...' : 'Submit Application'}
                 </button>
               </div>
             </div>
