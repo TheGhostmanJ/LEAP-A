@@ -250,6 +250,7 @@
   max-height: 450px; /* Adjust this value based on your screen layout */
   overflow-y: auto;
   border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 12px; /* Adds a nice visual cushion */
 }
 
 /* Optional: Make the table header stick to the top while scrolling */
@@ -258,4 +259,7 @@
   top: 0;
   z-index: 5;
   background-color: #f8fafc; /* Matches your table header background */
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
 }
