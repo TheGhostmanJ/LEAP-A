@@ -147,3 +147,16 @@
   overflow-x: auto;
   padding-bottom: 24px; /* Gives the bottom row plenty of breathing room */
 }
+
+/* 1. Force the main container to scroll vertically */
+.dashboard-main-content {
+  overflow-y: auto !important;
+  /* Adds plenty of breathing room at the very bottom of the Lipa City portal */
+  padding-bottom: 60px; 
+}
+
+/* 2. Forbid the browser from crushing the table cards */
+.profile-requests-card, 
+.dept-table-section {
+  flex-shrink: 0;
+}
