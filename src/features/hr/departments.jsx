@@ -21,7 +21,12 @@ export default function Departments({ onLogout, user }) {
   const fetchDepartments = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/departments');
+      // 1. Define the dynamic URL just like you did in the POST request
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      // 2. Inject it into the fetch call
+      const response = await fetch(`${apiUrl}/api/departments`);
+      
       if (!response.ok) throw new Error('Failed to fetch department data');
       const data = await response.json();
       setDepartments(data);
