@@ -8,7 +8,7 @@ import {
   ChevronRight,
   FileText
 } from 'lucide-react';
-import Sidebar from '../../components/Sidebar.jsx';
+import Sidebar from '../../components/sidebar.jsx';
 import Header from '../../components/Header.jsx'; // Imported Header component
 import './leavehistory.css';
 

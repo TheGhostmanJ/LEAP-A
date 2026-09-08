@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import Sidebar from '../../components/sidebar.jsx'; // Adjust path as needed
 import Header from '../../components/Header.jsx';
-import './Attendance.css';
+import './attendance.css';
 
 export default function Attendance({ onLogout, user }) {
   const navigate = useNavigate();

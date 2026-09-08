@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, UserCheck, Plane, Stethoscope, GraduationCap, Layers, Send, Eye } from 'lucide-react';
-import Sidebar from '../../components/Sidebar';
+import Sidebar from '../../components/sidebar.jsx';
 import LeavePreviewModal from "./leave-preview-modal";
 import './leaveapplication.css';
 

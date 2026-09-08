@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Bell, ChevronDown, LogOut } from 'lucide-react';
-import './header.css';
+import './Header.css';
 
 export default function Header({ user, onLogout, title }) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
