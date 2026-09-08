@@ -719,6 +719,91 @@ app.put('/api/onboarding/:id', async (req, res) => {
     }
 });
 
+// ==========================================
+// HOD: LEAVE APPROVALS ROUTES
+// ==========================================
+
+// GET: Fetch all leave requests for the HOD dashboard
+app.get('/api/leave-approvals', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                l.application_id AS id,
+                e.first_name || ' ' || e.last_name AS name,
+                e.department,
+                l.leave_type AS type,
+                l.status,
+                l.start_date AS date,
+                l.working_days
+            FROM public.dim_leave_application l
+            JOIN public.dim_employee e ON l.employee_key = e.employee_key
+            ORDER BY 
+                CASE WHEN l.status = 'Pending' THEN 1 ELSE 2 END,
+                l.application_id DESC;
+        `;
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching leave approvals:", error);
+        res.status(500).json({ error: "Failed to fetch leave requests." });
+    }
+});
+
+// PUT: Approve or Reject a leave application (Includes Ledger Deduction)
+app.put('/api/leave-approvals/:id', async (req, res) => {
+    const { id } = req.params;
+    const { action } = req.body; // Expects 'Approved' or 'Rejected'
+    
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        // 1. Update the request status and return the core details needed for deduction
+        const updateQuery = `
+            UPDATE public.dim_leave_application 
+            SET status = $1 
+            WHERE application_id = $2 
+            RETURNING employee_key, leave_type, working_days;
+        `;
+        const result = await client.query(updateQuery, [action, id]);
+
+        if (result.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: "Leave application not found." });
+        }
+
+        // 2. If Approved, dynamically deduct from the Ledger and Balance tables
+        if (action === 'Approved') {
+            const { employee_key, leave_type, working_days } = result.rows[0];
+
+            // Record the deduction in the Ledger
+            await client.query(`
+                INSERT INTO public.fact_leave_ledger 
+                (employee_key, leave_type, transaction_type, amount, reference_id, remarks)
+                VALUES ($1, $2, 'Deduction', $3, $4, 'Approved Leave Application')
+            `, [employee_key, leave_type, -working_days, id]);
+
+            // Update the Active Balance Table
+            await client.query(`
+                UPDATE public.dim_leave_balance 
+                SET remaining_credits = remaining_credits - $1,
+                    last_updated = CURRENT_TIMESTAMP
+                WHERE employee_key = $2 AND leave_type = $3
+            `, [working_days, employee_key, leave_type]);
+        }
+
+        await client.query('COMMIT');
+        res.status(200).json({ success: true, message: `Leave firmly ${action}` });
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Leave approval transaction failed:", error);
+        res.status(500).json({ error: "Failed to process leave approval." });
+    } finally {
+        client.release();
+    }
+});
 
 // Start listening for API calls
 app.listen(PORT, () => {
