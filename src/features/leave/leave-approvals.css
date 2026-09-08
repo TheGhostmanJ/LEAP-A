@@ -242,3 +242,45 @@
 
 .action-finalized-text.text-green { color: #16a34a; }
 .action-finalized-text.text-red { color: #7a0000; }
+
+/* =========================================================
+   SCROLL & FLEXBOX FIXES
+   ========================================================= */
+.dashboard-main-content {
+  overflow-y: auto !important;
+  padding-bottom: 60px; 
+}
+
+.filter-options-block,
+.leave-requests-master-container {
+  flex-shrink: 0;
+}
+
+.table-full-height-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 24px;
+}
+
+/* Adjust the inputs row to handle 4 columns gracefully */
+.filter-inputs-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+
+/* Date Range specific styling */
+.date-range-group {
+  display: flex;
+  gap: 8px;
+}
+.date-range-group input[type="date"] {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #374151;
+  outline: none;
+}
