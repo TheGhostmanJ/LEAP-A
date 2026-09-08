@@ -12,7 +12,7 @@ export default function Login({ onLoginSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSplash, setShowSplash] = useState(false); // Controls full-screen splash display
+  const [showSplash, setShowSplash] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
 
   const carouselData = [
@@ -53,6 +53,7 @@ export default function Login({ onLoginSuccess }) {
     setCurrentSlide((prev) => (prev === carouselData.length - 1 ? 0 : prev + 1));
   };
 
+  // --- MERGED: Live Backend Authentication with New UI Splash Screen ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -61,74 +62,37 @@ export default function Login({ onLoginSuccess }) {
     const username = e.target.elements.username.value;
     const password = e.target.elements.password.value;
 
-    // ============================================================
-    // ⚠️ TEMP: HARDCODED MOCK CREDENTIALS — NO DB ACCESS YET
-    // Add more mock accounts here as you need to test other roles
-    // (e.g., HR Admin, IT Staff) while the backend isn't connected.
-    // ============================================================
-    const MOCK_ACCOUNTS = {
-      testuser: {
-        password: "test123",
-        user: {
-          id: 1,
-          name: "Test Employee",
-          username: "testuser",
-          role: "Employee Self-Service",
-          department: "IT"
-        }
-      },
-      hodtest: {
-        password: "hod123",
-        user: {
-          id: 2,
-          name: "Test Department Head",
-          username: "hodtest",
-          role: "Department Head", // ⚠️ must exactly match the role string your routing logic checks for
-          department: "IT"
-        }
-      },
-      hrtest: {
-        password: "hr123",
-        user: {
-          id: 3,
-          name: "Test HR Admin",
-          username: "hrtest",
-          role: "HR Admin", // ⚠️ adjust to match your exact HR role string if different (e.g., "HR Manager", "Admin")
-          department: "Human Resources"
-        }
+    try {
+      const data = await loginUser(username, password);
+
+      if (data.success) {
+        // Trigger splash animation & clear old session flags
+        sessionStorage.removeItem('splash_shown');
+        setShowSplash(true);
+
+        setTimeout(() => {
+          if (typeof onLoginSuccess === 'function') {
+            onLoginSuccess(data.user);
+          }
+        }, 400); // Speed up transition delay to 400ms
+      } else {
+        setErrorMessage(data.message || "Invalid username or password");
+        setIsSubmitting(false);
       }
-    };
-
-    const account = MOCK_ACCOUNTS[username];
-
-    if (account && account.password === password) {
-      // Trigger splash animation & clear old session flags
-      sessionStorage.removeItem('splash_shown');
-      setShowSplash(true);
-
-      setTimeout(() => {
-        setIsSubmitting(false);
-        if (typeof onLoginSuccess === 'function') {
-          onLoginSuccess(account.user);
-        }
-      }, 400); // ⚡ Speed up transition delay to 400ms
-      return;
-    } else {
-      setTimeout(() => {
-        setIsSubmitting(false);
-        setErrorMessage("Invalid username or password (mock check — real DB not connected yet)");
-      }, 400);
-      return;
+    } catch (err) {
+      setErrorMessage("Incorrect username or password. Please try again.");
+      setIsSubmitting(false);
     }
   };
 
-  // --- Google Authentication Handoff Handler ---
+  // --- MERGED: Google Authentication with Environment Variable URL ---
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       setIsSubmitting(true);
       setErrorMessage('');
 
-      const response = await fetch('http://localhost:3001/api/login/google', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/login/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: credentialResponse.credential })
@@ -144,13 +108,13 @@ export default function Login({ onLoginSuccess }) {
           if (typeof onLoginSuccess === 'function') {
             onLoginSuccess(data.user);
           }
-        }, 400); // ⚡ Speed up transition delay to 400ms
+        }, 400);
       } else {
         setErrorMessage(data.message || "Google email not registered in system.");
+        setIsSubmitting(false);
       }
     } catch (err) {
       setErrorMessage("Google Authentication failed. Please try again.");
-    } finally {
       setIsSubmitting(false);
     }
   };

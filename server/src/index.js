@@ -419,7 +419,7 @@ app.get('/api/departments', async (req, res) => {
                 (
                     SELECT COUNT(*)::integer 
                     FROM dim_employee e2 
-                    WHERE e2.department_id = d.department_id 
+                    WHERE e2.department = d.department_name 
                     AND e2.is_active = true
                 ) AS headcount
             FROM public.dim_department d
@@ -467,6 +467,31 @@ app.post('/api/departments', async (req, res) => {
 });
 
 
+// PUT: Update an existing department
+app.put('/api/departments/:id', async (req, res) => {
+    const { id } = req.params;
+    const { department_name, max_capacity } = req.body;
+
+    try {
+        const query = `
+            UPDATE public.dim_department 
+            SET department_name = $1, max_capacity = $2 
+            WHERE department_id = $3 
+            RETURNING *;
+        `;
+        const values = [department_name, parseInt(max_capacity), id];
+        const result = await pool.query(query, values);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Department not found." });
+        }
+
+        res.status(200).json(result.rows[0]);
+    } catch (err) {
+        console.error("Error updating department:", err);
+        res.status(500).json({ error: "Internal server error while updating department." });
+    }
+});
 
 
 // Start listening for API calls
