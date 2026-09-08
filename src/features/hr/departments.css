@@ -259,7 +259,6 @@
   top: 0;
   z-index: 5;
   background-color: #f8fafc; /* Matches your table header background */
-  width: 100%;
   border-collapse: collapse;
   margin-bottom: 24px;
 }
