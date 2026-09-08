@@ -15,9 +15,7 @@ export default function ProfileRequests({ onLogout, user }) {
   const [isEmpLoading, setIsEmpLoading] = useState(true);
   const [empError, setEmpError] = useState(null);
 
-  // Search State for Employee Roster
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
-
   const [isEmpModalOpen, setIsEmpModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingEmpKey, setEditingEmpKey] = useState(null);
@@ -46,10 +44,6 @@ export default function ProfileRequests({ onLogout, user }) {
       setIsEmpLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
 
   const handleOpenCreateModal = () => {
     setIsEditMode(false);
@@ -98,7 +92,6 @@ export default function ProfileRequests({ onLogout, user }) {
     }
   };
 
-  // Filter employees based on search query
   const filteredEmployees = employees.filter((emp) => {
     const fullName = `${emp.first_name} ${emp.last_name}`.toLowerCase();
     const empId = (emp.employee_id || '').toLowerCase();
@@ -111,32 +104,66 @@ export default function ProfileRequests({ onLogout, user }) {
   // ==========================================
   // PROFILE EDIT REQUESTS STATE & LOGIC
   // ==========================================
-  const [requests, setRequests] = useState([
-    { 
-      id: 101, 
-      employee: 'Maria Santos', 
-      field: 'Civil Status', 
-      oldValue: 'Single', 
-      newValue: 'Married', 
-      proofAttached: true,
-      date: 'May 16, 2026',
-      status: 'Pending'
-    },
-    { 
-      id: 102, 
-      employee: 'Juan Dela Cruz', 
-      field: 'Contact Number', 
-      oldValue: '09123456789', 
-      newValue: '09987654321', 
-      proofAttached: false,
-      date: 'May 17, 2026',
-      status: 'Pending'
-    }
-  ]);
+  const [requests, setRequests] = useState([]);
+  const [isReqLoading, setIsReqLoading] = useState(true);
+  const [requestSearchTerm, setRequestSearchTerm] = useState('');
 
-  const handleAction = (id, action) => {
-    setRequests(prev => prev.map(req => req.id === id ? { ...req, status: action } : req));
+  const fetchRequests = async () => {
+    setIsReqLoading(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/profile-requests`);
+      
+      if (!response.ok) throw new Error('Failed to fetch requests');
+      const data = await response.json();
+      
+      // Map database columns to our UI keys
+      const formattedData = data.map(req => ({
+        id: req.id,
+        employee: req.employee,
+        field: req.field,
+        oldValue: req.old_value || 'None',
+        newValue: req.new_value,
+        proofAttached: !!req.proof_document_path,
+        date: new Date(req.request_date).toLocaleDateString(),
+        status: req.status
+      }));
+      setRequests(formattedData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsReqLoading(false);
+    }
   };
+
+  const handleAction = async (id, action) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/profile-requests/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        // Pass the HR Admin's employee_key if available to log who reviewed it
+        body: JSON.stringify({ action: action, reviewer_key: user?.employee_key })
+      });
+
+      if (!response.ok) throw new Error(`Failed to ${action} request`);
+
+      // Instantly update UI upon successful DB update
+      setRequests(prev => prev.map(req => req.id === id ? { ...req, status: action } : req));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const filteredRequests = requests.filter((req) => 
+    req.employee.toLowerCase().includes(requestSearchTerm.toLowerCase())
+  );
+
+  // Trigger both API fetches on mount
+  useEffect(() => {
+    fetchEmployees();
+    fetchRequests();
+  }, []);
 
   return (
     <div className="dashboard-container hod-view-wrapper dept-wrapper-relative">
@@ -165,7 +192,14 @@ export default function ProfileRequests({ onLogout, user }) {
             <span>Pending Data Alteration Requests</span>
             <div className="bar-search-input-wrapper">
               <Search size={14} color="#7a0000" />
-              <input type="text" placeholder="Filter requests..." className="bar-search-field" style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px' }}/>
+              <input 
+                type="text" 
+                placeholder="Filter requests..." 
+                className="bar-search-field" 
+                style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px' }}
+                value={requestSearchTerm}
+                onChange={(e) => setRequestSearchTerm(e.target.value)}
+              />
             </div>
           </div>
 
@@ -182,49 +216,59 @@ export default function ProfileRequests({ onLogout, user }) {
                 </tr>
               </thead>
               <tbody>
-                {requests.map((req) => (
-                  <tr key={req.id}>
-                    <td className="employee-name-cell" style={{ fontWeight: '600', color: '#1a202c' }}>{req.employee}</td>
-                    <td>{req.field}</td>
-                    <td className="old-value-cell" style={{ color: '#64748b' }}>{req.oldValue}</td>
-                    <td className="new-value-cell" style={{ color: '#047857', fontWeight: '500' }}>{req.newValue}</td>
-                    <td>
-                      {req.proofAttached ? (
-                        <span className="attachment-link" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#2563eb', cursor: 'pointer', fontSize: '13px' }}>
-                          <Paperclip size={14} /> View Attachment
-                        </span>
-                      ) : (
-                        <span className="no-attachment-note" style={{ color: '#94a3b8', fontSize: '13px', fontStyle: 'italic' }}>Provided in-person</span>
-                      )}
-                    </td>
-                    <td className="actions-cell" style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      {req.status === 'Pending' ? (
-                        <>
-                          <button 
-                            className="action-btn-green" 
-                            onClick={() => handleAction(req.id, 'Approved')} 
-                            title="Approve"
-                            style={{ background: '#dcfce7', color: '#166534', border: 'none', padding: '6px', borderRadius: '4px', cursor: 'pointer' }}
-                          >
-                            <CheckCircle size={16} />
-                          </button>
-                          <button 
-                            className="action-btn-red" 
-                            onClick={() => handleAction(req.id, 'Rejected')} 
-                            title="Reject"
-                            style={{ background: '#fee2e2', color: '#991b1b', border: 'none', padding: '6px', borderRadius: '4px', cursor: 'pointer' }}
-                          >
-                            <XCircle size={16} />
-                          </button>
-                        </>
-                      ) : (
-                        <span className={`status-badge status-${req.status.toLowerCase()}`} style={{ fontWeight: '600', fontSize: '13px', color: req.status === 'Approved' ? '#166534' : '#991b1b' }}>
-                          {req.status}
-                        </span>
-                      )}
-                    </td>
+                {isReqLoading ? (
+                  <tr>
+                    <td colSpan="6" className="text-center" style={{ padding: '16px', color: '#64748b' }}>Loading requests...</td>
                   </tr>
-                ))}
+                ) : filteredRequests.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="text-center" style={{ padding: '16px', color: '#64748b' }}>No requests found.</td>
+                  </tr>
+                ) : (
+                  filteredRequests.map((req) => (
+                    <tr key={req.id}>
+                      <td className="employee-name-cell" style={{ fontWeight: '600', color: '#1a202c' }}>{req.employee}</td>
+                      <td>{req.field}</td>
+                      <td className="old-value-cell" style={{ color: '#64748b' }}>{req.oldValue}</td>
+                      <td className="new-value-cell" style={{ color: '#047857', fontWeight: '500' }}>{req.newValue}</td>
+                      <td>
+                        {req.proofAttached ? (
+                          <span className="attachment-link" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#2563eb', cursor: 'pointer', fontSize: '13px' }}>
+                            <Paperclip size={14} /> View Attachment
+                          </span>
+                        ) : (
+                          <span className="no-attachment-note" style={{ color: '#94a3b8', fontSize: '13px', fontStyle: 'italic' }}>Provided in-person</span>
+                        )}
+                      </td>
+                      <td className="actions-cell" style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        {req.status === 'Pending' ? (
+                          <>
+                            <button 
+                              className="action-btn-green" 
+                              onClick={() => handleAction(req.id, 'Approved')} 
+                              title="Approve"
+                              style={{ background: '#dcfce7', color: '#166534', border: 'none', padding: '6px', borderRadius: '4px', cursor: 'pointer' }}
+                            >
+                              <CheckCircle size={16} />
+                            </button>
+                            <button 
+                              className="action-btn-red" 
+                              onClick={() => handleAction(req.id, 'Rejected')} 
+                              title="Reject"
+                              style={{ background: '#fee2e2', color: '#991b1b', border: 'none', padding: '6px', borderRadius: '4px', cursor: 'pointer' }}
+                            >
+                              <XCircle size={16} />
+                            </button>
+                          </>
+                        ) : (
+                          <span className={`status-badge status-${req.status.toLowerCase()}`} style={{ fontWeight: '600', fontSize: '13px', color: req.status === 'Approved' ? '#166534' : '#991b1b' }}>
+                            {req.status}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -302,7 +346,6 @@ export default function ProfileRequests({ onLogout, user }) {
             </table>
           </div>
         </section>
-
       </div>
 
       {/* ========================================== */}
@@ -401,7 +444,6 @@ export default function ProfileRequests({ onLogout, user }) {
           </div>
         </div>
       )}
-
     </div>
   );
 }

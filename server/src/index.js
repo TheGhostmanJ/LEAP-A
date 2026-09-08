@@ -597,6 +597,64 @@ app.put('/api/employees/:key', async (req, res) => {
     }
 });
 
+// ==========================================
+// PROFILE EDIT REQUESTS ROUTES
+// ==========================================
+
+// GET: Fetch all profile edit requests
+app.get('/api/profile-requests', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                r.request_id AS id,
+                e.first_name || ' ' || e.last_name AS employee,
+                r.field_to_change AS field,
+                r.old_value,
+                r.new_value,
+                r.proof_document_path,
+                r.status,
+                r.request_date
+            FROM public.fact_profile_request r
+            JOIN public.dim_employee e ON r.employee_key = e.employee_key
+            ORDER BY 
+                CASE WHEN r.status = 'Pending' THEN 1 ELSE 2 END, 
+                r.request_date DESC;
+        `;
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching profile requests:", error);
+        res.status(500).json({ error: "Failed to fetch profile requests." });
+    }
+});
+
+// PUT: Approve or Reject a profile edit request
+app.put('/api/profile-requests/:id', async (req, res) => {
+    const { id } = req.params;
+    const { action, reviewer_key } = req.body; // 'Approved' or 'Rejected'
+
+    try {
+        const query = `
+            UPDATE public.fact_profile_request 
+            SET status = $1, reviewed_by_key = $2, reviewed_date = CURRENT_TIMESTAMP 
+            WHERE request_id = $3 
+            RETURNING *;
+        `;
+        // Pass the reviewer's employee_key if available, otherwise null
+        const values = [action, reviewer_key || null, id];
+        const result = await pool.query(query, values);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Request not found." });
+        }
+
+        res.status(200).json({ success: true, message: `Request ${action}` });
+    } catch (error) {
+        console.error("Error updating request status:", error);
+        res.status(500).json({ error: "Failed to update request status." });
+    }
+});
+
 
 // Start listening for API calls
 app.listen(PORT, () => {
