@@ -7,9 +7,10 @@ body {
   font-family: 'Inter', sans-serif;
   background-color: #f3f4f6;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden; /* Prevents unwanted horizontal scrolling on mobile */
 }
 
-/* 1. Global Tactile Button Press (Works on all buttons site-wide) */
+/* 1. Global Tactile Button Press */
 button, 
 .btn, 
 [role="button"] {
@@ -62,5 +63,62 @@ button:active,
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* =========================================================
+   5. GLOBAL RESPONSIVE & LAYOUT RULES (Applies Everywhere)
+   ========================================================= */
+
+/* Core Dashboard Grid Setup */
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.dashboard-main-content {
+  flex: 1;
+  padding: 24px;
+  box-sizing: border-box;
+  min-width: 0; /* Prevents flex items from overflowing container */
+}
+
+/* Universal Table Scroll Handler */
+.table-responsive-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Media Query: Tablets & Small Desktops (<= 1024px) */
+@media (max-width: 1024px) {
+  .dashboard-main-content {
+    padding: 16px;
+  }
+}
+
+/* Media Query: Mobile Screens (<= 768px) */
+@media (max-width: 768px) {
+  .dashboard-container {
+    flex-direction: column; /* Stacks sidebar and main content vertically */
+  }
+
+  .dashboard-global-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Automatically stack cards or utility bars that use flex-row */
+  .forecast-summary-metrics-row,
+  .table-filter-utilities-row {
+    flex-direction: column;
+    gap: 12px;
   }
 }
