@@ -53,7 +53,7 @@ export default function HrSidebar() {
     { path: '/onboarding', icon: Users, label: 'Employee Onboarding' },
     { path: '/departments', icon: Building2, label: 'Department Setup' },
     { path: '/payroll', icon: Banknote, label: 'Payroll & Ledger' },
-    { path: '/profile-requests', icon: User, label: 'Profile Edit Requests' },
+    { path: '/profile-requests', icon: User, label: 'Profile Management' },
   ];
 
   const accountMenuItems = [
