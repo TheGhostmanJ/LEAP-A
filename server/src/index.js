@@ -493,6 +493,110 @@ app.put('/api/departments/:id', async (req, res) => {
     }
 });
 
+// ==========================================
+// EMPLOYEE MANAGEMENT ROUTES
+// ==========================================
+
+// GET: Fetch all active employees for the directory
+app.get('/api/employees', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                employee_key, 
+                employee_id, 
+                first_name, 
+                last_name, 
+                department, 
+                position_title 
+            FROM public.dim_employee 
+            WHERE is_active = true
+            ORDER BY employee_key DESC;
+        `;
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching employees:", error);
+        res.status(500).json({ error: "Failed to fetch employee roster." });
+    }
+});
+
+// POST: Onboard a new employee (Multi-table Transaction)
+app.post('/api/employees', async (req, res) => {
+    const { employee_id, first_name, last_name, department, position_title } = req.body;
+    
+    // Check out a client directly from the pool to handle the transaction
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN'); 
+
+        // 1. Insert into dim_employee (The core profile)
+        const empQuery = `
+            INSERT INTO public.dim_employee 
+            (employee_id, first_name, last_name, department, position_title, is_active, hire_date) 
+            VALUES ($1, $2, $3, $4, $5, true, CURRENT_DATE) 
+            RETURNING employee_key;
+        `;
+        const empValues = [employee_id.toUpperCase(), first_name, last_name, department, position_title];
+        const empResult = await client.query(empQuery, empValues);
+        
+        // Grab the newly generated primary key to link the account
+        const newEmployeeKey = empResult.rows[0].employee_key;
+
+        // 2. Generate a default system account in dim_accounts
+        // Automatically formats the username to lowercase (e.g., emp-2026-001)
+        const defaultPassword = 'City' + new Date().getFullYear(); // e.g., City2026
+        const accQuery = `
+            INSERT INTO public.dim_accounts 
+            (employee_key, username, password, system_access_level) 
+            VALUES ($1, $2, $3, 'Employee Self-Service');
+        `;
+        const accValues = [newEmployeeKey, employee_id.toLowerCase(), defaultPassword];
+        await client.query(accQuery, accValues);
+
+        await client.query('COMMIT'); 
+        res.status(201).json({ success: true, message: "Employee onboarded successfully." });
+        
+    } catch (error) {
+        await client.query('ROLLBACK'); 
+        console.error("Error onboarding employee:", error);
+        
+        // Catch duplicate Employee IDs
+        if (error.code === '23505') {
+            return res.status(409).json({ error: "An employee with this ID already exists." });
+        }
+        res.status(500).json({ error: "Internal server error during onboarding." });
+    } finally {
+        client.release();
+    }
+});
+
+// PUT: Update an existing employee profile
+app.put('/api/employees/:key', async (req, res) => {
+    const { key } = req.params;
+    const { first_name, last_name, department, position_title } = req.body;
+
+    try {
+        const query = `
+            UPDATE public.dim_employee 
+            SET first_name = $1, last_name = $2, department = $3, position_title = $4 
+            WHERE employee_key = $5 
+            RETURNING *;
+        `;
+        const values = [first_name, last_name, department, position_title, key];
+        const result = await pool.query(query, values);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Employee not found." });
+        }
+
+        res.status(200).json(result.rows[0]);
+    } catch (error) {
+        console.error("Error updating employee:", error);
+        res.status(500).json({ error: "Failed to update employee profile." });
+    }
+});
+
 
 // Start listening for API calls
 app.listen(PORT, () => {
