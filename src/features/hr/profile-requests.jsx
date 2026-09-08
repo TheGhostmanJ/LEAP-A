@@ -125,7 +125,6 @@ export default function ProfileRequests({ onLogout, user }) {
     setRequests(prev => prev.map(req => req.id === id ? { ...req, status: action } : req));
   };
 
-
   return (
     <div className="dashboard-container hod-view-wrapper dept-wrapper-relative">
       <HrSidebar />
@@ -157,7 +156,8 @@ export default function ProfileRequests({ onLogout, user }) {
             </div>
           </div>
 
-          <div className="table-responsive-scroll" style={{ maxHeight: '300px', paddingBottom: '12px' }}>
+          {/* CHANGED: Swapped to full-height wrapper */}
+          <div className="table-full-height-wrapper">
             <table className="record-grid-system left-aligned-table">
               <thead>
                 <tr>
@@ -221,7 +221,6 @@ export default function ProfileRequests({ onLogout, user }) {
         {/* ========================================== */}
         {/* SECTION 2: EMPLOYEE DIRECTORY              */}
         {/* ========================================== */}
-        {/* Added a top margin so there is breathing room between the two tables */}
         <div className="table-filter-utilities-row dept-utility-row" style={{ marginTop: '32px' }}>
           <div className="search-bar-input-wrapper">
             <Search size={16} className="search-lens-embed" />
@@ -237,8 +236,8 @@ export default function ProfileRequests({ onLogout, user }) {
             Active Employee Roster
           </div>
 
-          {/* Increased maxHeight from 350px to 500px, added paddingBottom to fix the cutoff */}
-          <div className="table-responsive-scroll" style={{ maxHeight: '500px', paddingBottom: '12px' }}>
+          {/* CHANGED: Swapped to full-height wrapper */}
+          <div className="table-full-height-wrapper">
             <table className="record-grid-system">
               <thead>
                 <tr>

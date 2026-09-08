@@ -141,3 +141,9 @@
   background-color: #fee2e2;
   color: #dc2626;
 }
+
+.table-full-height-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 24px; /* Gives the bottom row plenty of breathing room */
+}
