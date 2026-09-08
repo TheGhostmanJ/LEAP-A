@@ -9,8 +9,13 @@ export default function Departments({ onLogout, user }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Modal State
+  // Create Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Edit Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingDeptId, setEditingDeptId] = useState(null);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     department_id: '',
@@ -21,10 +26,7 @@ export default function Departments({ onLogout, user }) {
   const fetchDepartments = async () => {
     setIsLoading(true);
     try {
-      // 1. Define the dynamic URL just like you did in the POST request
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      
-      // 2. Inject it into the fetch call
       const response = await fetch(`${apiUrl}/api/departments`);
       
       if (!response.ok) throw new Error('Failed to fetch department data');
@@ -41,37 +43,67 @@ export default function Departments({ onLogout, user }) {
     fetchDepartments();
   }, []);
 
-  // Handle Form Submission
+  // Handle Create Submission
   const handleCreateDepartment = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL;
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
       const response = await fetch(`${apiUrl}/api/departments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const htmlError = await response.text();
-        console.error("Received HTML Error from Server:", htmlError);
-        throw new Error(`Server returned HTML error (${response.status} ${response.statusText}). Check your browser console.`);
-      }
-
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create department');
-      }
+      if (!response.ok) throw new Error(data.error || 'Failed to create department');
 
       await fetchDepartments();
       setIsModalOpen(false);
       setFormData({ department_id: '', department_name: '', max_capacity: '' });
       alert("Department created successfully!");
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
+  // Open Edit Modal and pre-fill data
+  const handleConfigureClick = (dept) => {
+    setEditingDeptId(dept.id);
+    setFormData({
+      department_id: dept.id, // ID remains read-only during edit
+      department_name: dept.name,
+      max_capacity: dept.max
+    });
+    setIsEditModalOpen(true);
+  };
+
+  // Handle Edit Submission
+  const handleUpdateDepartment = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/departments/${editingDeptId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          department_name: formData.department_name,
+          max_capacity: formData.max_capacity
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to update department');
+
+      await fetchDepartments();
+      setIsEditModalOpen(false);
+      setFormData({ department_id: '', department_name: '', max_capacity: '' });
+      alert("Department updated successfully!");
     } catch (err) {
       alert("Error: " + err.message);
     } finally {
@@ -84,7 +116,6 @@ export default function Departments({ onLogout, user }) {
       <HrSidebar />
 
       <div className="dashboard-main-content">
-        {/* GLOBAL HEADER */}
         <header className="dashboard-global-header">
           <div className="welcome-greeting page-title-layout">
             <div className="title-icon-badge">
@@ -95,23 +126,22 @@ export default function Departments({ onLogout, user }) {
               <p className="subtitle-department">Portal: <span className="highlight-maroon">HR Operations</span></p>
             </div>
           </div>
-          
-          {/* Shared Header Component */}
           <Header user={user} onLogout={onLogout} />
         </header>
 
-        {/* UTILITY BAR */}
         <div className="table-filter-utilities-row dept-utility-row">
           <div className="search-bar-input-wrapper">
             <Search size={16} className="search-lens-embed" />
             <input type="text" className="utility-search-field" placeholder="Search departments..." />
           </div>
-          <button className="primary-action-trigger-btn" onClick={() => setIsModalOpen(true)}>
+          <button className="primary-action-trigger-btn" onClick={() => {
+            setFormData({ department_id: '', department_name: '', max_capacity: '' });
+            setIsModalOpen(true);
+          }}>
             <Plus size={16} /> Create Department
           </button>
         </div>
 
-        {/* DATA TABLE */}
         <section className="content-data-box table-box-margin card-shadow-wrap dept-table-section">
           <div className="box-header-title-maroon-bar">
             Organizational Structure
@@ -132,21 +162,15 @@ export default function Departments({ onLogout, user }) {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan="6" className="table-status-cell info-text">
-                      Loading department records...
-                    </td>
+                    <td colSpan="6" className="table-status-cell info-text">Loading department records...</td>
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan="6" className="table-status-cell error-text">
-                      Error: {error}
-                    </td>
+                    <td colSpan="6" className="table-status-cell error-text">Error: {error}</td>
                   </tr>
                 ) : departments.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="table-status-cell info-text">
-                      No departments found. Click "Create Department" to begin.
-                    </td>
+                    <td colSpan="6" className="table-status-cell info-text">No departments found. Click "Create Department" to begin.</td>
                   </tr>
                 ) : (
                   departments.map((dept) => {
@@ -171,7 +195,10 @@ export default function Departments({ onLogout, user }) {
                           </div>
                         </td>
                         <td className="actions-cell">
-                          <button className="action-btn-investigate configure-action-btn">
+                          <button 
+                            className="action-btn-investigate configure-action-btn"
+                            onClick={() => handleConfigureClick(dept)}
+                          >
                             <Settings size={14} /> Configure
                           </button>
                         </td>
@@ -185,18 +212,24 @@ export default function Departments({ onLogout, user }) {
         </section>
       </div>
 
-      {/* CREATE DEPARTMENT MODAL */}
-      {isModalOpen && (
+      {/* CREATE & EDIT MODAL (Combined UI logic) */}
+      {(isModalOpen || isEditModalOpen) && (
         <div className="modal-overlay">
           <div className="modal-container">
             <div className="modal-header">
-              <h3>New Department</h3>
-              <button onClick={() => setIsModalOpen(false)} className="modal-close-btn">
+              <h3>{isEditModalOpen ? 'Edit Department' : 'New Department'}</h3>
+              <button 
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setIsEditModalOpen(false);
+                }} 
+                className="modal-close-btn"
+              >
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateDepartment} className="modal-form">
+            <form onSubmit={isEditModalOpen ? handleUpdateDepartment : handleCreateDepartment} className="modal-form">
               <div className="form-field-group">
                 <label>Department Code <span className="required-star">*</span></label>
                 <input 
@@ -207,6 +240,8 @@ export default function Departments({ onLogout, user }) {
                   className="modal-form-input"
                   value={formData.department_id}
                   onChange={(e) => setFormData({...formData, department_id: e.target.value})}
+                  disabled={isEditModalOpen} // Prevent changing the ID when editing
+                  style={{ backgroundColor: isEditModalOpen ? '#f1f5f9' : 'white' }}
                 />
               </div>
 
@@ -238,7 +273,10 @@ export default function Departments({ onLogout, user }) {
               <div className="modal-actions-row">
                 <button 
                   type="button" 
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setIsEditModalOpen(false);
+                  }}
                   className="modal-cancel-btn"
                 >
                   Cancel
@@ -248,7 +286,7 @@ export default function Departments({ onLogout, user }) {
                   disabled={isSubmitting}
                   className="modal-submit-btn"
                 >
-                  {isSubmitting ? 'Creating...' : 'Create Department'}
+                  {isSubmitting ? 'Saving...' : (isEditModalOpen ? 'Save Changes' : 'Create Department')}
                 </button>
               </div>
             </form>
