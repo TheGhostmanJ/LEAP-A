@@ -15,7 +15,6 @@ export default function ProfileRequests({ onLogout, user }) {
   const [isEmpLoading, setIsEmpLoading] = useState(true);
   const [empError, setEmpError] = useState(null);
 
-  // Employee Modal State
   const [isEmpModalOpen, setIsEmpModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingEmpKey, setEditingEmpKey] = useState(null);
@@ -29,12 +28,10 @@ export default function ProfileRequests({ onLogout, user }) {
     position_title: ''
   });
 
-  // Fetch Employees from Database
   const fetchEmployees = async () => {
     setIsEmpLoading(true);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      // ⚠️ Note: We will need to build this GET route in your backend next!
       const response = await fetch(`${apiUrl}/api/employees`);
       
       if (!response.ok) throw new Error('Failed to fetch employee data');
@@ -51,14 +48,12 @@ export default function ProfileRequests({ onLogout, user }) {
     fetchEmployees();
   }, []);
 
-  // Open Modal for New Hire
   const handleOpenCreateModal = () => {
     setIsEditMode(false);
     setEmpFormData({ employee_id: '', first_name: '', last_name: '', department: '', position_title: '' });
     setIsEmpModalOpen(true);
   };
 
-  // Open Modal for Editing Existing Employee
   const handleOpenEditModal = (emp) => {
     setIsEditMode(true);
     setEditingEmpKey(emp.employee_key);
@@ -72,7 +67,6 @@ export default function ProfileRequests({ onLogout, user }) {
     setIsEmpModalOpen(true);
   };
 
-  // Submit New or Edited Employee
   const handleEmployeeSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -152,76 +146,9 @@ export default function ProfileRequests({ onLogout, user }) {
         </header>
 
         {/* ========================================== */}
-        {/* SECTION 1: EMPLOYEE DIRECTORY              */}
+        {/* SECTION 1: PROFILE EDIT REQUESTS           */}
         {/* ========================================== */}
-        <div className="table-filter-utilities-row dept-utility-row">
-          <div className="search-bar-input-wrapper">
-            <Search size={16} className="search-lens-embed" />
-            <input type="text" className="utility-search-field" placeholder="Search employees..." />
-          </div>
-          <button className="primary-action-trigger-btn" onClick={handleOpenCreateModal}>
-            <UserPlus size={16} /> Onboard Employee
-          </button>
-        </div>
-
-        <section className="content-data-box table-box-margin card-shadow-wrap dept-table-section">
-          <div className="box-header-title-maroon-bar">
-            Active Employee Roster
-          </div>
-
-          <div className="table-responsive-scroll" style={{ maxHeight: '350px', marginBottom: '24px' }}>
-            <table className="record-grid-system">
-              <thead>
-                <tr>
-                  <th>Employee ID</th>
-                  <th>Full Name</th>
-                  <th>Department</th>
-                  <th>Position Title</th>
-                  <th className="text-center">Manage</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isEmpLoading ? (
-                  <tr>
-                    <td colSpan="5" className="table-status-cell info-text">Loading employee records...</td>
-                  </tr>
-                ) : empError ? (
-                  <tr>
-                    <td colSpan="5" className="table-status-cell error-text">Error: {empError}</td>
-                  </tr>
-                ) : employees.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="table-status-cell info-text">No active employees found.</td>
-                  </tr>
-                ) : (
-                  employees.map((emp) => (
-                    <tr key={emp.employee_key}>
-                      <td className="dept-code-cell">{emp.employee_id}</td>
-                      <td style={{ fontWeight: '600', color: '#1a202c' }}>
-                        {emp.first_name} {emp.last_name}
-                      </td>
-                      <td>{emp.department}</td>
-                      <td>{emp.position_title}</td>
-                      <td className="actions-cell">
-                        <button 
-                          className="action-btn-investigate configure-action-btn"
-                          onClick={() => handleOpenEditModal(emp)}
-                        >
-                          <Settings size={14} /> Profile
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* ========================================== */}
-        {/* SECTION 2: PROFILE EDIT REQUESTS           */}
-        {/* ========================================== */}
-        <section className="content-data-box table-box-margin card-shadow-wrap profile-requests-card" style={{ marginTop: '32px' }}>
+        <section className="content-data-box table-box-margin card-shadow-wrap profile-requests-card">
           <div className="box-header-title-maroon-bar flex-header-bar">
             <span>Pending Data Alteration Requests</span>
             <div className="bar-search-input-wrapper">
@@ -230,7 +157,7 @@ export default function ProfileRequests({ onLogout, user }) {
             </div>
           </div>
 
-          <div className="table-responsive-scroll" style={{ maxHeight: '300px' }}>
+          <div className="table-responsive-scroll" style={{ maxHeight: '300px', paddingBottom: '12px' }}>
             <table className="record-grid-system left-aligned-table">
               <thead>
                 <tr>
@@ -286,6 +213,75 @@ export default function ProfileRequests({ onLogout, user }) {
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* ========================================== */}
+        {/* SECTION 2: EMPLOYEE DIRECTORY              */}
+        {/* ========================================== */}
+        {/* Added a top margin so there is breathing room between the two tables */}
+        <div className="table-filter-utilities-row dept-utility-row" style={{ marginTop: '32px' }}>
+          <div className="search-bar-input-wrapper">
+            <Search size={16} className="search-lens-embed" />
+            <input type="text" className="utility-search-field" placeholder="Search employees..." />
+          </div>
+          <button className="primary-action-trigger-btn" onClick={handleOpenCreateModal}>
+            <UserPlus size={16} /> Onboard Employee
+          </button>
+        </div>
+
+        <section className="content-data-box table-box-margin card-shadow-wrap dept-table-section">
+          <div className="box-header-title-maroon-bar">
+            Active Employee Roster
+          </div>
+
+          {/* Increased maxHeight from 350px to 500px, added paddingBottom to fix the cutoff */}
+          <div className="table-responsive-scroll" style={{ maxHeight: '500px', paddingBottom: '12px' }}>
+            <table className="record-grid-system">
+              <thead>
+                <tr>
+                  <th>Employee ID</th>
+                  <th>Full Name</th>
+                  <th>Department</th>
+                  <th>Position Title</th>
+                  <th className="text-center">Manage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isEmpLoading ? (
+                  <tr>
+                    <td colSpan="5" className="table-status-cell info-text">Loading employee records...</td>
+                  </tr>
+                ) : empError ? (
+                  <tr>
+                    <td colSpan="5" className="table-status-cell error-text">Error: {empError}</td>
+                  </tr>
+                ) : employees.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="table-status-cell info-text">No active employees found.</td>
+                  </tr>
+                ) : (
+                  employees.map((emp) => (
+                    <tr key={emp.employee_key}>
+                      <td className="dept-code-cell">{emp.employee_id}</td>
+                      <td style={{ fontWeight: '600', color: '#1a202c' }}>
+                        {emp.first_name} {emp.last_name}
+                      </td>
+                      <td>{emp.department}</td>
+                      <td>{emp.position_title}</td>
+                      <td className="actions-cell">
+                        <button 
+                          className="action-btn-investigate configure-action-btn"
+                          onClick={() => handleOpenEditModal(emp)}
+                        >
+                          <Settings size={14} /> Profile
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
