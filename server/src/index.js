@@ -805,11 +805,6 @@ app.put('/api/leave-approvals/:id', async (req, res) => {
     }
 });
 
-// Start listening for API calls
-app.listen(PORT, () => {
-  console.log(`Node.js server executing on http://localhost:${PORT}`);
-});
-
 // ==========================================
 // IT OPERATIONS: ROLE MANAGEMENT (RBAC)
 // ==========================================
@@ -861,4 +856,11 @@ app.put('/api/roles/:username', async (req, res) => {
         console.error("Error updating role:", error);
         res.status(500).json({ error: "Failed to update role." });
     }
+});
+
+
+
+// Start listening for API calls
+app.listen(PORT, () => {
+  console.log(`Node.js server executing on http://localhost:${PORT}`);
 });
