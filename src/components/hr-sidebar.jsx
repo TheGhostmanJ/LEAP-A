@@ -8,7 +8,7 @@ import {
   UserCheck, History, CreditCard, GraduationCap
 } from 'lucide-react';
 import './sidebar.css'; 
-import './siebar.jsx';
+import './sidebar.jsx';
 
 export default function HrSidebar() {
   const navigate = useNavigate();
