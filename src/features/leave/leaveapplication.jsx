@@ -7,7 +7,7 @@ import LeavePreviewModal from "./leave-preview-modal";
 import UnsavedChangesModal from "./unsavedchangesmodal";
 import { buildLeavePdfBytes } from './generateLeavePdf';
 import { leaveService } from '../../services/leaveService';
-import { validateCSCApplication } from './cscRules';
+import { validateCSCApplication } from './cscRules.js';
 import './leaveapplication.css';
 
 export default function LeaveApplication({ user, onLogout }) {
@@ -74,9 +74,7 @@ export default function LeaveApplication({ user, onLogout }) {
     fetchCredits();
   }, [user]);
 
-  const cscValidation = typeof validateCSCApplication === 'function' 
-    ? validateCSCApplication(formData, userCredits) 
-    : { isValid: true, errors: [], requiredDocs: [] };
+  const cscValidation = validateCSCApplication(formData, userCredits);
 
   const activeRequiredDocs = cscValidation.requiredDocs || cscValidation.requiredFiles || [];
 
