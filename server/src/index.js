@@ -809,3 +809,56 @@ app.put('/api/leave-approvals/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Node.js server executing on http://localhost:${PORT}`);
 });
+
+// ==========================================
+// IT OPERATIONS: ROLE MANAGEMENT (RBAC)
+// ==========================================
+
+// GET: Fetch all system accounts and their current roles
+app.get('/api/roles', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                a.username,
+                e.employee_id AS id,
+                e.first_name || ' ' || e.last_name AS name,
+                e.department,
+                a.system_access_level AS current_role
+            FROM public.dim_accounts a
+            JOIN public.dim_employee e ON a.employee_key = e.employee_key
+            ORDER BY 
+                CASE WHEN a.system_access_level = 'Disabled' THEN 2 ELSE 1 END,
+                e.last_name ASC;
+        `;
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching roles:", error);
+        res.status(500).json({ error: "Failed to fetch accounts." });
+    }
+});
+
+// PUT: Update an account's system access level
+app.put('/api/roles/:username', async (req, res) => {
+    const { username } = req.params;
+    const { role } = req.body;
+    
+    try {
+        const query = `
+            UPDATE public.dim_accounts 
+            SET system_access_level = $1 
+            WHERE username = $2 
+            RETURNING username, system_access_level;
+        `;
+        const result = await pool.query(query, [role, username]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Account not found." });
+        }
+        
+        res.status(200).json({ success: true, message: "Role updated successfully." });
+    } catch (error) {
+        console.error("Error updating role:", error);
+        res.status(500).json({ error: "Failed to update role." });
+    }
+});
