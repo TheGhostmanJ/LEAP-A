@@ -285,3 +285,70 @@ body,
   color: #7a0000;
   border-color: #d1d5db;
 }
+
+/* ==========================================================================
+   MOBILE FLOATING BUTTON & OVERLAY
+   ========================================================================== */
+
+/* Hidden on Desktop by default */
+.mobile-floating-toggle {
+  display: none;
+}
+
+.sidebar-mobile-overlay {
+  display: none;
+}
+
+/* Show only on Mobile Screens */
+@media (max-width: 768px) {
+  
+  /* The floating maroon circle button */
+  .mobile-floating-toggle {
+    display: flex;
+    position: fixed;
+    bottom: 24px;
+    left: 20px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background-color: #800020; /* LEAP-A Maroon */
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 4px 12px rgba(128, 0, 32, 0.35);
+    z-index: 10000; /* Highest z-index so it sits above everything */
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+  }
+
+  .mobile-floating-toggle:active {
+    transform: scale(0.92);
+    background-color: #5c0000;
+  }
+
+  /* The dark backdrop behind the menu */
+  .sidebar-mobile-overlay {
+    display: block;
+    position: fixed;
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    bottom: 0;
+    background-color: rgba(15, 23, 42, 0.5); /* Dim effect */
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    z-index: 9998; /* Sits right under the sidebar */
+    animation: fadeInOverlay 0.3s ease;
+  }
+
+  /* Hide the desktop collapse button so it isn't confusing */
+  .desktop-toggle-only {
+    display: none !important;
+  }
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
