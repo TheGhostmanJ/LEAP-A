@@ -2,15 +2,28 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Server, Shield, Database, Terminal, User, Clock, Settings
+  Server, Shield, Database, Terminal, User, Clock, Settings,
+  ChevronLeft, ChevronRight, Menu, X, Home, UserCheck, History, CreditCard, GraduationCap
 } from 'lucide-react';
 import './sidebar.css'; 
-
 
 export default function ItSidebar() {
   const navigate = useNavigate();
   const location = useLocation(); 
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebar_collapsed');
+    return saved === 'true';
+  });
+
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState(null);
+  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    localStorage.setItem('sidebar_collapsed', isCollapsed);
+  }, [isCollapsed]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -29,47 +42,156 @@ export default function ItSidebar() {
     return location.pathname === path ? "sidebar-item active" : "sidebar-item";
   };
 
+  const handleNavClick = (path) => {
+    navigate(path);
+    setIsMobileOpen(false); 
+  };
+
+  const itOperationsItems = [
+    { path: '/system-config', icon: Server, label: 'System Config' },
+    { path: '/role-management', icon: Shield, label: 'Role Management (RBAC)' },
+    { path: '/database-metrics', icon: Database, label: 'Database Metrics' },
+    { path: '/api-gateway', icon: Terminal, label: 'API Gateway Log' },
+    { path: '/system-settings', icon: Settings, label: 'Global Settings' },
+  ];
+
+  const employeeMenuItems = [
+    { path: '/dashboard', icon: Home, label: 'Personal Dashboard' },
+    { path: '/attendance', icon: UserCheck, label: 'My Attendance' },
+    { path: '/leavehistory', icon: History, label: 'My Leave History' },
+    { path: '/creditledger', icon: CreditCard, label: 'My Credit Ledger' },
+    { path: '/trainingrecords', icon: GraduationCap, label: 'My Training Records' },
+  ];
+
+  const accountMenuItems = [
+    { path: '/profile', icon: User, label: 'My Profile' },
+  ];
+
+  const handleMouseEnter = (e, label) => {
+    if (!isCollapsed) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltipPos({
+      top: rect.top + rect.height / 2,
+      left: rect.right + 12
+    });
+    setHoveredItem(label);
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredItem(null);
+  };
+
   return (
-    <aside className="dashboard-sidebar">
-      <div className="sidebar-brand">
-        <img src="/leaplogo.png" alt="LEAP-A Logo" style={{ height: '65px', width: 'auto', objectFit: 'contain' }} />
-      </div>
+    <>
+      {/* MOBILE OVERLAY */}
+      {isMobileOpen && (
+        <div className="sidebar-mobile-overlay" onClick={() => setIsMobileOpen(false)} />
+      )}
 
-      <ul className="sidebar-menu">
-        <div className="sidebar-section-label">IT Operations</div>
-        
-        <li className={getMenuClass('/system-config')} onClick={() => navigate('/system-config')}>
-          <Server size={16} /> System Config
-        </li>
-        <li className={getMenuClass('/role-management')} onClick={() => navigate('/role-management')}>
-          <Shield size={16} /> Role Management (RBAC)
-        </li>
-        <li className={getMenuClass('/database-metrics')} onClick={() => navigate('/database-metrics')}>
-          <Database size={16} /> Database Metrics
-        </li>
-        <li className={getMenuClass('/api-gateway')} onClick={() => navigate('/api-gateway')}>
-          <Terminal size={16} /> API Gateway Log
-        </li>
-        <li className={getMenuClass('/system-settings')} onClick={() => navigate('/system-settings')}>
-          <Settings size={16} /> Global Settings
-        </li>
+      {/* MOBILE FLOATING TOGGLE BUTTON */}
+      <button
+        className="mobile-floating-toggle"
+        onClick={() => setIsMobileOpen(!isMobileOpen)}
+        aria-label="Toggle mobile menu"
+      >
+        {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
 
-        <div className="sidebar-section-label">Account</div>
-        
-        <li className={getMenuClass('/profile')} onClick={() => navigate('/profile')}>
-            <User size={16} /> My Profile
-        </li>
-      </ul>
-
-      <div className="sidebar-footer">
-        <div className="datetime-box">
-          <Clock size={20} />
-          <div className="datetime-text">
-            <span>{formattedDate}</span>
-            <span className="time-label">Time: <span style={{ color: '#5a0000' }}>{formattedTime}</span></span>
-          </div>
+      <aside className={`dashboard-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'sidebar-mobile-open' : ''}`}>
+        {/* BRAND / LOGO AREA */}
+        <div className="sidebar-brand">
+          {!isCollapsed ? (
+            <img src="/leaplogo.png" alt="LEAP-A Logo" style={{ height: '65px', width: 'auto', objectFit: 'contain' }} />
+          ) : (
+            <img src="/leap-asidebar.png" alt="LEAP-A" className="sidebar-logo-icon" />
+          )}
         </div>
-      </div>
-    </aside>
+
+        {/* IT OPERATIONS SECTION */}
+        {!isCollapsed && <div className="sidebar-section-label">IT Operations</div>}
+        <ul className="sidebar-menu">
+          {itOperationsItems.map((item) => (
+            <li
+              key={item.path}
+              className={getMenuClass(item.path)}
+              onClick={() => handleNavClick(item.path)}
+              onMouseEnter={(e) => handleMouseEnter(e, item.label)}
+              onMouseLeave={handleMouseLeave}
+            >
+              <item.icon size={18} className="sidebar-item-icon" />
+              {!isCollapsed && <span className="sidebar-item-label">{item.label}</span>}
+            </li>
+          ))}
+        </ul>
+
+        {/* PERSONAL EMPLOYEE RECORDS SECTION */}
+        {!isCollapsed && <div className="sidebar-section-label" style={{ marginTop: '16px' }}>My Employee Records</div>}
+        <ul className="sidebar-menu">
+          {employeeMenuItems.map((item) => (
+            <li
+              key={item.path}
+              className={getMenuClass(item.path)}
+              onClick={() => handleNavClick(item.path)}
+              onMouseEnter={(e) => handleMouseEnter(e, item.label)}
+              onMouseLeave={handleMouseLeave}
+            >
+              <item.icon size={18} className="sidebar-item-icon" />
+              {!isCollapsed && <span className="sidebar-item-label">{item.label}</span>}
+            </li>
+          ))}
+        </ul>
+
+        {/* ACCOUNT SECTION */}
+        {!isCollapsed && <div className="sidebar-section-label" style={{ marginTop: '16px' }}>Account</div>}
+        <ul className="sidebar-menu">
+          {accountMenuItems.map((item) => (
+            <li
+              key={item.path}
+              className={getMenuClass(item.path)}
+              onClick={() => handleNavClick(item.path)}
+              onMouseEnter={(e) => handleMouseEnter(e, item.label)}
+              onMouseLeave={handleMouseLeave}
+            >
+              <item.icon size={18} className="sidebar-item-icon" />
+              {!isCollapsed && <span className="sidebar-item-label">{item.label}</span>}
+            </li>
+          ))}
+        </ul>
+
+        {/* FOOTER AREA */}
+        <div className="sidebar-footer">
+          <div className="datetime-box">
+            <Clock size={18} className="datetime-icon" />
+            {!isCollapsed && (
+              <div className="datetime-text">
+                <span>{formattedDate}</span>
+                <span className="time-label">Time: <span className="time-value" style={{ color: '#5a0000' }}>{formattedTime}</span></span>
+              </div>
+            )}
+          </div>
+
+          {/* BOTTOM TOGGLE BUTTON */}
+          <button
+            type="button"
+            className="sidebar-bottom-toggle-btn desktop-toggle-only"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            {!isCollapsed && <span>Collapse menu</span>}
+          </button>
+        </div>
+
+        {/* FLOATING TOOLTIP */}
+        {hoveredItem && (
+          <div
+            className="sidebar-floating-tooltip"
+            style={{ top: `${tooltipPos.top}px`, left: `${tooltipPos.left}px` }}
+          >
+            {hoveredItem}
+          </div>
+        )}
+      </aside>
+    </>
   );
 }
