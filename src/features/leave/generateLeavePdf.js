@@ -20,12 +20,9 @@ const PAGE_HEIGHT = IMG_HEIGHT_PX * SCALE; // ≈ 835
 // needs adjusting, then update the FIELDS map below and set this
 // back to false.
 // ─────────────────────────────────────────────────────────────
-const DEBUG_GRID = true;
+const DEBUG_GRID = false;
 
-// All coordinates are "from the top-left corner, in template-image pixels" —
-// i.e. exactly what you'd see hovering over leave-form-template.png in an
-// image editor. These are starting estimates from the photo you sent;
-// nudge them using DEBUG_GRID until they land on the real blank lines/boxes.
+// All coordinates are "from the top-left corner, in template-image pixels"
 const FIELDS = {
   officeDepartment: { x: 300, y: 350 },
   lastName:         { x: 700, y: 350 },
@@ -35,7 +32,7 @@ const FIELDS = {
   position:         { x: 640, y: 470 },
   salary:           { x: 1120, y: 470 },
 
-  // 6.A — checkbox position per leave type (matches LEAVE_TYPES in LeaveApplication.jsx)
+  // 6.A — checkbox position per leave type
   leaveTypeCheckboxes: {
     'Vacation Leave':                     { x: 122, y: 702 },
     'Mandatory/Forced Leave':             { x: 122, y: 742 },
@@ -79,7 +76,12 @@ function formatDate(str) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function downloadPdf(bytes, filename) {
+// EXPORT 1: The Download Trigger
+export function downloadPdfBytes(bytes, formData, user) {
+  const filenameSafe = (user?.last_name || 'employee').replace(/\s+/g, '-');
+  const filingDate = formData?.filingDate || new Date().toISOString().split('T')[0];
+  const filename = `Leave-Application-${filenameSafe}-${filingDate}.pdf`;
+
   const blob = new Blob([bytes], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -91,7 +93,8 @@ function downloadPdf(bytes, filename) {
   URL.revokeObjectURL(url);
 }
 
-export async function generateLeavePdf(formData, user) {
+// EXPORT 2: The Core PDF Builder
+export async function buildLeavePdfBytes(formData, user) {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
 
@@ -102,10 +105,6 @@ export async function generateLeavePdf(formData, user) {
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  // Places text using top-left pixel coordinates (matches the image you're looking at),
-  // converting internally to pdf-lib's bottom-left point space.
-  // NOTE: avoid unicode symbols like ₱ or ✓ here — pdf-lib's standard fonts
-  // (WinAnsi encoding) can't render them and will throw. Use "PHP" and "X" instead.
   const put = (xPx, yPx, str, opts = {}) => {
     if (str === undefined || str === null || str === '') return;
     const x = xPx * SCALE;
@@ -142,9 +141,7 @@ export async function generateLeavePdf(formData, user) {
       });
       if (y % 100 === 0) put(4, y + 10, String(y), { size: 6 });
     }
-    const bytes = await pdfDoc.save();
-    downloadPdf(bytes, 'leave-form-grid-calibration.pdf');
-    return;
+    return await pdfDoc.save();
   }
 
   // 1–5
@@ -200,11 +197,14 @@ export async function generateLeavePdf(formData, user) {
   }
 
   // 6.C / 6.D
+  const startDate = formData.startDate || formData.inclusiveDateFrom;
+  const endDate = formData.endDate || formData.inclusiveDateTo;
+
   put(FIELDS.workingDays.x, FIELDS.workingDays.y, formData.workingDays);
   put(
     FIELDS.inclusiveDates.x,
     FIELDS.inclusiveDates.y,
-    `${formatDate(formData.inclusiveDateFrom)} - ${formatDate(formData.inclusiveDateTo)}`
+    `${formatDate(startDate)} - ${formatDate(endDate)}`
   );
   if (formData.commutation === 'not-requested') {
     checkbox(FIELDS.commutationNotReq.x, FIELDS.commutationNotReq.y);
@@ -213,7 +213,6 @@ export async function generateLeavePdf(formData, user) {
     checkbox(FIELDS.commutationReq.x, FIELDS.commutationReq.y);
   }
 
-  const pdfBytes = await pdfDoc.save();
-  const filenameSafe = (user?.last_name || 'employee').replace(/\s+/g, '-');
-  downloadPdf(pdfBytes, `Leave-Application-${filenameSafe}-${formData.filingDate}.pdf`);
+  // Return the raw bytes instead of automatically triggering a download
+  return await pdfDoc.save();
 }
