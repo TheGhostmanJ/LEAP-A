@@ -255,6 +255,11 @@ export default function Root() {
   );
 }
 
+const metaTheme = document.createElement('meta');
+metaTheme.name = "color-scheme";
+metaTheme.content = "light only";
+document.head.appendChild(metaTheme);
+
 const rootElement = document.getElementById('root');
 const root = ReactDOM.createRoot(rootElement);
 
