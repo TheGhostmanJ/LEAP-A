@@ -12,7 +12,7 @@ import {
   Users,
   Filter
 } from 'lucide-react';
-import Sidebar from '../../components/sidebar.jsx';
+import RoleSidebar from '../../components/RoleSidebar.jsx';
 import Header from '../../components/Header.jsx';
 import './trainingrecords.css';
 
@@ -52,7 +52,7 @@ export default function TrainingRecords({ onLogout, user }) {
 
   return (
     <div className="tr-dashboard-container">
-      <Sidebar />
+      <RoleSidebar user={user}/>
 
       {/* Added 'fade-in-up' class for smooth layout entry */}
       <main className="tr-main-content fade-in-up">

@@ -8,7 +8,7 @@ import {
   ChevronRight,
   FileText
 } from 'lucide-react';
-import Sidebar from '../../components/sidebar.jsx';
+import RoleSidebar from '../../components/RoleSidebar.jsx';
 import Header from '../../components/Header.jsx'; // Imported Header component
 import './leavehistory.css';
 
@@ -66,7 +66,7 @@ export default function LeaveHistory({ onNavigate, onLogout, user }) {
 
   return (
     <div className="dashboard-container">
-      <Sidebar />
+      <RoleSidebar user={user}/>
 
       {/* MAIN SYSTEM WRAPPER WITH FADE-IN ANIMATION */}
       <main className="dashboard-main-content fade-in-up">

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   UserCheck, History, Search, FilePlus
 } from 'lucide-react';
-import Sidebar from '../../components/sidebar.jsx';
+import RoleSidebar from '../../components/RoleSidebar.jsx';
 import Header from '../../components/Header.jsx';
 import './dashboard.css';
 
@@ -58,7 +58,7 @@ export default function Dashboard({ onLogout, user }) {
 
   return (
     <div className="dashboard-container">
-      <Sidebar />
+      <RoleSidebar user={user}/>
 
       {/* Added 'fade-in-up' class for smooth entrance animation */}
       <main className="dashboard-main-content fade-in-up">

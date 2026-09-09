@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search, Calendar, AlertTriangle, CheckCircle, XCircle
 } from 'lucide-react';
-import Sidebar from '../../components/sidebar.jsx'; // Adjust path as needed
+import RoleSidebar from '../../components/RoleSidebar.jsx';
 import Header from '../../components/Header.jsx';
 import './attendance.css';
 
@@ -45,7 +45,7 @@ export default function Attendance({ onLogout, user }) {
 
   return (
     <div className="dashboard-container">
-      <Sidebar />
+      <RoleSidebar user={user} />
 
       {/* Added 'fade-in-up' class for smooth page entrance transition */}
       <main className="dashboard-main-content fade-in-up">

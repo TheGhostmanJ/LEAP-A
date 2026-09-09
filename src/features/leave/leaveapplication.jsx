@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, UserCheck, Plane, Stethoscope, GraduationCap, Layers, Send, Eye, AlertCircle, Paperclip, CheckCircle, Loader2 } from 'lucide-react';
-import Sidebar from '../../components/sidebar.jsx';
+import RoleSidebar from '../../components/RoleSidebar.jsx';
 import LeavePreviewModal from "./leave-preview-modal";
 import UnsavedChangesModal from "./unsavedchangesmodal";
 import { buildLeavePdfBytes } from './generateLeavePdf';
@@ -294,7 +294,7 @@ export default function LeaveApplication({ user, onLogout }) {
 
   return (
     <div className="dashboard-container">
-      <Sidebar onNavigate={handleNavigateAway} />
+      <RoleSidebar user={user} onNavigate={handleNavigateAway} />
 
       <main className="leave-app-main">
         <div className="leave-app-wrapper">

@@ -5,14 +5,14 @@ import {
     ChevronRight,
     BookOpen
 } from 'lucide-react';
-import Sidebar from '../../components/sidebar.jsx';
+import RoleSidebar from '../../components/RoleSidebar.jsx';
 import Header from '../../components/Header.jsx';
 import './creditledger.css';
 
 export default function CreditLedger({ onLogout, user }) {
     return (
         <div className="cl-dashboard-container">
-            <Sidebar />
+            <RoleSidebar user={user}/>
 
             {/* Added 'fade-in-up' class for entrance transition */}
             <main className="cl-main-content fade-in-up">
