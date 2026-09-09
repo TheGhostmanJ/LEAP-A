@@ -1,15 +1,28 @@
 // src/features/leave/LeaveApplication.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, UserCheck, Plane, Stethoscope, GraduationCap, Layers, Send, Eye, Loader2 } from 'lucide-react';
+import { ArrowLeft, FileText, UserCheck, Plane, Stethoscope, GraduationCap, Layers, Send, Eye, AlertCircle, Paperclip, CheckCircle, Loader2 } from 'lucide-react';
 import Sidebar from '../../components/sidebar.jsx';
 import LeavePreviewModal from "./leave-preview-modal";
+import UnsavedChangesModal from "./unsavedchangesmodal";
+import { buildLeavePdfBytes } from './generateLeavePdf';
+import { leaveService } from '../../services/leaveService';
+import { validateCSCApplication } from './cscRules';
 import './leaveapplication.css';
 
 export default function LeaveApplication({ user, onLogout }) {
   const navigate = useNavigate();
   const [showPreview, setShowPreview] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // New loading state
+  const [isSubmitting, setIsSubmitting] = useState(false); // From User's version
+  
+  // Modal & Draft States from Groupmate
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [userCredits, setUserCredits] = useState(null);
+  const [attachedFiles, setAttachedFiles] = useState({});
+
+  const todayStr = new Date().toISOString().split('T')[0];
 
   const LEAVE_TYPES = [
     'Vacation Leave',
@@ -28,55 +41,201 @@ export default function LeaveApplication({ user, onLogout }) {
     'Others'
   ];
 
-  const [formData, setFormData] = useState({
-    filingDate: new Date().toISOString().split('T')[0],
-    leaveType: '',
-    othersSpecify: '',
-    vacationSplLocation: '',
-    abroadSpecify: '',
-    sickLeaveType: '',
-    illnessSpecify: '',
-    studyLeavePurpose: '',
-    othersPurpose: '',
-    workingDays: '',
-    inclusiveDateFrom: '',
-    inclusiveDateTo: '',
-    commutation: 'not-requested'
+  const [formData, setFormData] = useState(() => {
+    const savedDraft = localStorage.getItem('leave_application_draft');
+    return savedDraft ? JSON.parse(savedDraft) : {
+      filingDate: todayStr,
+      leaveType: '',
+      othersSpecify: '',
+      vacationSplLocation: '',
+      abroadSpecify: '',
+      sickLeaveType: '',
+      illnessSpecify: '',
+      studyLeavePurpose: '',
+      othersPurpose: '',
+      workingDays: '',
+      inclusiveDateFrom: todayStr,
+      inclusiveDateTo: todayStr,
+      commutation: 'not-requested'
+    };
   });
+
+  useEffect(() => {
+    async function fetchCredits() {
+      if (user?.employee_key && leaveService?.getUserCredits) {
+        try {
+          const credits = await leaveService.getUserCredits(user.employee_key);
+          setUserCredits(credits);
+        } catch (err) {
+          console.error('Failed to load leave credits:', err);
+        }
+      }
+    }
+    fetchCredits();
+  }, [user]);
+
+  const cscValidation = typeof validateCSCApplication === 'function' 
+    ? validateCSCApplication(formData, userCredits) 
+    : { isValid: true, errors: [], requiredDocs: [] };
+
+  const activeRequiredDocs = cscValidation.requiredDocs || cscValidation.requiredFiles || [];
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  // Sync End Date based on Working Days
+  const calculateEndDate = (startDateStr, daysCount) => {
+    if (!startDateStr || !daysCount || daysCount <= 0) return startDateStr;
+    let currentDate = new Date(startDateStr);
+    let addedDays = 0;
+    const targetDays = Math.ceil(parseFloat(daysCount));
+
+    while (addedDays < targetDays - 1) {
+      currentDate.setDate(currentDate.getDate() + 1);
+      const dayOfWeek = currentDate.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        addedDays++;
+      }
+    }
+    return currentDate.toISOString().split('T')[0];
+  };
+
+  useEffect(() => {
+    if (formData.inclusiveDateFrom && formData.workingDays) {
+      const computedEndDate = calculateEndDate(formData.inclusiveDateFrom, formData.workingDays);
+      setFormData((prev) => ({ ...prev, inclusiveDateTo: computedEndDate }));
+    }
+  }, [formData.inclusiveDateFrom, formData.workingDays]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setIsDirty(true);
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCancel = () => {
-    navigate('/dashboard');
+  const handleFileChange = (docLabel, file) => {
+    if (!file) {
+      setAttachedFiles((prev) => {
+        const next = { ...prev };
+        delete next[docLabel];
+        return next;
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert(`"${file.name}" exceeds the maximum allowed limit of 5MB.`);
+      return;
+    }
+
+    setIsDirty(true);
+    setAttachedFiles((prev) => ({ ...prev, [docLabel]: file }));
   };
 
+  const fileToBase64Async = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result.split(',')[1];
+        resolve({
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          base64Data: base64
+        });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleNavigateAway = (targetPath = '/dashboard') => {
+    if (isDirty) {
+      setPendingNavigation(targetPath);
+      setShowUnsavedModal(true);
+    } else {
+      navigate(targetPath);
+    }
+  };
+
+  const handleSaveDraft = () => {
+    localStorage.setItem('leave_application_draft', JSON.stringify(formData));
+    setIsDirty(false);
+    setShowUnsavedModal(false);
+    alert('Draft saved successfully.');
+    if (pendingNavigation) navigate(pendingNavigation);
+  };
+
+  const handleDiscardChanges = () => {
+    localStorage.removeItem('leave_application_draft');
+    setIsDirty(false);
+    setShowUnsavedModal(false);
+    if (pendingNavigation) navigate(pendingNavigation);
+  };
+
+  const uint8ToBase64Async = (uint8Array) => {
+    return new Promise((resolve, reject) => {
+      const blob = new Blob([uint8Array], { type: 'application/pdf' });
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        resolve(reader.result.split(',')[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  // USER'S FIX: The main submission sequence hitting your local Express API
   const submitApplication = async () => {
     setIsSubmitting(true);
-    const payload = {
-      employee_key: user?.employee_key,
-      department: user?.department,
-      position: user?.position_title,
-      salary: user?.current_salary_amount,
-      leave_type: formData.leaveType,
-      others_specify: formData.othersSpecify,
-      vacation_spl_location: formData.vacationSplLocation,
-      abroad_specify: formData.abroadSpecify,
-      sick_leave_type: formData.sickLeaveType,
-      illness_specify: formData.illnessSpecify,
-      study_leave_purpose: formData.studyLeavePurpose,
-      others_purpose: formData.othersPurpose,
-      working_days: formData.workingDays,
-      start_date: formData.inclusiveDateFrom,
-      end_date: formData.inclusiveDateTo,
-      commutation: formData.commutation,
-      status: 'Pending',
-      filingDate: formData.filingDate
-    };
-
     try {
+      // Process attachments into Base64
+      const processedAttachments = [];
+      for (const [requirement, fileObj] of Object.entries(attachedFiles)) {
+        if (fileObj) {
+          const encoded = await fileToBase64Async(fileObj);
+          processedAttachments.push({ requirementLabel: requirement, ...encoded });
+        }
+      }
+
+      // Generate the CS Form PDF if the helper exists
+      let pdfBase64 = null;
+      if (typeof buildLeavePdfBytes === 'function') {
+        const pdfBytes = await buildLeavePdfBytes(formData, user);
+        pdfBase64 = await uint8ToBase64Async(pdfBytes);
+      }
+
+      const payload = {
+        employee_key: user?.employee_key,
+        department: user?.department,
+        position: user?.position_title,
+        salary: user?.current_salary_amount,
+        leave_type: formData.leaveType,
+        others_specify: formData.othersSpecify,
+        vacation_spl_location: formData.vacationSplLocation,
+        abroad_specify: formData.abroadSpecify,
+        sick_leave_type: formData.sickLeaveType,
+        illness_specify: formData.illnessSpecify,
+        study_leave_purpose: formData.studyLeavePurpose,
+        others_purpose: formData.othersPurpose,
+        working_days: formData.workingDays,
+        start_date: formData.inclusiveDateFrom,
+        end_date: formData.inclusiveDateTo,
+        commutation: formData.commutation,
+        status: 'Pending',
+        filingDate: formData.filingDate,
+        attachments: processedAttachments,
+        pdf_document: pdfBase64
+      };
+
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
       const response = await fetch(`${apiUrl}/api/leave/apply`, {
         method: 'POST',
@@ -85,24 +244,47 @@ export default function LeaveApplication({ user, onLogout }) {
       });
 
       if (response.ok) {
+        localStorage.removeItem('leave_application_draft'); 
+        setIsDirty(false);
         alert('Application submitted successfully.');
-        navigate('/dashboard'); // Head back to the user's dashboard after success
+        navigate('/dashboard'); 
       } else {
         const errorData = await response.json();
         alert(`Submission failed: ${errorData.message || 'Unknown error'}`);
       }
     } catch (err) {
-      alert('Submission failed. Please check your connection.');
-      console.error(err);
+      console.error('Failed to process submission:', err);
+      alert('Error processing application submission. Please check your connection.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // CHANGED: Now properly executes the backend fetch instead of the preview modal
+  // USER'S FIX: Triggers validation, then fires API (Bypasses Preview Modal)
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    submitApplication();
+
+    if (showVacationSpl && !formData.vacationSplLocation) {
+      alert('Please select a location for Vacation/Special Privilege Leave.');
+      return;
+    }
+    if (showSickLeave && !formData.sickLeaveType) {
+      alert('Please select Sick Leave type (In Hospital / Out Patient).');
+      return;
+    }
+
+    if (cscValidation.errors && cscValidation.errors.length > 0) {
+      alert(`CSC Rule Non-Compliance:\n\n• ${cscValidation.errors.join('\n• ')}`);
+      return;
+    }
+
+    const missingDocs = activeRequiredDocs.filter((doc) => !attachedFiles[doc]);
+    if (missingDocs.length > 0) {
+      alert(`Please upload all required supporting attachments:\n\n• ${missingDocs.join('\n• ')}`);
+      return;
+    }
+
+    submitApplication(); 
   };
 
   const showVacationSpl = formData.leaveType === 'Vacation Leave' || formData.leaveType === 'Special Privilege Leave';
@@ -114,11 +296,11 @@ export default function LeaveApplication({ user, onLogout }) {
 
   return (
     <div className="dashboard-container">
-      <Sidebar />
+      <Sidebar onNavigate={handleNavigateAway} />
 
       <main className="leave-app-main">
         <div className="leave-app-wrapper">
-          <button type="button" className="leave-back-link" onClick={handleCancel}>
+          <button type="button" className="leave-back-link" onClick={() => handleNavigateAway('/dashboard')}>
             <ArrowLeft size={16} />
             <span>Back to Dashboard</span>
           </button>
@@ -173,12 +355,13 @@ export default function LeaveApplication({ user, onLogout }) {
               </div>
 
               <div className="form-field form-field-narrow" style={{ marginTop: '16px' }}>
-                <label className="form-field-label">Date of Filing</label>
+                <label className="form-field-label">Date of Filing <span className="req-asterisk">*</span></label>
                 <div className="form-input-icon-wrapper">
                   <input
                     name="filingDate"
                     type="date"
                     className="form-text-field"
+                    min={todayStr}
                     value={formData.filingDate}
                     onChange={handleChange}
                     required
@@ -196,7 +379,7 @@ export default function LeaveApplication({ user, onLogout }) {
 
               <div className="form-grid-2col">
                 <div className="form-field">
-                  <label className="form-field-label">Type of Leave Requested</label>
+                  <label className="form-field-label">Type of Leave Requested <span className="req-asterisk">*</span></label>
                   <select
                     name="leaveType"
                     className="form-select-field"
@@ -212,7 +395,7 @@ export default function LeaveApplication({ user, onLogout }) {
 
                   {showOthers && (
                     <div className="form-field" style={{ marginTop: '12px' }}>
-                      <label className="form-field-label">Specify Other Leave Type</label>
+                      <label className="form-field-label">Specify Other Leave Type <span className="req-asterisk">*</span></label>
                       <input
                         name="othersSpecify"
                         type="text"
@@ -238,7 +421,7 @@ export default function LeaveApplication({ user, onLogout }) {
 
                   {showVacationSpl && (
                     <div className="form-subgroup">
-                      <p className="form-subgroup-label"><Plane size={14} /> Vacation Location</p>
+                      <p className="form-subgroup-label"><Plane size={14} /> Vacation Location <span className="req-asterisk">*</span></p>
                       <div className="form-checkbox-row">
                         <label className={`radio-card ${formData.vacationSplLocation === 'within-ph' ? 'selected' : ''}`}>
                           <input type="radio" name="vacationSplLocation" value="within-ph" checked={formData.vacationSplLocation === 'within-ph'} onChange={handleChange} />
@@ -265,7 +448,7 @@ export default function LeaveApplication({ user, onLogout }) {
 
                   {showSickLeave && (
                     <div className="form-subgroup">
-                      <p className="form-subgroup-label"><Stethoscope size={14} /> Medical Location & Illness</p>
+                      <p className="form-subgroup-label"><Stethoscope size={14} /> Medical Location & Illness <span className="req-asterisk">*</span></p>
                       <div className="form-checkbox-row">
                         <label className={`radio-card ${formData.sickLeaveType === 'in-hospital' ? 'selected' : ''}`}>
                           <input type="radio" name="sickLeaveType" value="in-hospital" checked={formData.sickLeaveType === 'in-hospital'} onChange={handleChange} />
@@ -290,7 +473,7 @@ export default function LeaveApplication({ user, onLogout }) {
 
                   {showSpecialWomen && (
                     <div className="form-subgroup">
-                      <p className="form-subgroup-label"><Stethoscope size={14} /> Medical Details</p>
+                      <p className="form-subgroup-label"><Stethoscope size={14} /> Medical Details <span className="req-asterisk">*</span></p>
                       <input
                         name="illnessSpecify"
                         type="text"
@@ -305,7 +488,7 @@ export default function LeaveApplication({ user, onLogout }) {
 
                   {showStudyLeave && (
                     <div className="form-subgroup">
-                      <p className="form-subgroup-label"><GraduationCap size={14} /> Study Purpose</p>
+                      <p className="form-subgroup-label"><GraduationCap size={14} /> Study Purpose <span className="req-asterisk">*</span></p>
                       <div className="form-checkbox-row stacked">
                         <label className={`radio-card ${formData.studyLeavePurpose === 'masters' ? 'selected' : ''}`}>
                           <input type="radio" name="studyLeavePurpose" value="masters" checked={formData.studyLeavePurpose === 'masters'} onChange={handleChange} />
@@ -321,7 +504,7 @@ export default function LeaveApplication({ user, onLogout }) {
 
                   {showOthers && (
                     <div className="form-subgroup">
-                      <p className="form-subgroup-label"><Layers size={14} /> Purpose</p>
+                      <p className="form-subgroup-label"><Layers size={14} /> Purpose <span className="req-asterisk">*</span></p>
                       <div className="form-checkbox-row stacked">
                         <label className={`radio-card ${formData.othersPurpose === 'monetization' ? 'selected' : ''}`}>
                           <input type="radio" name="othersPurpose" value="monetization" checked={formData.othersPurpose === 'monetization'} onChange={handleChange} />
@@ -340,7 +523,7 @@ export default function LeaveApplication({ user, onLogout }) {
               {/* DATES & DAYS */}
               <div className="form-grid-2col" style={{ marginTop: '24px' }}>
                 <div className="form-field">
-                  <label className="form-field-label">Working Days Applied For</label>
+                  <label className="form-field-label">Working Days Applied For <span className="req-asterisk">*</span></label>
                   <input
                     name="workingDays"
                     type="number"
@@ -354,12 +537,13 @@ export default function LeaveApplication({ user, onLogout }) {
                   />
                 </div>
                 <div className="form-field">
-                  <label className="form-field-label">Inclusive Dates</label>
+                  <label className="form-field-label">Inclusive Dates <span className="req-asterisk">*</span></label>
                   <div className="date-range-row">
                     <input
                       name="inclusiveDateFrom"
                       type="date"
                       className="form-text-field"
+                      min={todayStr}
                       value={formData.inclusiveDateFrom}
                       onChange={handleChange}
                       required
@@ -369,6 +553,7 @@ export default function LeaveApplication({ user, onLogout }) {
                       name="inclusiveDateTo"
                       type="date"
                       className="form-text-field"
+                      min={formData.inclusiveDateFrom || todayStr}
                       value={formData.inclusiveDateTo}
                       onChange={handleChange}
                       required
@@ -391,11 +576,62 @@ export default function LeaveApplication({ user, onLogout }) {
                   </label>
                 </div>
               </div>
+
+              {/* CSC RULES dynamic feedback section */}
+              {cscValidation.errors && cscValidation.errors.length > 0 && (
+                <div style={{ marginTop: '20px', padding: '12px 16px', borderRadius: '6px', backgroundColor: '#FEF2F2', border: '1px solid #FCA5A5' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#991B1B', fontWeight: 600, fontSize: '14px', marginBottom: '6px' }}>
+                    <AlertCircle size={16} /> CSC Rule Non-Compliance Warnings
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '20px', color: '#B91C1C', fontSize: '13px' }}>
+                    {cscValidation.errors.map((err, idx) => (
+                      <li key={idx}>{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* REQUIRED ATTACHMENTS FILE UPLOAD BOX */}
+              {activeRequiredDocs.length > 0 && (
+                <div style={{ marginTop: '16px', padding: '16px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #93C5FD' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1E40AF', fontWeight: 600, fontSize: '14px', marginBottom: '4px' }}>
+                    <Paperclip size={16} /> Required Supporting Attachments (CS Form No. 6)
+                  </div>
+                  <p style={{ margin: '0 0 12px 0', color: '#1D4ED8', fontSize: '13px' }}>
+                    Please attach mandatory document(s) in PDF, PNG, or JPG format (Max 5MB each).
+                  </p>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {activeRequiredDocs.map((doc, idx) => (
+                      <div key={idx} style={{ background: '#FFFFFF', padding: '12px', borderRadius: '6px', border: '1px solid #BFDBFE' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: '#1E3A8A' }}>
+                            {doc} <span style={{ color: '#EF4444' }}>*</span>
+                          </span>
+                          {attachedFiles[doc] && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#059669', fontSize: '12px', fontWeight: 500 }}>
+                              <CheckCircle size={14} /> Attached
+                            </span>
+                          )}
+                        </div>
+
+                        <input
+                          type="file"
+                          accept=".pdf,.png,.jpg,.jpeg"
+                          onChange={(e) => handleFileChange(doc, e.target.files[0])}
+                          style={{ fontSize: '12px', width: '100%' }}
+                          required
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* ACTION BUTTONS */}
             <div className="form-action-row">
-              <button type="button" className="form-btn-cancel" onClick={handleCancel}>
+              <button type="button" className="form-btn-cancel" onClick={() => handleNavigateAway('/dashboard')}>
                 Cancel
               </button>
               <div className="primary-actions">
@@ -422,6 +658,14 @@ export default function LeaveApplication({ user, onLogout }) {
           user={user}
           onClose={() => setShowPreview(false)}
           onConfirm={submitApplication}
+        />
+      )}
+
+      {showUnsavedModal && (
+        <UnsavedChangesModal
+          onKeepEditing={() => setShowUnsavedModal(false)}
+          onDiscard={handleDiscardChanges}
+          onSaveDraft={handleSaveDraft}
         />
       )}
     </div>

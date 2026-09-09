@@ -6,6 +6,9 @@
   min-height: 100vh;
   padding: 32px 40px 64px;
   box-sizing: border-box;
+  flex: 1 1 auto;
+  width: 100%;
+  overflow-y: auto;
 }
 
 .leave-app-wrapper {
@@ -179,6 +182,12 @@
   font-size: 12px;
   font-weight: 600;
   color: #334155;
+}
+
+.req-asterisk {
+  color: #ef4444;
+  margin-left: 2px;
+  font-weight: bold;
 }
 
 .form-text-field,
@@ -365,18 +374,6 @@
 
 .form-btn-submit:hover {
   background: #5c0000;
-}
-
-.leave-app-main {
-  background: #f8fafc;
-  min-height: 100vh;
-  padding: 32px 40px 64px;
-  box-sizing: border-box;
-
-  /* ADD THESE THREE LINES: */
-  flex: 1 1 auto;
-  width: 100%;
-  overflow-y: auto;
 }
 
 /* ==========================================================================
