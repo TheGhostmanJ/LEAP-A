@@ -1,76 +1,88 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'; 
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 // Import features
-import Login from "./features/auth/login.jsx"; 
-import Dashboard from './features/dashboard/dashboard.jsx'; 
-import Attendance from './features/attendance/attendance.jsx'; 
-import LeaveHistory from './features/leave/leavehistory.jsx'; 
-import CreditLedger from './features/ledger/creditledger.jsx';
-import TrainingRecords from './features/training/trainingrecords.jsx';
+import Login from "./features/auth/login.jsx";
+import ChangePasswordRequest from "./features/auth/ChangePasswordRequest.jsx";
+import AccessDenied from './features/auth/access-denied.jsx';
+
+// Shared / Employee Features
+import Dashboard from './features/dashboard/dashboard.jsx';
+import Attendance from './features/attendance/attendance.jsx';
 import Profile from './features/profile/profile.jsx';
 import Support from './features/support/support.jsx';
+import LeaveHistory from './features/leave/leavehistory.jsx';
 import LeaveApplication from './features/leave/leaveapplication.jsx';
+import CreditLedger from './features/ledger/creditledger.jsx';
+import TrainingRecords from './features/training/trainingrecords.jsx';
+import EmployeeEvents from './features/training/employee-events.jsx'; // Added Employee Events
+
+// Management Features (HOD)
 import HodDashboard from './features/dashboard/hod-dashboard.jsx';
 import LeaveApprovals from './features/leave/leave-approvals.jsx';
 import WorkforceForecast from './features/workforce/workforce-forecast.jsx';
 import AnomalyAlert from './features/anomaly/anomaly-alert.jsx';
 import DepartmentReports from './features/reports/department-reports.jsx';
-import AccessDenied from './features/auth/access-denied.jsx';
+
+// HR Features
 import HrDashboard from './features/dashboard/hr-dashboard.jsx';
-import Onboarding from './features/hr/onboarding.jsx';
+import EventManagement from './features/hr/event-management.jsx';
 import Departments from './features/hr/departments.jsx';
 import Payroll from './features/hr/payroll.jsx';
 import ProfileRequests from './features/hr/profile-requests.jsx';
-import SystemConfig from './features/admin/system-config.jsx'; // Or wherever you saved this one!
+
+// IT Operations Features (Super Admin)
+import SystemConfig from './features/admin/system-config.jsx';
 import RoleManagement from './features/it/role-management.jsx';
 import DatabaseMetrics from './features/it/database-metrics.jsx';
 import ApiGateway from './features/it/api-gateway.jsx';
 import SystemSettings from './features/it/system-settings.jsx';
+import PasswordResetDashboard from './features/it/password-reset.jsx';
 
 import './index.css';
 
-const GOOGLE_CLIENT_ID = '718581008344-0pr3hqb4867olblp5e3n27fvom9klrrh.apps.googleusercontent.com'
+const GOOGLE_CLIENT_ID = '718581008344-0pr3hqb4867olblp5e3n27fvom9klrrh.apps.googleusercontent.com';
 
-// 1. SMART REDIRECT HELPER: Determines where a user should land upon login
+// 1. SMART REDIRECT HELPER
 const getRoleBasedHome = (role) => {
   if (role === 'Super Admin') return "/system-config";
-  if (role === 'HR Admin') return "/hr-dashboard"; // <--- Route HR here
-  if (role === 'Department Head') return "/hod-dashboard"; 
-  return "/dashboard"; 
+  if (role === 'HR Admin') return "/hr-dashboard";
+  if (role === 'Department Head') return "/hod-dashboard";
+  return "/dashboard";
 };
 
-// 2. THE GATEKEEPER COMPONENT: Protects routes based on user role
+// 2. PROTECTED ROUTE GATEKEEPER
 const ProtectedRoute = ({ user, allowedRoles, children }) => {
-  // Not logged in at all
   if (!user) {
-    return <Navigate to="/" replace />; 
+    return <Navigate to="/" replace />;
   }
   
-  // Account is disabled
-  if (user.role === 'Disabled') {
-    return <Navigate to="/access-denied" replace />; 
+  if (user.is_active === false) {
+    return <Navigate to="/access-denied" replace />;
   }
 
-  // Logged in, but lacks permission for this specific page
-  if (!allowedRoles.includes(user.role)) {
-    // Kick them back to their appropriate home page
-    return <Navigate to={getRoleBasedHome(user.role)} replace />;
+  // Safety fallback if user role is missing or invalid
+  const userRole = user.role || 'Employee Self-Service';
+
+  if (!allowedRoles.includes(userRole)) {
+    return <Navigate to={getRoleBasedHome(userRole)} replace />;
   }
 
-  // Access granted
   return children;
 };
 
 export default function Root() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(() => {
-    const savedUser = localStorage.getItem('active_user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    try {
+      const savedUser = localStorage.getItem('active_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (e) {
+      console.error("Error reading user session from localStorage:", e);
+      return null;
+    }
   });
 
   // Keep session synchronized with local storage
@@ -95,23 +107,42 @@ export default function Root() {
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.clear();
+    navigate('/');
   };
 
-  const ALL_ACTIVE_ROLES = ['Employee Self-Service', 'Department Head', 'HR Admin', 'Super Admin'];
+  // Roles access scopes
+  const ALL_ACTIVE_ROLES = [
+    'Restricted Self-Service',
+    'Employee Self-Service',
+    'Department Head',
+    'HR Admin',
+    'Super Admin',
+  ];
+
+  const FULL_SELF_SERVICE_ROLES = [
+    'Employee Self-Service',
+    'Department Head',
+    'HR Admin',
+    'Super Admin',
+  ];
+
   const MANAGEMENT_ROLES = ['Department Head', 'HR Admin', 'Super Admin'];
-  const IT_ROLES = ['Super Admin'];
 
   return (
     <Routes>
       {/* AUTHENTICATION ROUTE */}
       <Route 
         path="/" 
-        element={!currentUser ? <Login onLoginSuccess={handleLoginSuccess} /> : <Navigate to={getRoleBasedHome(currentUser.role)} />} 
+        element={!currentUser ? <Login onLoginSuccess={handleLoginSuccess} /> : <Navigate to={getRoleBasedHome(currentUser?.role)} replace />} 
+      />
+
+      {/* FORGOT PASSWORD / CHANGE PASSWORD REQUEST ROUTE */}
+      <Route 
+        path="/change-password-request" 
+        element={!currentUser ? <ChangePasswordRequest /> : <Navigate to={getRoleBasedHome(currentUser?.role)} replace />} 
       />
       
-      {/* ========================================================
-          STANDARD EMPLOYEE ROUTES (Accessible by everyone)
-          ======================================================== */}
+      {/* SHARED ACTIVE ROUTES (Accessible by everyone, including Restricted profiles) */}
       <Route path="/dashboard" element={
         <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
           <Dashboard onLogout={handleLogout} user={currentUser} />
@@ -120,21 +151,6 @@ export default function Root() {
       <Route path="/attendance" element={
         <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
           <Attendance onLogout={handleLogout} user={currentUser} />
-        </ProtectedRoute>
-      } />
-      <Route path="/leavehistory" element={
-        <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
-          <LeaveHistory onLogout={handleLogout} user={currentUser} />
-        </ProtectedRoute>
-      } />
-      <Route path="/creditledger" element={
-        <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
-          <CreditLedger onLogout={handleLogout} user={currentUser} />
-        </ProtectedRoute>
-      } />
-      <Route path="/trainingrecords" element={
-        <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
-          <TrainingRecords onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
       <Route path="/profile" element={
@@ -147,15 +163,35 @@ export default function Root() {
           <Support onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
+
+      {/* FULL SELF-SERVICE ROUTES */}
+      <Route path="/leavehistory" element={
+        <ProtectedRoute user={currentUser} allowedRoles={FULL_SELF_SERVICE_ROLES}>
+          <LeaveHistory onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
+      <Route path="/creditledger" element={
+        <ProtectedRoute user={currentUser} allowedRoles={FULL_SELF_SERVICE_ROLES}>
+          <CreditLedger onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
+      <Route path="/trainingrecords" element={
+        <ProtectedRoute user={currentUser} allowedRoles={FULL_SELF_SERVICE_ROLES}>
+          <TrainingRecords onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
+      <Route path="/employee-events" element={
+        <ProtectedRoute user={currentUser} allowedRoles={FULL_SELF_SERVICE_ROLES}>
+          <EmployeeEvents onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
       <Route path="/leaveapplication" element={
-        <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
-          <LeaveApplication user={currentUser} onNavigate={(path) => navigate(`/${path}`)} />
+        <ProtectedRoute user={currentUser} allowedRoles={FULL_SELF_SERVICE_ROLES}>
+          <LeaveApplication user={currentUser} onLogout={handleLogout} onNavigate={(path) => navigate(path.startsWith('/') ? path : `/${path}`)} />
         </ProtectedRoute>
       } />
 
-      {/* ========================================================
-          MANAGEMENT ROUTES (HOD & HR Admin)
-          ======================================================== */}
+      {/* MANAGEMENT ROUTES (HODs & HR) */}
       <Route path="/hod-dashboard" element={
         <ProtectedRoute user={currentUser} allowedRoles={MANAGEMENT_ROLES}>
           <HodDashboard onLogout={handleLogout} user={currentUser} />
@@ -181,23 +217,23 @@ export default function Root() {
           <DepartmentReports onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
+
+      {/* HR SPECIFIC ROUTES */}
       <Route path="/hr-dashboard" element={
         <ProtectedRoute user={currentUser} allowedRoles={['HR Admin', 'Super Admin']}>
           <HrDashboard onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
-      <Route path="/onboarding" element={
+      <Route path="/event-management" element={
         <ProtectedRoute user={currentUser} allowedRoles={['HR Admin', 'Super Admin']}>
-          <Onboarding onLogout={handleLogout} user={currentUser} />
+          <EventManagement onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
-      
       <Route path="/departments" element={
         <ProtectedRoute user={currentUser} allowedRoles={['HR Admin', 'Super Admin']}>
           <Departments onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
-      
       <Route path="/payroll" element={
         <ProtectedRoute user={currentUser} allowedRoles={['HR Admin', 'Super Admin']}>
           <Payroll onLogout={handleLogout} user={currentUser} />
@@ -208,40 +244,38 @@ export default function Root() {
           <ProfileRequests onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
-{/* ==========================================
-          IT OPERATIONS ROUTES (Super Admin Only)
-          ========================================== */}
-      
+
+      {/* IT OPERATIONS ROUTES (Super Admin Only) */}
       <Route path="/system-config" element={
         <ProtectedRoute user={currentUser} allowedRoles={['Super Admin']}>
           <SystemConfig onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
-
       <Route path="/role-management" element={
         <ProtectedRoute user={currentUser} allowedRoles={['Super Admin']}>
           <RoleManagement onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
-
       <Route path="/database-metrics" element={
         <ProtectedRoute user={currentUser} allowedRoles={['Super Admin']}>
           <DatabaseMetrics onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
-
       <Route path="/api-gateway" element={
         <ProtectedRoute user={currentUser} allowedRoles={['Super Admin']}>
           <ApiGateway onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
-
+      <Route path="/password-reset-requests" element={
+        <ProtectedRoute user={currentUser} allowedRoles={['Super Admin']}>
+          <PasswordResetDashboard onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
       <Route path="/system-settings" element={
         <ProtectedRoute user={currentUser} allowedRoles={['Super Admin']}>
           <SystemSettings onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
-
 
       {/* ACCESS DENIED ROUTE */}
       <Route 
@@ -250,25 +284,30 @@ export default function Root() {
       />
 
       {/* FALLBACK CATCH-ALL */}
-      <Route path="*" element={<Navigate to={currentUser ? getRoleBasedHome(currentUser.role) : "/"} />} />
+      <Route path="*" element={<Navigate to={currentUser ? getRoleBasedHome(currentUser.role) : "/"} replace />} />
     </Routes>
   );
 }
 
-const metaTheme = document.createElement('meta');
-metaTheme.name = "color-scheme";
-metaTheme.content = "light only";
-document.head.appendChild(metaTheme);
+// Meta Tag Helper
+if (!document.querySelector('meta[name="color-scheme"]')) {
+  const metaTheme = document.createElement('meta');
+  metaTheme.name = "color-scheme";
+  metaTheme.content = "light only";
+  document.head.appendChild(metaTheme);
+}
 
+// Render Setup
 const rootElement = document.getElementById('root');
-const root = ReactDOM.createRoot(rootElement);
-
-root.render(
-  <React.StrictMode>
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <BrowserRouter>
-        <Root />
-      </BrowserRouter>
-    </GoogleOAuthProvider>
-  </React.StrictMode>
-);
+if (rootElement) {
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
+    <React.StrictMode>
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+        <BrowserRouter>
+          <Root />
+        </BrowserRouter>
+      </GoogleOAuthProvider>
+    </React.StrictMode>
+  );
+}

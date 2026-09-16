@@ -1,0 +1,334 @@
+/* ==========================================================================
+   ROLE MANAGEMENT (RBAC) MODULE - STYLESHEET (ENHANCED READABILITY)
+   ========================================================================== */
+
+.rbac-container {
+  display: flex;
+  height: 100vh;
+  max-height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: #f4f5f7;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #1f2937;
+}
+
+.rbac-main-content {
+  flex: 1;
+  height: 100vh;
+  padding: 28px 36px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+/* METRICS ROW */
+.rbac-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 36px;
+  margin-bottom: 24px;
+}
+
+.rbac-stat-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.rbac-stat-icon-box {
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rbac-stat-icon-box.maroon {
+  background-color: #fde8e8;
+  color: #680000;
+}
+
+.rbac-stat-icon-box.green {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.rbac-stat-icon-box.amber {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.rbac-stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.rbac-stat-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #6b7280;
+  letter-spacing: 0.5px;
+}
+
+.rbac-stat-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.rbac-stat-sub {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+/* TOOLBAR & SEARCH */
+.rbac-utilities-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.rbac-search-wrapper {
+  position: relative;
+  width: 380px;
+}
+
+.rbac-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+.rbac-search-input {
+  width: 100%;
+  padding: 10px 14px 10px 42px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: #1e293b;
+  background-color: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.rbac-search-input:focus {
+  border-color: #680000;
+  box-shadow: 0 0 0 3px rgba(104, 0, 0, 0.08);
+}
+
+.rbac-audit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.rbac-audit-btn:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.rbac-audit-btn.active {
+  background-color: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+/* CARD CONTAINER */
+.rbac-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.rbac-card-header {
+  background-color: #680000;
+  color: #ffffff;
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rbac-header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.rbac-active-count {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.rbac-card-body {
+  padding: 0;
+}
+
+/* EMPTY STATE */
+.rbac-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 24px;
+  color: #6b7280;
+  font-size: 14px;
+  gap: 12px;
+}
+
+/* TABLE STYLING */
+.rbac-table-wrapper {
+  overflow-x: auto;
+}
+
+.rbac-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  text-align: left;
+}
+
+.rbac-table th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 14px 22px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.rbac-table td {
+  padding: 16px 22px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.rbac-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.rbac-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.rbac-emp-id {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.rbac-user-name {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.rbac-dept {
+  color: #475569;
+  font-weight: 500;
+}
+
+/* STATUS BADGES */
+.rbac-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rbac-status-badge.active {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.rbac-status-badge.suspended {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* ROLE SELECT CONTROL */
+.rbac-role-select {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  background-color: #ffffff;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+  max-width: 220px;
+  transition: border-color 0.15s ease;
+}
+
+.rbac-role-select:focus {
+  border-color: #680000;
+}
+
+/* BUTTONS */
+.rbac-update-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #16a34a;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rbac-update-btn:hover {
+  background-color: #15803d;
+  box-shadow: 0 1px 3px rgba(22, 163, 74, 0.2);
+}
+
+.rbac-update-btn.saved {
+  background-color: #0f766e;
+}
+
+.text-center {
+  text-align: center;
+}

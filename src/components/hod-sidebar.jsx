@@ -108,7 +108,9 @@ export default function HodSidebar() {
         </div>
 
         {/* MAIN NAVIGATION SECTION */}
-        {!isCollapsed && <div className="sidebar-section-label">HOD Menu</div>}
+        <div className="sidebar-section-label">
+          {!isCollapsed && "HOD Menu"}
+        </div>
         <ul className="sidebar-menu">
           {mainMenuItems.map((item) => (
             <li
@@ -118,14 +120,16 @@ export default function HodSidebar() {
               onMouseEnter={(e) => handleMouseEnter(e, item.label)}
               onMouseLeave={handleMouseLeave}
             >
-              <item.icon size={18} className="sidebar-item-icon" />
+              <item.icon size={20} className="sidebar-item-icon" />
               {!isCollapsed && <span className="sidebar-item-label">{item.label}</span>}
             </li>
           ))}
         </ul>
 
         {/* PERSONAL EMPLOYEE RECORDS SECTION */}
-        {!isCollapsed && <div className="sidebar-section-label" style={{ marginTop: '16px' }}>My Employee Records</div>}
+        <div className="sidebar-section-label">
+          {!isCollapsed && "My Employee Records"}
+        </div>
         <ul className="sidebar-menu">
           {employeeMenuItems.map((item) => (
             <li
@@ -135,14 +139,16 @@ export default function HodSidebar() {
               onMouseEnter={(e) => handleMouseEnter(e, item.label)}
               onMouseLeave={handleMouseLeave}
             >
-              <item.icon size={18} className="sidebar-item-icon" />
+              <item.icon size={20} className="sidebar-item-icon" />
               {!isCollapsed && <span className="sidebar-item-label">{item.label}</span>}
             </li>
           ))}
         </ul>
 
         {/* GENERAL SECTION */}
-        {!isCollapsed && <div className="sidebar-section-label" style={{ marginTop: '16px' }}>Account</div>}
+        <div className="sidebar-section-label">
+          {!isCollapsed && "Account"}
+        </div>
         <ul className="sidebar-menu">
           {generalMenuItems.map((item) => (
             <li
@@ -152,7 +158,7 @@ export default function HodSidebar() {
               onMouseEnter={(e) => handleMouseEnter(e, item.label)}
               onMouseLeave={handleMouseLeave}
             >
-              <item.icon size={18} className="sidebar-item-icon" />
+              <item.icon size={20} className="sidebar-item-icon" />
               {!isCollapsed && <span className="sidebar-item-label">{item.label}</span>}
             </li>
           ))}
@@ -161,7 +167,7 @@ export default function HodSidebar() {
         {/* FOOTER AREA */}
         <div className="sidebar-footer">
           <div className="datetime-box">
-            <Clock size={18} className="datetime-icon" />
+            <Clock size={20} className="datetime-icon" />
             {!isCollapsed && (
               <div className="datetime-text">
                 <span>{formattedDate}</span>

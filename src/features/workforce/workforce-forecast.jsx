@@ -1,39 +1,90 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { 
+  BarChart3, 
+  Info, 
+  AlertTriangle, 
+  AlertCircle, 
+  SlidersHorizontal, 
+  ArrowRight,
+  Loader2
+} from 'lucide-react';
+
+/* SIDEBAR & HEADER COMPONENTS */
 import HodSidebar from '../../components/hod-sidebar'; 
 import HrSidebar from '../../components/hr-sidebar'; 
 import Header from '../../components/Header';
-import { BarChart3, Info, AlertTriangle, AlertCircle, SlidersHorizontal, ArrowRight } from 'lucide-react';
+
 import './workforce-forecast.css';
 
 export default function WorkforceForecast({ onLogout, user }) {
+  const [forecastData, setForecastData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchForecast = async () => {
+      setIsLoading(true);
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        
+        // HR Admins see global data, HODs see their department
+        const deptParam = user?.role === 'HR Admin' ? '' : `?department=${encodeURIComponent(user?.department || '')}`;
+        
+        const response = await fetch(`${apiUrl}/api/workforce-forecast${deptParam}`);
+        if (response.ok) {
+          const data = await response.json();
+          setForecastData(data);
+        }
+      } catch (error) {
+        console.error("Failed to load workforce forecast:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user) fetchForecast();
+  }, [user]);
+
   const renderSidebar = () => {
     switch (user?.role) {
       case 'HR Admin':
-        return <HrSidebar />;
+        return <HrSidebar user={user} />;
       case 'Department Head':
       default:
-        return <HodSidebar />;
+        return <HodSidebar user={user} />;
     }
   };
 
+  // Helper to draw the SVG Line graph dynamically based on 30-day percentages
+  const generateSvgPath = () => {
+    if (!forecastData || !forecastData.forecast) return "";
+    const points = forecastData.forecast.map((day, index) => {
+      const x = (index / 29) * 100; // Spread evenly across 100% width
+      // Y axis maps 75% to 100%. (100 - value) / 25 * 100
+      const clampedVal = Math.max(75, Math.min(100, day.availablePercentage));
+      const y = ((100 - clampedVal) / 25) * 100; 
+      return `${x},${y}`;
+    });
+    return `M ${points.join(' L ')}`;
+  };
+
   return (
-    <div className="dashboard-container hod-view-wrapper">
+    <div className="wf-dashboard-container">
       {/* Navigation Column */}
       {renderSidebar()}
 
-      {/* Main Viewport Content Surface with entrance animation */}
-      <main className="dashboard-main-content fade-in-up">
+      {/* Main Viewport Area */}
+      <main className="wf-main-content fade-in-up">
         
-        {/* STANDARDIZED GLOBAL HEADER */}
-        <header className="dashboard-global-header">
-          <div className="welcome-greeting page-title-layout">
-            <BarChart3 size={24} className="tr-icon-maroon" /> 
-            <div className="title-text-group">
+        {/* STANDARDIZED HEADER */}
+        <header className="wf-header-row">
+          <div className="wf-title-wrapper">
+            <BarChart3 size={28} className="wf-icon-maroon" /> 
+            <div className="wf-title-text">
               <h2>
-                <span className="cl-title-dark">Workforce</span> <span className="cl-title-maroon">Forecast</span>
+                <span className="wf-title-dark">Workforce</span> <span className="wf-title-maroon">Forecast</span>
               </h2>
-              <p className="subtitle-department">
-                Department: <span className="highlight-maroon">{user?.department || 'Unassigned'}</span>
+              <p className="wf-subtitle">
+                Department: <span className="wf-highlight-maroon">{user?.role === 'HR Admin' ? 'All Departments' : user?.department || 'Unassigned'}</span>
               </p>
             </div>
           </div>
@@ -41,174 +92,224 @@ export default function WorkforceForecast({ onLogout, user }) {
           <Header user={user} onLogout={onLogout} />
         </header>
 
-        {/* SUMMARY CARDS HEADER GRID */}
-        <section className="forecast-summary-metrics-row">
-          <div className="forecast-stat-card">
-            <div className="stat-left-labels">
-              <span className="stat-main-label">Total Staff</span>
-              <span className="stat-subtext-label">Active Employees: 230</span>
-            </div>
-            <div className="stat-right-numbers text-green-value">250</div>
-            <Info size={14} className="card-info-indicator" />
+        {isLoading || !forecastData ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '50vh', color: '#64748b' }}>
+            <Loader2 size={32} className="spin" style={{ color: '#800000', marginBottom: '16px' }} />
+            <p>Analyzing workforce availability patterns...</p>
           </div>
-
-          <div className="forecast-stat-card">
-            <div className="stat-left-labels">
-              <span className="stat-main-label">Available Staff</span>
-              <span className="stat-subtext-label">On-duty today</span>
-            </div>
-            <div className="stat-right-numbers text-dark-value">210</div>
-            <Info size={14} className="card-info-indicator" />
-          </div>
-
-          <div className="forecast-stat-card">
-            <div className="stat-left-labels">
-              <span className="stat-main-label">On Leave</span>
-              <span className="stat-subtext-label">Pending Approvals: 15</span>
-            </div>
-            <div className="stat-right-numbers text-yellow-value">8</div>
-            <Info size={14} className="card-info-indicator" />
-          </div>
-        </section>
-
-        {/* TWO-COLUMN GRID LAYOUT */}
-        <div className="forecast-grid-split">
-          
-          {/* LEFT SIDE PANELS */}
-          <div className="forecast-left-column">
-            
-            {/* 30 Day Availability Graph Box */}
-            <div className="content-data-box main-chart-box">
-              <div className="box-header-title space-between-header">
-                <span>30 Day Workforce Availability Forecast</span>
-                <SlidersHorizontal size={16} className="header-filter-icon" />
+        ) : (
+          <>
+            {/* SUMMARY METRICS ROW */}
+            <section className="wf-metrics-grid">
+              <div className="wf-stat-card">
+                <div className="wf-stat-info">
+                  <span className="wf-stat-label">Total Staff</span>
+                  <span className="wf-stat-subtext">Active Employees</span>
+                </div>
+                <div className="wf-stat-number text-green">{forecastData.totalStaff}</div>
+                <Info size={16} className="wf-info-icon" />
               </div>
-              <div className="chart-wrapper-body">
-                <div className="mock-svg-graph-container">
-                  <div className="y-axis-labels">
-                    <span>100%</span>
-                    <span>90%</span>
-                    <span>85%</span>
-                    <span>80%</span>
-                    <span>75%</span>
+
+              <div className="wf-stat-card">
+                <div className="wf-stat-info">
+                  <span className="wf-stat-label">Available Staff</span>
+                  <span className="wf-stat-subtext">On-duty today</span>
+                </div>
+                <div className="wf-stat-number text-dark">{forecastData.availableToday}</div>
+                <Info size={16} className="wf-info-icon" />
+              </div>
+
+              <div className="wf-stat-card">
+                <div className="wf-stat-info">
+                  <span className="wf-stat-label">On Leave</span>
+                  <span className="wf-stat-subtext">Pending Approvals: <b>{forecastData.pendingLeaves}</b></span>
+                </div>
+                <div className="wf-stat-number text-amber">{forecastData.onLeaveToday}</div>
+                <Info size={16} className="wf-info-icon" />
+              </div>
+            </section>
+
+            {/* TWO-COLUMN LAYOUT GRID */}
+            <div className="wf-grid-split">
+              
+              {/* LEFT COLUMN: GRAPH & BREAKDOWN TABLE */}
+              <div className="wf-left-col">
+                
+                {/* 30-Day Forecast Box */}
+                <div className="wf-card-box">
+                  <div className="wf-card-header">
+                    <h3>30 Day Workforce Availability Forecast</h3>
+                    <SlidersHorizontal size={18} className="wf-header-icon" />
                   </div>
-                  <div className="graph-image-mask">
-                    <div className="mock-graph-vector-line"></div>
-                    <div className="critical-dip-marker-pulse">
-                      <span className="critical-label-pill">Critical Availability Dip &lt;90%</span>
+
+                  <div className="wf-chart-body">
+                    <div className="wf-graph-container">
+                      <div className="wf-y-axis">
+                        <span>100%</span>
+                        <span>90%</span>
+                        <span>85%</span>
+                        <span>80%</span>
+                        <span>75%</span>
+                      </div>
+
+                      <div className="wf-graph-canvas" style={{ position: 'relative', width: '100%', height: '100%' }}>
+                        {/* Dynamic SVG Line Graph */}
+                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', top: 0, left: 0, overflow: 'visible' }}>
+                           <polyline 
+                              points={generateSvgPath()} 
+                              fill="none" 
+                              stroke="#800000" 
+                              strokeWidth="2"
+                              vectorEffect="non-scaling-stroke"
+                           />
+                           {/* Add points for critical dips */}
+                           {forecastData.forecast.map((day, i) => {
+                              if (day.availablePercentage < 90) {
+                                const x = (i / 29) * 100;
+                                const y = ((100 - Math.max(75, day.availablePercentage)) / 25) * 100;
+                                return (
+                                  <circle key={i} cx={`${x}%`} cy={`${y}%`} r="3" fill="#dc2626" />
+                                );
+                              }
+                              return null;
+                           })}
+                        </svg>
+                        
+                        {forecastData.alerts.some(a => a.type === 'critical') && (
+                          <div className="wf-dip-pulse" style={{ left: '50%', top: '40%' }}>
+                            <span className="wf-dip-pill">Critical Availability Dip &lt;90%</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* X-Axis Days */}
+                    <div className="wf-x-axis-row">
+                      <div className="wf-x-spacer"></div>
+                      <div className="wf-x-days">
+                        {forecastData.forecast.map((day, i) => (
+                          // Only show every 3rd day to prevent crowding
+                          i % 3 === 0 ? <span key={i}>{day.dateStr}</span> : <span key={i}></span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Legend */}
+                    <div className="wf-graph-legend">
+                      <span className="wf-legend-item">
+                        <span className="wf-line maroon"></span> Current Forecast
+                      </span>
+                      <span className="wf-legend-item">
+                        <span className="wf-line dashed"></span> Historical Avg
+                      </span>
+                      <span className="wf-legend-item">
+                        <span className="wf-square gray"></span> Weekend
+                      </span>
                     </div>
                   </div>
-                </div>
-                {/* Timeline Grid X-Axis */}
-                <div className="x-axis-timeline-wrapper">
-                  <div className="x-axis-spacer"></div>
-                  <div className="x-axis-days">
-                    {Array.from({ length: 30 }, (_, i) => <span key={i+1}>{i+1}</span>)}
+
+                  <div className="wf-card-footer-link">
+                    <span>View Full Forecast Detail <ArrowRight size={14} /></span>
                   </div>
                 </div>
-                {/* Legend Rules */}
-                <div className="graph-footer-legend">
-                  <span className="legend-item"><span className="legend-line maroon-line"></span> Current Forecast</span>
-                  <span className="legend-item"><span className="legend-line dashed-line"></span> Historical Avg</span>
-                  <span className="legend-item"><span className="legend-square gray-box"></span> Weekend</span>
+
+                {/* Availability Breakdown Table */}
+                <div className="wf-card-box">
+                  <div className="wf-card-header">
+                    <h3>Workforce Availability Breakdown</h3>
+                    <SlidersHorizontal size={18} className="wf-header-icon" />
+                  </div>
+
+                  <div className="wf-table-wrapper">
+                    <table className="wf-data-table">
+                      <thead>
+                        <tr>
+                          <th>Date Range</th>
+                          <th className="text-center">Available Staff</th>
+                          <th className="text-center">Required (90%)</th>
+                          <th className="text-center">Risk Level</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {forecastData.breakdowns.length === 0 ? (
+                          <tr><td colSpan="4" className="text-center" style={{padding: '16px', color: '#64748b'}}>All operations stable for the next 30 days.</td></tr>
+                        ) : (
+                          forecastData.breakdowns.map((br, idx) => (
+                            <tr key={idx}>
+                              <td className="wf-td-bold">{br.dateRange}</td>
+                              <td className="text-center">{br.available}</td>
+                              <td className="text-center">{br.required}</td>
+                              <td className="text-center">
+                                <span className={`wf-risk-badge ${br.riskLevel === 'High' ? 'critical' : br.riskLevel === 'Moderate' ? 'mod' : 'low'}`}>
+                                  {br.riskLevel} Risk
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-              <div className="box-footer-action-link">
-                <span>View Full Forecast Detail <ArrowRight size={14} /></span>
-              </div>
-            </div>
 
-            {/* Workforce Availability Table */}
-            <div className="content-data-box table-box-margin">
-              <div className="box-header-title space-between-header">
-                <span>Workforce Availability Breakdown</span>
-                <SlidersHorizontal size={16} className="header-filter-icon" />
               </div>
-              <div className="table-responsive-scroll">
-                <table className="data-display-table">
-                  <thead>
-                    <tr>
-                      <th>Date Range</th>
-                      <th className="text-center">Available Staff</th>
-                      <th className="text-center">Required</th>
-                      <th className="text-center">Risk Level</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="font-semibold">May 1–15</td>
-                      <td className="text-center">225</td>
-                      <td className="text-center">200</td>
-                      <td className="text-center">
-                        <span className="risk-badge risk-badge-low">Low Risk</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="font-semibold">May 16–18</td>
-                      <td className="text-center">215</td>
-                      <td className="text-center">200</td>
-                      <td className="text-center">
-                        <span className="risk-badge risk-badge-moderate">Moderate Risk</span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
 
-          </div>
-
-          {/* RIGHT SIDE PANELS */}
-          <div className="forecast-right-column">
-            
-            {/* Staffing Risk Alert Card */}
-            <div className="content-data-box paddingless-box">
-              <div className="box-header-title">Staffing Risk Alerts</div>
-              <div className="alert-list-wrapper">
+              {/* RIGHT COLUMN: RISKS & SUGGESTIONS */}
+              <div className="wf-right-col">
                 
-                <div className="alert-item-row">
-                  <AlertCircle size={18} className="alert-icon-red" />
-                  <p className="alert-text">
-                    <span className="alert-bold-tag text-red">Critical Dip:</span> May 20–22 availability drops below the 90% operational threshold.
-                  </p>
+                {/* Risk Alerts */}
+                <div className="wf-card-box">
+                  <div className="wf-card-header">
+                    <h3>Staffing Risk Alerts</h3>
+                  </div>
+
+                  <div className="wf-alert-list">
+                    {forecastData.alerts.length === 0 ? (
+                      <div style={{ padding: '16px', color: '#059669', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <CheckCircle2 size={18} /> No critical alerts at this time.
+                      </div>
+                    ) : (
+                      forecastData.alerts.map((alert, idx) => (
+                        <div key={idx} className="wf-alert-item">
+                          {alert.type === 'critical' ? (
+                            <AlertCircle size={20} className="icon-red" />
+                          ) : (
+                            <AlertTriangle size={20} className="icon-amber" />
+                          )}
+                          <p className="wf-alert-msg">
+                            <span className={`wf-alert-tag ${alert.type === 'critical' ? 'text-red' : 'text-amber'}`}>
+                              {alert.tag}:
+                            </span> {alert.message}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
 
-                <div className="alert-item-row">
-                  <AlertTriangle size={18} className="alert-icon-yellow" />
-                  <p className="alert-text">
-                    <span className="alert-bold-tag text-yellow">Team Congestion:</span> Engineering Team availability below required (9/15 staff).
-                  </p>
-                </div>
-
-                <div className="alert-item-row">
-                  <AlertTriangle size={18} className="alert-icon-yellow" />
-                  <p className="alert-text">
-                    <span className="alert-bold-tag text-yellow">Concurrent Leaves:</span> 5 staff members have overlapping requested leaves.
-                  </p>
+                {/* Automated Scheduling Suggestion */}
+                <div className="wf-suggestion-card">
+                  <div className="wf-suggestion-header">
+                    <AlertCircle size={20} className="wf-icon-maroon" />
+                    <h3>Automated Scheduling Suggestion</h3>
+                  </div>
+                  <div className="wf-suggestion-body">
+                    <p className="suggestion-description">
+                      {forecastData.suggestion || "Workforce levels are optimal. No automated scheduling interventions are required at this time."}
+                    </p>
+                    {forecastData.suggestion && (
+                      <button type="button" className="wf-action-btn">
+                        Apply Deferral Plan
+                      </button>
+                    )}
+                  </div>
                 </div>
 
               </div>
+
             </div>
-
-            {/* Automated Scheduling Suggestion Box */}
-            <div className="content-data-box border-suggestion-box">
-              <div className="box-header-title bg-transparent text-maroon-title">
-                <AlertCircle size={18} className="suggestion-title-icon" /> Automated Scheduling Suggestion
-              </div>
-              <div className="suggestion-inner-body">
-                <p className="suggestion-description">
-                  For the May 20–22 risk period, deferring 3 of the 5 pending Staff Team leave requests to June 1–5 restores the minimum requirement and mitigates the critical dip.
-                </p>
-                <button type="button" className="apply-deferral-action-btn">
-                  Apply Deferral Plan
-                </button>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-
+          </>
+        )}
       </main>
     </div>
   );

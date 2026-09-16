@@ -1,0 +1,321 @@
+/* ==========================================================================
+   API GATEWAY LOGS MODULE - STYLESHEET (ENHANCED READABILITY)
+   ========================================================================== */
+
+.apig-container {
+  display: flex;
+  height: 100vh;
+  max-height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: #f4f5f7;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #1f2937;
+}
+
+.apig-main-content {
+  flex: 1;
+  height: 100vh;
+  padding: 28px 36px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+/* METRICS ROW */
+.apig-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 36px;
+  margin-bottom: 24px;
+}
+
+.apig-stat-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.apig-stat-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.apig-stat-icon-box.maroon {
+  background-color: #fde8e8;
+  color: #680000;
+}
+
+.apig-stat-icon-box.green {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.apig-stat-icon-box.amber {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.apig-stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.apig-stat-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #6b7280;
+  letter-spacing: 0.5px;
+}
+
+.apig-stat-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.apig-stat-sub {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+/* SEARCH & TOOLBAR ROW */
+.apig-utilities-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.apig-search-wrapper {
+  position: relative;
+  width: 360px;
+}
+
+.apig-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+.apig-search-input {
+  width: 100%;
+  padding: 10px 14px 10px 42px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: #1e293b;
+  background-color: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.apig-search-input:focus {
+  border-color: #680000;
+  box-shadow: 0 0 0 3px rgba(104, 0, 0, 0.08);
+}
+
+.apig-refresh-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  color: #475569;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.apig-refresh-pill strong {
+  color: #680000;
+}
+
+/* MAIN CARD CONTAINER */
+.apig-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.apig-card-header {
+  background-color: #111827;
+  color: #ffffff;
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.apig-header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.apig-active-count {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.apig-card-body {
+  padding: 0;
+}
+
+/* EMPTY STATE */
+.apig-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 24px;
+  color: #6b7280;
+  font-size: 14px;
+  gap: 12px;
+}
+
+/* LOG TABLE STYLING */
+.apig-table-wrapper {
+  overflow-x: auto;
+}
+
+.apig-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  text-align: left;
+}
+
+.apig-table th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 14px 22px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.apig-table td {
+  padding: 16px 22px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.apig-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.apig-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.apig-time-cell {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* METHOD BADGES */
+.apig-method-badge {
+  font-weight: 800;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  display: inline-block;
+}
+
+.apig-method-badge.get {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.apig-method-badge.post {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.apig-method-badge.put {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.apig-method-badge.delete {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+/* ENDPOINT MONOSPACE */
+.apig-endpoint-cell {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 13.5px;
+}
+
+/* STATUS PILLS */
+.apig-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.apig-status-pill.success {
+  color: #16a34a;
+}
+
+.apig-status-pill.error {
+  color: #dc2626;
+}
+
+/* LATENCY TEXT */
+.apig-latency-text {
+  font-weight: 600;
+  color: #475569;
+  font-size: 13px;
+}
+
+.apig-latency-text.slow {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* ANIMATIONS */
+.spin-slow {
+  animation: spin 6s linear infinite;
+  color: #680000;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

@@ -16,8 +16,16 @@ import {
   Send,
   ArrowRight
 } from 'lucide-react';
+
+// Dynamic Sidebars
 import Sidebar from '../../components/sidebar.jsx';
+import HodSidebar from '../../components/hod-sidebar.jsx';
+import HrSidebar from '../../components/hr-sidebar.jsx';
+import ItSidebar from '../../components/it-sidebar.jsx';
+
+// Shared Components
 import Header from '../../components/Header.jsx';
+
 import './support.css';
 
 export default function Support({ onLogout, user }) {
@@ -41,6 +49,20 @@ export default function Support({ onLogout, user }) {
     navigator.clipboard.writeText(text);
     setCopiedText(text);
     setTimeout(() => setCopiedText(null), 2000);
+  };
+
+  // Dynamically render the correct sidebar based on user role
+  const renderSidebar = () => {
+    switch (user?.role) {
+      case 'Super Admin':
+        return <ItSidebar user={user} />;
+      case 'HR Admin':
+        return <HrSidebar user={user} />;
+      case 'Department Head':
+        return <HodSidebar user={user} />;
+      default:
+        return <Sidebar user={user} />;
+    }
   };
 
   const guidesContent = {
@@ -113,10 +135,11 @@ export default function Support({ onLogout, user }) {
 
   return (
     <div className="support-layout-container">
-      <Sidebar />
+      {/* Dynamic Sidebar Injection */}
+      {renderSidebar()}
 
       {/* MAIN WORKSPACE CANVAS */}
-      <main className="support-main-content">
+      <main className="support-main-content fade-in-up">
 
         {/* TOP VIEW HEADER */}
         <header className="support-header">

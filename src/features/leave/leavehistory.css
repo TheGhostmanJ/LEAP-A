@@ -181,6 +181,13 @@
   background-color: #4a080e;
 }
 
+/* Added: was referenced in leavehistory.jsx for the Emergency Leave
+   segment of the "Leaves Used" bar but was missing from this stylesheet,
+   matching the slate color already used in the donut legend. */
+.seg-emergency {
+  background-color: #475569;
+}
+
 .seg-empty {
   background-color: transparent;
 }
@@ -233,6 +240,19 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
 }
 
+/* Added: header row so "Filter Options" and the new Clear Filters
+   button sit on the same line instead of stacking awkwardly. */
+.filter-panel-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.filter-panel-header-row .filter-section-title {
+  margin-bottom: 0;
+}
+
 .filter-section-title {
   font-size: 12px;
   font-weight: 800;
@@ -245,10 +265,47 @@
   gap: 6px;
 }
 
+/* Added: the "Clear Filters" button that appears once a filter is active */
+.lh-clear-filters-btn {
+  background: none;
+  border: 1px solid #cbd5e1;
+  color: #7a0000;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.lh-clear-filters-btn:hover {
+  background-color: #fdf1f1;
+  border-color: #7a0000;
+}
+
+/* Changed: auto-fit instead of a rigid 4-column grid, so fields keep a
+   sane minimum width and wrap on smaller screens instead of squeezing. */
 .filter-controls-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 16px;
+  align-items: end;
+}
+
+/* Added: lets the search field claim extra width when there's room,
+   since keyword search benefits most from it. Falls back to a single
+   column on narrower layouts via the media query below. */
+.filter-field-search {
+  grid-column: span 2;
+}
+
+@media (max-width: 900px) {
+  .filter-field-search {
+    grid-column: span 1;
+  }
 }
 
 .filter-field-wrapper {
@@ -302,6 +359,13 @@
   outline: none;
   appearance: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Added: the two native date inputs have no right-side icon anymore,
+   so they don't need the reserved 32px of right padding the old
+   text-based date field used for its calendar icon. */
+.filter-input-element[type="date"] {
+  padding-right: 12px;
 }
 
 .filter-input-element.has-left-icon {

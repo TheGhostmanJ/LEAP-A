@@ -26,7 +26,7 @@ body,
    SIDEBAR NAV MASTER HOUSING
    ========================================================================== */
 .dashboard-sidebar {
-  width: 260px;
+  width: 270px;
   height: 100vh;
   background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
   display: flex;
@@ -121,26 +121,42 @@ body,
 }
 
 .sidebar-section-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: #9ca3af;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  padding: 8px 16px 4px 16px;
+  padding: 12px 16px 6px 16px;
+  transition: all 0.2s ease;
+}
+
+/* Converts section label into a centered divider line when collapsed */
+.dashboard-sidebar.collapsed .sidebar-section-label {
+  font-size: 0;
+  line-height: 0;
+  padding: 0;
+  margin: 12px 10px;
+  height: 1px;
+  background-color: #e5e7eb;
+}
+
+/* Hide top section label completely when collapsed so there's no divider above the 1st icon */
+.dashboard-sidebar.collapsed .sidebar-menu > .sidebar-section-label:first-child {
+  display: none;
 }
 
 /* INDIVIDUAL ITEM ROW LAYOUT */
 .sidebar-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  height: 42px;
-  padding: 0 12px;
+  gap: 14px;
+  height: 46px;
+  padding: 0 14px;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 13px;
-  color: #4b5563;
+  font-size: 15px;
+  color: #374151;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   box-sizing: border-box;
@@ -154,6 +170,14 @@ body,
 
 .sidebar-item-icon {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-item-icon svg {
+  width: 20px;
+  height: 20px;
 }
 
 .sidebar-item-label {
@@ -168,12 +192,23 @@ body,
   transform: translateX(3px);
 }
 
+.dashboard-sidebar.collapsed .sidebar-item:hover:not(.active) {
+  transform: none;
+}
+
 .sidebar-item.active {
   background-color: #fef2f2 !important;
   color: #7a0000 !important;
   font-weight: 700 !important;
   border-left: 4px solid #7a0000 !important;
   border-radius: 0 8px 8px 0 !important;
+}
+
+/* Symmetric rounded pill for collapsed active item */
+.dashboard-sidebar.collapsed .sidebar-item.active {
+  border-left: none !important;
+  border-radius: 8px !important;
+  background-color: #fef2f2 !important;
 }
 
 .sidebar-item.active .sidebar-item-icon {
@@ -215,7 +250,7 @@ body,
 .datetime-box {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  height: 48px;
+  height: 52px;
   padding: 0 12px;
   background-color: #ffffff;
   display: flex;
@@ -234,15 +269,26 @@ body,
 .datetime-icon {
   flex-shrink: 0;
   color: #7a0000;
+  display: flex;
+  align-items: center;
+}
+
+.datetime-icon svg {
+  width: 20px;
+  height: 20px;
 }
 
 .datetime-text {
   display: flex;
   flex-direction: column;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
-  line-height: 1.2;
+  line-height: 1.25;
+}
+
+.dashboard-sidebar.collapsed .datetime-text {
+  display: none;
 }
 
 .datetime-text .time-label {
@@ -262,13 +308,13 @@ body,
   justify-content: flex-start;
   gap: 10px;
   width: 100%;
-  height: 42px;
+  height: 44px;
   padding: 0 12px;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
   background-color: #ffffff;
   color: #4b5563;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -311,11 +357,11 @@ body,
     width: 52px;
     height: 52px;
     border-radius: 50%;
-    background-color: #800020; /* LEAP-A Maroon */
+    background-color: #800020;
     color: #ffffff;
     border: none;
     box-shadow: 0 4px 12px rgba(128, 0, 32, 0.35);
-    z-index: 10000; /* Highest z-index so it sits above everything */
+    z-index: 10000;
     align-items: center;
     justify-content: center;
     cursor: pointer;
@@ -335,10 +381,10 @@ body,
     left: 0; 
     right: 0; 
     bottom: 0;
-    background-color: rgba(15, 23, 42, 0.5); /* Dim effect */
+    background-color: rgba(15, 23, 42, 0.5);
     -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
-    z-index: 9998; /* Sits right under the sidebar */
+    z-index: 9998;
     animation: fadeInOverlay 0.3s ease;
   }
 

@@ -1,93 +1,145 @@
-import React from 'react';
-import ItSidebar from '../../components/it-sidebar';
-import { Bell, Database, HardDrive, Activity, RefreshCw } from 'lucide-react';
+import React, { useState } from "react";
+import { 
+  Database, 
+  HardDrive, 
+  Activity, 
+  RefreshCw, 
+  CheckCircle2, 
+  Server,
+  Layers
+} from "lucide-react";
+import ItSidebar from "../../components/it-sidebar.jsx";
+import Header from "../../components/Header.jsx";
+import "./database-metrics.css";
 
 export default function DatabaseMetrics({ onLogout, user }) {
+  const [isVacuuming, setIsVacuuming] = useState(false);
+  const [lastVacuumTime, setLastVacuumTime] = useState("Just now");
+
   const dbTables = [
-    { name: 'fact_attendance', rows: '1,245,030', size: '142 MB', bloat: '2.1%' },
-    { name: 'fact_leave_application', rows: '32,150', size: '18 MB', bloat: '1.5%' },
-    { name: 'dim_employee', rows: '1,450', size: '2 MB', bloat: '0.4%' },
-    { name: 'dim_event', rows: '412', size: '1.2 MB', bloat: '0.1%' }
+    { name: "fact_attendance", rows: "1,245,030", size: "142 MB", bloat: "2.1%", status: "Healthy" },
+    { name: "fact_leave_application", rows: "32,150", size: "18 MB", bloat: "1.5%", status: "Healthy" },
+    { name: "dim_employee", rows: "1,450", size: "2 MB", bloat: "0.4%", status: "Healthy" },
+    { name: "dim_event", rows: "412", size: "1.2 MB", bloat: "0.1%", status: "Healthy" }
   ];
 
-  return (
-    <div className="dashboard-container hod-view-wrapper">
-      <ItSidebar />
+  const handleRunVacuum = () => {
+    setIsVacuuming(true);
+    setTimeout(() => {
+      setIsVacuuming(false);
+      setLastVacuumTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    }, 1500);
+  };
 
-      <div className="dashboard-main-content">
-        <header className="dashboard-global-header">
-          <div className="welcome-greeting page-title-layout">
-            <Database size={22} className="title-icon-svg" /> 
-            <div className="title-text-group">
-              <h2>Database Metrics</h2>
-              <p className="subtitle-department">Environment: <span className="highlight-maroon">PostgreSQL Production</span></p>
-            </div>
+  return (
+    <div className="dbm-container">
+      {/* SIDEBAR */}
+      <ItSidebar user={user} />
+
+      {/* MAIN CONTENT AREA */}
+      <main className="dbm-main-content fade-in-up">
+        
+        {/* STANDARDIZED HEADER BLOCK */}
+        <header className="tr-header">
+          <div className="tr-header-title">
+            <span className="tr-header-badge">
+              <span className="tr-badge-dot"></span> IT OPERATIONS PORTAL
+            </span>
+            <h2>
+              <span className="tr-title-dark">Database </span>
+              <span className="tr-title-maroon">Metrics & Health</span>
+            </h2>
           </div>
-          
-          <div className="header-actions">
-            <button className="notification-bell-btn">
-              <Bell size={18} fill="#ffffff" color="#ffffff" />
-            </button>
-            <div className="user-profile-badge">
-              <span className="profile-icon-avatar">👤</span>
-              <span className="profile-name-string">{`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Super Admin'}</span>
-            </div>
-            <button className="logout-action-btn" onClick={onLogout}>Log Out</button>
-          </div>
+
+          <Header user={user} onLogout={onLogout} />
         </header>
 
-        <section className="forecast-summary-metrics-row" style={{ marginTop: '24px' }}>
-          <div className="forecast-stat-card">
-            <div className="stat-left-labels">
-              <span className="stat-main-label"><Activity size={16} className="inline-icon" /> Active Connections</span>
-              <span className="stat-subtext-label">Current pool usage</span>
+        {/* METRICS & QUICK ACTIONS ROW */}
+        <div className="dbm-stat-row">
+          <div className="dbm-stat-card">
+            <div className="dbm-stat-icon-box maroon">
+              <Activity size={22} />
             </div>
-            <div className="stat-right-numbers text-dark-value">48 / 100</div>
-          </div>
-          <div className="forecast-stat-card">
-            <div className="stat-left-labels">
-              <span className="stat-main-label"><HardDrive size={16} className="inline-icon" /> Total Storage</span>
-              <span className="stat-subtext-label">Data + Indexes</span>
+            <div className="dbm-stat-info">
+              <span className="dbm-stat-label">ACTIVE CONNECTIONS</span>
+              <span className="dbm-stat-value">48 / 100</span>
+              <span className="dbm-stat-sub">Current connection pool usage</span>
             </div>
-            <div className="stat-right-numbers text-green-value">1.4 GB</div>
           </div>
-          <div className="forecast-stat-card" style={{ flex: 0.5, display: 'flex', justifyContent: 'center' }}>
-            <button className="action-btn-investigate" style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center' }}>
-              <RefreshCw size={16} /> Run Vacuum
-            </button>
-          </div>
-        </section>
 
-        <section className="content-data-box table-box-margin card-shadow-wrap" style={{ marginTop: '24px' }}>
-          <div className="box-header-title-maroon-bar">Top Schema Tables by Size</div>
-          <div className="table-responsive-scroll">
-            <table className="record-grid-system">
-              <thead>
-                <tr>
-                  <th>Table Name</th>
-                  <th>Estimated Row Count</th>
-                  <th>Total Size</th>
-                  <th>Index Bloat</th>
-                  <th style={{ textAlign: 'center' }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dbTables.map((tbl, i) => (
-                  <tr key={i}>
-                    <td style={{ fontWeight: '600', fontFamily: 'monospace' }}>{tbl.name}</td>
-                    <td>{tbl.rows}</td>
-                    <td style={{ color: '#4b5563' }}>{tbl.size}</td>
-                    <td>{tbl.bloat}</td>
-                    <td style={{ textAlign: 'center' }}>
-                      <span className="status-badge status-approved">Healthy</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="dbm-stat-card">
+            <div className="dbm-stat-icon-box green">
+              <HardDrive size={22} />
+            </div>
+            <div className="dbm-stat-info">
+              <span className="dbm-stat-label">TOTAL STORAGE</span>
+              <span className="dbm-stat-value">1.4 GB</span>
+              <span className="dbm-stat-sub">Allocated data + index files</span>
+            </div>
           </div>
-        </section>
-      </div>
+
+          <div className="dbm-stat-card action-card">
+            <button 
+              className={`dbm-action-btn ${isVacuuming ? "loading" : ""}`}
+              onClick={handleRunVacuum}
+              disabled={isVacuuming}
+            >
+              <RefreshCw size={18} className={isVacuuming ? "spin" : ""} />
+              <span>{isVacuuming ? "Vacuuming DB..." : "Run Maintenance Vacuum"}</span>
+            </button>
+            <span className="dbm-action-subtext">
+              Last executed: <strong>{lastVacuumTime}</strong>
+            </span>
+          </div>
+        </div>
+
+        {/* SCHEMA TABLES CONTAINER */}
+        <div className="dbm-card">
+          <div className="dbm-card-header">
+            <div className="dbm-header-title-group">
+              <Database size={18} />
+              <span>Top Schema Tables by Size</span>
+            </div>
+            <div className="dbm-header-badge-tag">
+              <Server size={14} /> PostgreSQL Production
+            </div>
+          </div>
+
+          <div className="dbm-card-body">
+            <div className="dbm-table-wrapper">
+              <table className="dbm-table">
+                <thead>
+                  <tr>
+                    <th>Table Name</th>
+                    <th>Estimated Row Count</th>
+                    <th>Total Size</th>
+                    <th>Index Bloat</th>
+                    <th className="text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dbTables.map((tbl, index) => (
+                    <tr key={index}>
+                      <td className="dbm-table-name">
+                        <Layers size={15} className="dbm-table-icon" />
+                        <code>{tbl.name}</code>
+                      </td>
+                      <td className="dbm-numeric-cell">{tbl.rows}</td>
+                      <td className="dbm-size-cell">{tbl.size}</td>
+                      <td className="dbm-bloat-cell">{tbl.bloat}</td>
+                      <td className="text-center">
+                        <span className="dbm-status-badge healthy">
+                          <CheckCircle2 size={13} /> {tbl.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

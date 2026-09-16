@@ -20,25 +20,25 @@ export default function LeavePreviewModal({ formData = {}, user = {}, onClose, o
       setLoading(true);
       setError(null);
       try {
-        // Normalize user keys to guarantee matches with PDF generator
+        // Normalize property keys to guarantee user/form data matches generator expectations
         const normalizedUser = {
           ...user,
-          last_name: user?.last_name || '',
-          first_name: user?.first_name || '',
-          middle_name: user?.middle_name || '',
-          department: user?.department || '',
-          position_title: user?.position_title || '',
-          current_salary_amount: user?.current_salary_amount || ''
+          last_name: user?.last_name || user?.lastName || '',
+          first_name: user?.first_name || user?.firstName || '',
+          middle_name: user?.middle_name || user?.middleName || '',
+          department: user?.department || user?.office || '',
+          position_title: user?.position_title || user?.positionTitle || user?.position || '',
+          current_salary_amount: user?.current_salary_amount || user?.salary || user?.monthlySalary || ''
         };
 
-        // FIXED: Correctly mapped the inclusive dates from your LeaveApplication state!
+        // Correctly maps the inclusive dates from LeaveApplication state as a fallback
         const normalizedForm = {
           ...formData,
-          filingDate: formData?.filingDate || new Date().toISOString().split('T')[0],
-          leaveType: formData?.leaveType || '',
-          workingDays: formData?.workingDays || '',
-          startDate: formData?.inclusiveDateFrom || '',
-          endDate: formData?.inclusiveDateTo || ''
+          filingDate: formData?.filingDate || formData?.filing_date || new Date().toISOString().split('T')[0],
+          leaveType: formData?.leaveType || formData?.leave_type || '',
+          workingDays: formData?.workingDays || formData?.working_days || formData?.workingDaysApplied || '',
+          startDate: formData?.startDate || formData?.start_date || formData?.inclusiveDateFrom || '',
+          endDate: formData?.endDate || formData?.end_date || formData?.inclusiveDateTo || ''
         };
 
         const bytes = await buildLeavePdfBytes(normalizedForm, normalizedUser);
@@ -69,12 +69,12 @@ export default function LeavePreviewModal({ formData = {}, user = {}, onClose, o
     try {
       // 1. Fire the backend submission from the parent component
       if (onConfirm) await onConfirm();
-      
+
       // 2. Automatically download the filled PDF to the user's computer for their records
       if (bytesRef.current) {
         downloadPdfBytes(bytesRef.current, formData, user);
       }
-      
+
       // 3. Close the modal
       if (onClose) onClose();
     } catch (err) {

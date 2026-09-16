@@ -1,20 +1,17 @@
 const path = require('path');
-// 1. Load the .env file located one folder up from this file
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('pg'); // <-- 2. ESSENTIAL: Imports the PG Pool class
+const { Pool } = require('pg'); 
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// 3. ESSENTIAL: Defines the 'pool' variable globally in this file
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-// Test database connection on startup
 pool.connect((err, client, release) => {
   if (err) {
     return console.error('Error acquiring database client:', err.stack);
@@ -23,11 +20,208 @@ pool.connect((err, client, release) => {
   release();
 });
 
-// Middleware Configurations
 app.use(cors());                  
-app.use(express.json());          
+app.use(express.json());
 
-// Base Verification Route
+const multer = require('multer');
+const fs = require('fs');
+
+// 1. Setup Local Storage for Images
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir)
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname)
+    }
+});
+const upload = multer({ storage: storage });
+
+// 2. Expose the /uploads folder to the internet so React can render the images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ==========================================
+// EMPLOYEE EVENT REGISTRATIONS
+// ==========================================
+
+// GET: Fetch all events an employee has registered for (WITH EVENT DETAILS)
+app.get('/api/events/employee/:employee_key/registered', async (req, res) => {
+    const { employee_key } = req.params;
+    try {
+        const query = `
+            SELECT 
+                r.event_id, 
+                r.status AS registration_status, 
+                r.registration_date,
+                e.title, 
+                e.department, 
+                e.start_date, 
+                e.end_date, 
+                e.venue,
+                e.image_url,
+                NULL AS pdf_url -- Placeholder for future certificates
+            FROM public.fact_event_registration r
+            JOIN public.dim_event e ON r.event_id = e.event_id
+            WHERE r.employee_key = $1 AND r.status = 'Registered'
+            ORDER BY e.start_date ASC;
+        `;
+        const result = await pool.query(query, [employee_key]);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching registered events:", error);
+        res.status(500).json({ error: "Failed to fetch registrations." });
+    }
+});
+
+// POST: Employee joins an event
+app.post('/api/events/:id/register', async (req, res) => {
+    const { id } = req.params;
+    const { employee_key } = req.body;
+    try {
+        // Enforce unique constraint naturally, explicitly inserting the status
+        await pool.query(
+            `INSERT INTO public.fact_event_registration (event_id, employee_key, status) 
+             VALUES ($1, $2, 'Registered')`, 
+            [id, employee_key]
+        );
+        res.status(201).json({ success: true, message: "Registered successfully." });
+    } catch (error) {
+        if (error.code === '23505') { // PostgreSQL unique violation code
+            return res.status(409).json({ error: "You are already registered for this event." });
+        }
+        console.error("Error joining event:", error);
+        res.status(500).json({ error: "Failed to register for event." });
+    }
+});
+
+// DELETE: Employee cancels their registration
+app.delete('/api/events/:id/register/:employee_key', async (req, res) => {
+    const { id, employee_key } = req.params;
+    try {
+        // Hard delete the row when they cancel
+        await pool.query(
+            `DELETE FROM public.fact_event_registration WHERE event_id = $1 AND employee_key = $2`, 
+            [id, employee_key]
+        );
+        res.status(200).json({ success: true, message: "Registration cancelled." });
+    } catch (error) {
+        console.error("Error cancelling registration:", error);
+        res.status(500).json({ error: "Failed to cancel registration." });
+    }
+});
+
+// ==========================================
+// EVENT MANAGEMENT
+// ==========================================
+
+// GET: Fetch all active events (with optional department filtering)
+app.get('/api/events', async (req, res) => {
+    const { department } = req.query;
+    try {
+        let deptFilter = '';
+        let params = [];
+        
+        // If the user's department is provided, only show events for "All Departments" OR their specific dept
+        if (department && department !== 'All Departments') {
+            deptFilter = `WHERE (e.department = $1 OR e.department = 'All Departments' OR e.department IS NULL OR e.department = '')`;
+            params.push(department);
+        }
+
+        const query = `
+            SELECT e.*, 
+                   (SELECT COUNT(*) FROM public.fact_event_registration WHERE event_id = e.event_id) as registered_count
+            FROM public.dim_event e
+            ${deptFilter}
+            ORDER BY start_date ASC;
+        `;
+        const result = await pool.query(query, params);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching events:", error);
+        res.status(500).json({ error: "Failed to fetch events." });
+    }
+});
+
+// POST: Create a new event
+app.post('/api/events', upload.single('cover_image'), async (req, res) => {
+    const { title, description, objectives, event_type, venue, capacity, department, start_date, end_date, created_by } = req.body;
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+    
+    try {
+        const query = `
+            INSERT INTO public.dim_event 
+            (title, description, objectives, event_type, venue, capacity, department, start_date, end_date, created_by, image_url) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            RETURNING *;
+        `;
+        const values = [
+            title, description, objectives, event_type, venue, 
+            capacity ? parseInt(capacity) : null, 
+            department, start_date, end_date, 
+            created_by ? parseInt(created_by) : null, 
+            imageUrl
+        ];
+        
+        const result = await pool.query(query, values);
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error("Error creating event:", error);
+        res.status(500).json({ error: "Failed to create event." });
+    }
+});
+
+// PUT: Update existing event
+app.put('/api/events/:id', upload.single('cover_image'), async (req, res) => {
+    const { id } = req.params;
+    const { title, description, objectives, event_type, venue, capacity, department, start_date, end_date } = req.body;
+    
+    try {
+        // If a new file was uploaded, update the image_url, otherwise keep the existing one
+        let query;
+        let values;
+
+        if (req.file) {
+            const imageUrl = `/uploads/${req.file.filename}`;
+            query = `
+                UPDATE public.dim_event 
+                SET title=$1, description=$2, objectives=$3, event_type=$4, venue=$5, capacity=$6, department=$7, start_date=$8, end_date=$9, image_url=$10
+                WHERE event_id=$11 RETURNING *;
+            `;
+            values = [title, description, objectives, event_type, venue, capacity ? parseInt(capacity) : null, department, start_date, end_date, imageUrl, id];
+        } else {
+            query = `
+                UPDATE public.dim_event 
+                SET title=$1, description=$2, objectives=$3, event_type=$4, venue=$5, capacity=$6, department=$7, start_date=$8, end_date=$9
+                WHERE event_id=$10 RETURNING *;
+            `;
+            values = [title, description, objectives, event_type, venue, capacity ? parseInt(capacity) : null, department, start_date, end_date, id];
+        }
+
+        const result = await pool.query(query, values);
+        res.status(200).json(result.rows[0]);
+    } catch (error) {
+        console.error("Error updating event:", error);
+        res.status(500).json({ error: "Failed to update event." });
+    }
+});
+
+// DELETE: Mark event as Cancelled
+app.delete('/api/events/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('UPDATE public.dim_event SET status = $1 WHERE event_id = $2', ['Cancelled', id]);
+        res.status(200).json({ success: true, message: "Event cancelled successfully." });
+    } catch (error) {
+        console.error("Error cancelling event:", error);
+        res.status(500).json({ error: "Failed to cancel event." });
+    }
+});
+
 app.get('/api/health', async (req, res) => {
   res.status(200).json({
     success: true,
@@ -35,12 +229,14 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
-// --- LOGIN ROUTE ---
+// ==========================================
+// AUTHENTICATION & LOGIN
+// ==========================================
+
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    // Uses the globally defined 'pool' variable above
    const queryText = `
       SELECT 
         a.username, 
@@ -50,9 +246,9 @@ app.post('/api/login', async (req, res) => {
         a.password,
         e.employee_key,
         e.employee_id,
-        e.first_name,        -- REPLACED full_name
-        e.middle_name,       -- NEW
-        e.last_name,         -- NEW
+        e.first_name,        
+        e.middle_name,       
+        e.last_name,         
         e.department,
         e.position_title,
         e.civil_status,
@@ -60,15 +256,15 @@ app.post('/api/login', async (req, res) => {
         e.gender,
         e.salary_grade,
         (SELECT salary_amount 
-     FROM public.dim_salary_history 
-     WHERE employee_key = e.employee_key 
-     ORDER BY effective_date DESC 
-     LIMIT 1) AS current_salary_amount,
+         FROM public.salary_history 
+         WHERE employee_key = e.employee_key 
+         ORDER BY effective_date DESC 
+         LIMIT 1) AS current_salary_amount,
         e.hire_date,
         e.employment_type,
         e.civil_service_eligibility,
         EXTRACT(YEAR FROM AGE(CURRENT_DATE, e.hire_date)) AS years_of_service
-      FROM public.dim_accounts a
+      FROM public.user_accounts a
       INNER JOIN public.dim_employee e ON a.employee_key = e.employee_key
       WHERE a.username = $1
     `;
@@ -76,22 +272,15 @@ app.post('/api/login', async (req, res) => {
     const userQuery = await pool.query(queryText, [username]);
     
     if (userQuery.rows.length === 0) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid username or password' 
-      });
+      return res.status(401).json({ success: false, message: 'Invalid username or password' });
     }
 
     const activeUser = userQuery.rows[0];
 
     if (activeUser.password !== password) { 
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid username or password' 
-      });
+      return res.status(401).json({ success: false, message: 'Invalid username or password' });
     }
 
-    // Further down inside the same route on success:
     res.status(200).json({
       success: true,
       message: 'Login successful!',
@@ -101,11 +290,9 @@ app.post('/api/login', async (req, res) => {
         contact_number: activeUser.contact_number,
         employee_key: activeUser.employee_key,
         employee_id: activeUser.employee_id,
-        // --- REPLACE full_name WITH THESE 3 LINES ---
         first_name: activeUser.first_name,
         middle_name: activeUser.middle_name,
         last_name: activeUser.last_name,
-        // --------------------------------------------
         position_title: activeUser.position_title,
         department: activeUser.department,
         role: activeUser.system_access_level,
@@ -123,16 +310,672 @@ app.post('/api/login', async (req, res) => {
 
   } catch (error) {
     console.error("Database query error:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message // Keeps raw database error visibility active for debugging
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ==========================================
+// PASSWORD RESET REQUESTS
+// ==========================================
+
+app.post('/api/password-reset-requests', async (req, res) => {
+  const { 
+    employee_id, 
+    first_name, 
+    middle_name, 
+    last_name, 
+    department, 
+    position_title 
+  } = req.body;
+
+  // 1. Basic Payload Validation
+  if (!employee_id || !first_name || !last_name || !department || !position_title) {
+    return res.status(400).json({ 
+      error: "Missing required verification fields." 
+    });
+  }
+
+  try {
+    // 2. Verify identity against active records in dim_employee
+    // Uses TRIM and ILIKE/UPPER to avoid false rejections due to capitalization or trailing spaces
+    const checkUserQuery = `
+      SELECT employee_key, department, position_title
+      FROM public.dim_employee 
+      WHERE UPPER(TRIM(employee_id)) = UPPER(TRIM($1))
+        AND TRIM(first_name) ILIKE TRIM($2)
+        AND TRIM(last_name) ILIKE TRIM($3)
+        AND is_active = true
+      LIMIT 1;
+    `;
+    
+    const checkResult = await pool.query(checkUserQuery, [
+      employee_id, 
+      first_name, 
+      last_name
+    ]);
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ 
+        error: "Employee details do not match our active records. Please check your credentials." 
+      });
+    }
+
+    const matchedEmployee = checkResult.rows[0];
+
+    // 3. Extract client IP address for security logging
+    const requesterIp = 
+      req.headers['x-forwarded-for']?.split(',')[0].trim() || 
+      req.socket.remoteAddress || 
+      null;
+
+    // 4. Insert into the password_reset_requests table
+    const insertRequestQuery = `
+      INSERT INTO public.password_reset_requests (
+        employee_id_input,
+        employee_key,
+        first_name,
+        middle_name,
+        last_name,
+        department,
+        position_title,
+        status,
+        requester_ip
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'Pending', $8)
+      RETURNING request_id, requested_at;
+    `;
+
+    const insertResult = await pool.query(insertRequestQuery, [
+      employee_id.trim(),
+      matchedEmployee.employee_key,
+      first_name.trim(),
+      middle_name ? middle_name.trim() : null,
+      last_name.trim(),
+      department.trim(),
+      position_title.trim(),
+      requesterIp
+    ]);
+
+    return res.status(201).json({ 
+      success: true, 
+      message: "Password reset request submitted successfully.",
+      requestId: insertResult.rows[0].request_id 
+    });
+
+  } catch (error) {
+    console.error("Password reset error:", error);
+    return res.status(500).json({ 
+      error: "Internal server error processing password request." 
     });
   }
 });
 
+// GET: Fetch ALL Leaves & Analytics Summary for Employee Dashboard and Leave History
+app.get('/api/leave-applications/:employee_key', async (req, res) => {
+    const { employee_key } = req.params;
+
+    try {
+        // 1. Fetch ALL leave applications for the employee (Removed LIMIT 5)
+        // Added hod_remarks, pdf_document, and attachment_data for the history table
+        const historyQuery = `
+            SELECT 
+                id AS application_id, 
+                date_key, 
+                leave_type, 
+                start_date, 
+                end_date, 
+                remarks, 
+                hod_remarks,
+                working_days, 
+                status, 
+                created_at,
+                pdf_document,
+                attachment_data
+            FROM public.fact_leave_application
+            WHERE employee_key = $1
+            ORDER BY created_at DESC;
+        `;
+        const historyResult = await pool.query(historyQuery, [employee_key]);
+
+        // 2. Fetch the summary of used leave credits via the ledger
+        const summaryQuery = `
+            SELECT leave_type, SUM(ABS(amount)) AS used_days
+            FROM public.fact_leave_ledger
+            WHERE employee_key = $1 AND transaction_type = 'Deduction'
+            GROUP BY leave_type;
+        `;
+        const summaryResult = await pool.query(summaryQuery, [employee_key]);
+        
+        // Map the summary into the format the frontend charts expect
+        const summaryObj = {};
+        summaryResult.rows.forEach(row => {
+            summaryObj[row.leave_type] = { used: parseFloat(row.used_days) || 0 };
+        });
+
+        res.status(200).json({
+            history: historyResult.rows,
+            summary: summaryObj
+        });
+    } catch (error) {
+        console.error("Error fetching dashboard leave data:", error);
+        res.status(500).json({ error: "Failed to fetch dashboard data." });
+    }
+});
+
+// ==========================================
+// NOTIFICATIONS SYSTEM
+// ==========================================
+
+// GET: Fetch all notifications for a specific employee
+app.get('/api/notifications/:employee_key', async (req, res) => {
+    const { employee_key } = req.params;
+    try {
+        const query = `
+            SELECT notification_id, title, message, type, related_id, is_read, created_at 
+            FROM public.notifications 
+            WHERE employee_key = $1 
+            ORDER BY created_at DESC 
+            LIMIT 20;
+        `;
+        const result = await pool.query(query, [employee_key]);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching notifications:", error);
+        res.status(500).json({ error: "Failed to fetch notifications." });
+    }
+});
+
+// PATCH: Mark a single notification as read
+app.patch('/api/notifications/:id/read', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query(`
+            UPDATE public.notifications 
+            SET is_read = true 
+            WHERE notification_id = $1
+        `, [id]);
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error("Error marking notification read:", error);
+        res.status(500).json({ error: "Failed to update notification." });
+    }
+});
+
+// PATCH: Mark all notifications as read for an employee
+app.patch('/api/notifications/:employee_key/read-all', async (req, res) => {
+    const { employee_key } = req.params;
+    try {
+        await pool.query(`
+            UPDATE public.notifications 
+            SET is_read = true 
+            WHERE employee_key = $1 AND is_read = false
+        `, [employee_key]);
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error("Error marking all notifications read:", error);
+        res.status(500).json({ error: "Failed to clear notifications." });
+    }
+});
+
+// GET: Fetch detailed attendance records by month
+app.get('/api/attendance/:employee_key', async (req, res) => {
+    const { employee_key } = req.params;
+    const { month } = req.query; // Expected format: 'YYYY-MM'
+
+    try {
+        let monthFilter = '';
+        let queryParams = [employee_key];
+
+        // Apply month filtering if provided from the frontend picker
+        if (month) {
+            const [year, m] = month.split('-');
+            monthFilter = `AND EXTRACT(YEAR FROM d.full_date) = $2 AND EXTRACT(MONTH FROM d.full_date) = $3`;
+            queryParams.push(year, m);
+        }
+
+        const query = `
+            SELECT 
+                a.attendance_id,
+                a.status,
+                a.hours_worked,
+                a.tardy_minutes,
+                d.full_date
+            FROM public.fact_attendance a
+            JOIN public.dim_date d ON a.date_key = d.date_key
+            WHERE a.employee_key = $1
+            ${monthFilter}
+            ORDER BY d.full_date DESC;
+        `;
+        
+        const result = await pool.query(query, queryParams);
+
+        // Transform data to populate the UI table format
+        const records = result.rows.map(row => {
+            const dateObj = new Date(row.full_date);
+            const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            
+            let timeIn = "08:00 AM";
+            let timeOut = "05:00 PM";
+            let remarks = "Biometric Verified";
+
+            // Determine Time In/Out strings based on factual DW data
+            if (row.status === 'Tardy' || row.tardy_minutes > 0) {
+                const inHour = 8 + Math.floor(row.tardy_minutes / 60);
+                const inMin = (row.tardy_minutes % 60).toString().padStart(2, '0');
+                timeIn = `0${inHour}:${inMin} AM`;
+                remarks = `Grace period exceeded (${row.tardy_minutes} mins)`;
+            } else if (row.status === 'Absent') {
+                timeIn = "—";
+                timeOut = "—";
+                remarks = "No record found";
+            } else if (row.status === 'Leave') {
+                timeIn = "—";
+                timeOut = "—";
+                remarks = "Approved Leave";
+            }
+
+            return {
+                date: formattedDate,
+                timeIn,
+                timeOut,
+                status: row.status,
+                remarks: remarks,
+                tardy_minutes: row.tardy_minutes
+            };
+        });
+
+        res.status(200).json(records);
+    } catch (error) {
+        console.error("Attendance fetch error:", error);
+        res.status(500).json({ error: "Failed to fetch attendance history." });
+    }
+});
+
+// ==========================================
+// HOD: DEPARTMENT LEAVE APPLICATIONS
+// ==========================================
+
+// GET: Fetch all department leave requests (includes the new hod_remarks)
+app.get('/api/leave-applications/department', async (req, res) => {
+    const { name } = req.query;
+    
+    if (!name) {
+        return res.status(400).json({ error: "Department name parameter is required." });
+    }
+
+    try {
+        const query = `
+            SELECT 
+                l.id AS application_id,
+                l.id,
+                l.employee_key,
+                l.leave_type,
+                l.start_date,
+                l.end_date,
+                l.remarks,
+                l.hod_remarks,
+                l.working_days,
+                l.status,
+                l.created_at,
+                l.start_date_key,
+                l.end_date_key,
+                e.first_name,
+                e.middle_name,
+                e.last_name,
+                e.department,
+                e.position_title,
+                e.salary_grade
+            FROM public.fact_leave_application l
+            JOIN public.dim_employee e ON l.employee_key = e.employee_key
+            WHERE e.department = $1
+            ORDER BY 
+                CASE WHEN l.status = 'Pending' THEN 1 
+                     WHEN l.status = 'Needs Revision' THEN 2
+                     ELSE 3 END,
+                l.created_at DESC;
+        `;
+        
+        const result = await pool.query(query, [name]);
+        res.status(200).json({ applications: result.rows });
+    } catch (error) {
+        console.error("Error fetching department applications:", error);
+        res.status(500).json({ error: "Failed to fetch department applications." });
+    }
+});
+
+// PUT: Approve, Reject, or Require Revision for a leave request
+app.put('/api/leave-applications/leave-approvals/:id', async (req, res) => {
+    const { id } = req.params;
+    const { action, remarks } = req.body; 
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        // Update the status and attach HOD remarks
+        const updateQuery = `
+            UPDATE public.fact_leave_application 
+            SET status = $1, hod_remarks = $2 
+            WHERE id = $3 
+            RETURNING employee_key, leave_type, working_days;
+        `;
+        const result = await client.query(updateQuery, [action, remarks, id]);
+
+        if (result.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: "Leave application not found." });
+        }
+
+        // If Approved, correctly deduct the employee's leave balance in the ledger
+        if (action === 'Approved') {
+            const { employee_key, leave_type, working_days } = result.rows[0];
+
+            // Record the deduction in the ledger
+            await client.query(`
+                INSERT INTO public.fact_leave_ledger 
+                (employee_key, leave_type, transaction_type, amount, reference_id, remarks)
+                VALUES ($1, $2, 'Deduction', $3, $4, 'Approved Leave Application')
+            `, [employee_key, leave_type, -working_days, id]);
+
+            // Adjust the actual remaining credits balance
+            await client.query(`
+                UPDATE public.leave_balances 
+                SET remaining_credits = remaining_credits - $1,
+                    last_updated = CURRENT_TIMESTAMP
+                WHERE employee_key = $2 AND leave_type = $3
+            `, [working_days, employee_key, leave_type]);
+        }
+
+        await client.query('COMMIT');
+        res.status(200).json({ success: true, message: `Leave marked as ${action}` });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Leave approval transaction failed:", error);
+        res.status(500).json({ error: "Failed to process leave approval." });
+    } finally {
+        client.release();
+    }
+});
+
+// ==========================================
+// DEPARTMENT ANALYTICS & REPORTS
+// ==========================================
+
+app.get('/api/reports/department', async (req, res) => {
+    const { name } = req.query;
+    
+    // If the user is HR Admin, they might not pass a name (viewing global data). 
+    // If they are a HOD, they will pass their department name.
+    const deptFilter = name ? `WHERE department = $1` : '';
+    const params = name ? [name] : [];
+
+    try {
+        // 1. Leave Distribution (Pie Chart Data)
+        const distQuery = `
+            SELECT leave_type, COUNT(*) as total
+            FROM public.fact_leave_application
+            ${deptFilter}
+            GROUP BY leave_type;
+        `;
+        const distResult = await pool.query(distQuery, params);
+
+        const totalLeaves = distResult.rows.reduce((sum, row) => sum + parseInt(row.total), 0);
+        const distribution = distResult.rows.map(r => ({
+            type: r.leave_type,
+            percentage: totalLeaves > 0 ? Math.round((parseInt(r.total) / totalLeaves) * 100) : 0
+        }));
+
+        // 2. Monthly Trend (Stacked Bar Chart Data for Current Year)
+        const trendQuery = `
+            SELECT 
+                TRIM(TO_CHAR(created_at, 'Mon')) as month_name, 
+                EXTRACT(MONTH FROM created_at) as month_num,
+                leave_type, 
+                COUNT(*) as total
+            FROM public.fact_leave_application
+            ${name ? `WHERE department = $1 AND EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM CURRENT_DATE)` : `WHERE EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM CURRENT_DATE)`}
+            GROUP BY TRIM(TO_CHAR(created_at, 'Mon')), EXTRACT(MONTH FROM created_at), leave_type
+            ORDER BY month_num ASC;
+        `;
+        const trendResult = await pool.query(trendQuery, params);
+
+        // Map into { 'Jan': { 'Sick Leave': 5, 'Vacation Leave': 2 }, 'Feb': ... }
+        const monthlyData = {};
+        trendResult.rows.forEach(r => {
+            if (!monthlyData[r.month_name]) monthlyData[r.month_name] = {};
+            monthlyData[r.month_name][r.leave_type] = parseInt(r.total);
+        });
+
+        res.status(200).json({
+            distribution,
+            monthlyData,
+            anomaly: {
+                peak: '94% Consistency',
+                avgCheckIn: '07:51 AM'
+            }
+        });
+
+    } catch (error) {
+        console.error("Error generating department report:", error);
+        res.status(500).json({ error: "Failed to generate analytics report." });
+    }
+});
+
+// ==========================================
+// WORKFORCE FORECAST & ANALYTICS
+// ==========================================
+
+app.get('/api/workforce-forecast', async (req, res) => {
+    const { department } = req.query;
+    
+    const deptFilterEmp = department ? `WHERE department = $1 AND employment_status = 'Active'` : `WHERE employment_status = 'Active'`;
+    const deptFilterLeave = department ? `AND department = $1` : ``;
+    const params = department ? [department] : [];
+
+    try {
+        // 1. Get Total Active Staff
+        const staffRes = await pool.query(`SELECT COUNT(*) as total FROM public.dim_employee ${deptFilterEmp}`, params);
+        const totalStaff = parseInt(staffRes.rows[0].total) || 0;
+
+        // 2. Get Pending Approvals count
+        const pendingRes = await pool.query(`
+            SELECT COUNT(*) as pending 
+            FROM public.fact_leave_application 
+            WHERE status = 'Pending' ${deptFilterLeave}
+        `, params);
+        const pendingLeaves = parseInt(pendingRes.rows[0].pending) || 0;
+
+        // 3. Fetch all overlapping Approved/Pending leaves for the next 30 days
+        const leavesQuery = `
+            SELECT start_date, end_date, status 
+            FROM public.fact_leave_application
+            WHERE (status = 'Approved' OR status = 'Pending') 
+              AND end_date >= CURRENT_DATE 
+              AND start_date <= CURRENT_DATE + INTERVAL '30 days'
+            ${deptFilterLeave};
+        `;
+        const leavesRes = await pool.query(leavesQuery, params);
+        const activeLeaves = leavesRes.rows;
+
+        // 4. Calculate daily availability over 30 days
+        const forecast = [];
+        let onLeaveToday = 0;
+        const requiredStaff = Math.ceil(totalStaff * 0.90); // 90% operational requirement
+
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        for (let i = 0; i < 30; i++) {
+            const targetDate = new Date(today);
+            targetDate.setDate(targetDate.getDate() + i);
+            
+            // Skip weekends for calculation logic
+            const isWeekend = targetDate.getDay() === 0 || targetDate.getDay() === 6;
+            
+            let absences = 0;
+            activeLeaves.forEach(leave => {
+                const s = new Date(leave.start_date);
+                const e = new Date(leave.end_date);
+                if (targetDate >= s && targetDate <= e && leave.status === 'Approved') {
+                    absences++;
+                }
+            });
+
+            if (i === 0) onLeaveToday = absences;
+
+            const available = Math.max(0, totalStaff - absences);
+            const percentage = totalStaff > 0 ? (available / totalStaff) * 100 : 100;
+
+            forecast.push({
+                dateStr: targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                isWeekend,
+                available,
+                absences,
+                availablePercentage: isWeekend ? 100 : percentage // Assume full availability on weekends to flatten chart
+            });
+        }
+
+        // 5. Generate Breakdowns and Alerts
+        const breakdowns = [];
+        const alerts = [];
+        let suggestion = null;
+
+        const criticalDays = forecast.filter(f => f.availablePercentage < 90 && !f.isWeekend);
+        
+        if (criticalDays.length > 0) {
+            // Group critical days
+            const firstCrit = criticalDays[0].dateStr;
+            const lastCrit = criticalDays[criticalDays.length - 1].dateStr;
+            
+            breakdowns.push({
+                dateRange: firstCrit === lastCrit ? firstCrit : `${firstCrit} - ${lastCrit}`,
+                available: criticalDays[0].available,
+                required: requiredStaff,
+                riskLevel: criticalDays[0].availablePercentage < 80 ? 'High' : 'Moderate'
+            });
+
+            alerts.push({
+                type: criticalDays[0].availablePercentage < 80 ? 'critical' : 'warning',
+                tag: 'Critical Dip',
+                message: `Availability drops to ${Math.round(criticalDays[0].availablePercentage)}% around ${firstCrit}.`
+            });
+
+            suggestion = `For the ${firstCrit} risk period, deferring ${requiredStaff - criticalDays[0].available} pending leave requests restores the minimum 90% operational requirement.`;
+        }
+
+        // Check for concurrent pending leaves
+        if (pendingLeaves > 3) {
+            alerts.push({
+                type: 'warning',
+                tag: 'Concurrent Leaves',
+                message: `${pendingLeaves} staff members have overlapping requested leaves.`
+            });
+        }
+
+        res.status(200).json({
+            totalStaff,
+            availableToday: totalStaff - onLeaveToday,
+            onLeaveToday,
+            pendingLeaves,
+            forecast,
+            breakdowns,
+            alerts,
+            suggestion
+        });
+
+    } catch (error) {
+        console.error("Error generating workforce forecast:", error);
+        res.status(500).json({ error: "Failed to generate workforce forecast." });
+    }
+});
+
+// ==========================================
+// ML ANOMALY DETECTION ALERTS
+// ==========================================
+
+// GET: Fetch Anomaly Alerts & Stats
+app.get('/api/anomalies', async (req, res) => {
+    const { department } = req.query;
+    
+    const deptFilter = department ? `WHERE e.department = $1 AND a.status IN ('Flagged', 'Investigating')` : `WHERE a.status IN ('Flagged', 'Investigating')`;
+    const params = department ? [department] : [];
+
+    try {
+        // 1. Fetch active alerts
+        const alertsQuery = `
+            SELECT 
+                a.alert_id, 
+                a.anomaly_pattern, 
+                a.risk_score, 
+                a.status, 
+                a.flagged_at, 
+                e.first_name || ' ' || e.last_name AS employee_name,
+                e.department
+            FROM public.fact_anomaly_alerts a
+            JOIN public.dim_employee e ON a.employee_key = e.employee_key
+            ${deptFilter}
+            ORDER BY a.risk_score DESC, a.flagged_at DESC;
+        `;
+        const alertsResult = await pool.query(alertsQuery, params);
+
+        // 2. Calculate Stats
+        const totalFlagged = alertsResult.rows.filter(r => r.status === 'Flagged').length;
+        const highRisk = alertsResult.rows.filter(r => parseFloat(r.risk_score) >= 0.75).length;
+        
+        const resolvedFilter = department ? `WHERE e.department = $1 AND a.status = 'Resolved' AND EXTRACT(MONTH FROM a.resolved_at) = EXTRACT(MONTH FROM CURRENT_DATE)` : `WHERE a.status = 'Resolved' AND EXTRACT(MONTH FROM a.resolved_at) = EXTRACT(MONTH FROM CURRENT_DATE)`;
+        
+        const resolvedQuery = `
+            SELECT COUNT(*) as resolved_count
+            FROM public.fact_anomaly_alerts a
+            JOIN public.dim_employee e ON a.employee_key = e.employee_key
+            ${resolvedFilter};
+        `;
+        const resolvedResult = await pool.query(resolvedQuery, params);
+        const resolvedThisMonth = parseInt(resolvedResult.rows[0].resolved_count) || 0;
+
+        res.status(200).json({
+            alerts: alertsResult.rows,
+            stats: {
+                totalFlagged,
+                highRisk,
+                resolvedThisMonth
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching anomaly alerts:", error);
+        res.status(500).json({ error: "Failed to fetch anomaly data." });
+    }
+});
+
+// PUT: Update Anomaly Status (Investigate, Dismiss, Resolve)
+app.put('/api/anomalies/:id/status', async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    try {
+        const timestampUpdate = (status === 'Dismissed' || status === 'Resolved') 
+            ? `, resolved_at = CURRENT_TIMESTAMP` 
+            : ``;
+
+        const query = `
+            UPDATE public.fact_anomaly_alerts 
+            SET status = $1 ${timestampUpdate}
+            WHERE alert_id = $2
+        `;
+        await pool.query(query, [status, id]);
+        
+        res.status(200).json({ success: true, message: `Anomaly marked as ${status}` });
+    } catch (error) {
+        console.error("Error updating anomaly status:", error);
+        res.status(500).json({ error: "Failed to update anomaly status." });
+    }
+});
+
+// ==========================================
+// EMPLOYEE PROFILE & PAYROLL
+// ==========================================
+
 app.put('/api/profile/:employee_key', async (req, res) => {
   const { employee_key } = req.params;
-  // Destructure the separated names instead of full_name
   const { first_name, middle_name, last_name, civil_status, contact_number, email } = req.body;
 
   const client = await pool.connect();
@@ -140,7 +983,6 @@ app.put('/api/profile/:employee_key', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Update dim_employee table with the 3 separate name columns
     const updateEmployeeQuery = `
       UPDATE public.dim_employee 
       SET first_name = $1, middle_name = $2, last_name = $3, civil_status = $4
@@ -148,9 +990,8 @@ app.put('/api/profile/:employee_key', async (req, res) => {
     `;
     await client.query(updateEmployeeQuery, [first_name, middle_name, last_name, civil_status, employee_key]);
 
-    // Update dim_accounts table
     const updateAccountQuery = `
-      UPDATE public.dim_accounts 
+      UPDATE public.user_accounts 
       SET contact_number = $1, email = $2
       WHERE employee_key = $3
     `;
@@ -168,137 +1009,149 @@ app.put('/api/profile/:employee_key', async (req, res) => {
   }
 });
 
-// --- GOOGLE SINGLE-SIGN-ON AUTHENTICATION ROUTE ---
-app.post('/api/login/google', async (req, res) => {
-  const { token } = req.body;
+app.post('/api/salary/update', async (req, res) => {
+    const { employee_key, salary_amount, salary_grade, reason } = req.body;
+    const client = await pool.connect();
 
-  try {
-    // 1. Send token to Google's public token verification API
-    const googleVerifyUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${token}`;
-    const googleResponse = await fetch(googleVerifyUrl);
-    const googleUserData = await googleResponse.json();
+    try {
+        await client.query('BEGIN'); 
 
-    if (!googleResponse.ok) {
-      return res.status(401).json({ success: false, message: "Invalid Google token payload validation." });
+        await client.query(`
+            INSERT INTO public.salary_history 
+            (employee_key, salary_amount, salary_grade, effective_date, reason)
+            VALUES ($1, $2, $3, CURRENT_DATE, $4)
+        `, [employee_key, salary_amount, salary_grade, reason]);
+
+        await client.query(`
+            UPDATE public.dim_employee 
+            SET salary_grade = $1
+            WHERE employee_key = $2
+        `, [salary_grade, employee_key]);
+
+        await client.query('COMMIT'); 
+        res.status(200).json({ message: "Salary updated successfully" });
+    } catch (error) {
+        await client.query('ROLLBACK'); 
+        res.status(500).json({ error: "Failed to update salary" });
+    } finally {
+        client.release();
     }
-
-    // Google returns the user's verified email address as 'email'
-    const googleEmail = googleUserData.email;
-
-    // 2. Check if this specific email address exists inside your public.dim_accounts database
-    const queryText = `
-      SELECT 
-        a.username, 
-        a.email, 
-        a.system_access_level,
-        a.contact_number,
-        a.password,
-        e.employee_key,
-        e.employee_id,
-        e.first_name,        -- REPLACED full_name
-        e.middle_name,       -- NEW
-        e.last_name,         -- NEW
-        e.department,
-        e.position_title,
-        e.civil_status,
-        e.date_of_birth,
-        e.gender,
-        e.salary_grade,
-        (SELECT salary_amount 
-     FROM public.dim_salary_history 
-     WHERE employee_key = e.employee_key 
-     ORDER BY effective_date DESC 
-     LIMIT 1) AS current_salary_amount,
-        e.hire_date,
-        e.employment_type,
-        e.civil_service_eligibility,
-        EXTRACT(YEAR FROM AGE(CURRENT_DATE, e.hire_date)) AS years_of_service
-      FROM public.dim_accounts a
-      INNER JOIN public.dim_employee e ON a.employee_key = e.employee_key
-      WHERE a.email = $1
-    `;
-    const result = await pool.query(queryText, [googleEmail]);
-
-    if (result.rows.length === 0) {
-      return res.status(401).json({ 
-        success: false, 
-        message: `The Google account (${googleEmail}) is not linked to any active employee profile account records.` 
-      });
-    }
-
-    const activeUser = result.rows[0];
-
-    // 3. Return the exact same user object context format back to your React layout state engine!
-    res.status(200).json({
-      success: true,
-      message: 'Login successful!',
-      user: {
-        username: activeUser.username,
-        email: activeUser.email,
-        contact_number: activeUser.contact_number,
-        employee_key: activeUser.employee_key,
-        employee_id: activeUser.employee_id,
-        // --- REPLACE full_name WITH THESE 3 LINES ---
-        first_name: activeUser.first_name,
-        middle_name: activeUser.middle_name,
-        last_name: activeUser.last_name,
-        // --------------------------------------------
-        position_title: activeUser.position_title,
-        department: activeUser.department,
-        role: activeUser.system_access_level,
-        civil_status: activeUser.civil_status,
-        date_of_birth: activeUser.date_of_birth,
-        gender: activeUser.gender,
-        salary_grade: activeUser.salary_grade,
-        current_salary_amount: activeUser.current_salary_amount || 0,
-        hire_date: activeUser.hire_date,
-        employment_type: activeUser.employment_type,
-        civil_service: activeUser.civil_service_eligibility,
-        years_of_service: activeUser.years_of_service
-      }
-    });
-
-  } catch (error) {
-    console.error("Google SSO route runtime error:", error);
-    res.status(500).json({ success: false, message: "Internal server error handling Google verification processing." });
-  }
 });
 
+// GET: Unified Credit Ledger & Balance Data for Employee Dashboard
+app.get('/api/credit-ledger/:employee_key', async (req, res) => {
+    const { employee_key } = req.params;
+
+    try {
+        // 1. Fetch current balances
+        const balanceQuery = `
+            SELECT leave_type, remaining_credits 
+            FROM public.leave_balances 
+            WHERE employee_key = $1;
+        `;
+        const balances = await pool.query(balanceQuery, [employee_key]);
+
+        // 2. Fetch used credits for the CURRENT YEAR
+        const usedQuery = `
+            SELECT leave_type, SUM(ABS(amount)) as used_days
+            FROM public.fact_leave_ledger
+            WHERE employee_key = $1 
+              AND transaction_type = 'Deduction' 
+              AND EXTRACT(YEAR FROM transaction_date) = EXTRACT(YEAR FROM CURRENT_DATE)
+            GROUP BY leave_type;
+        `;
+        const used = await pool.query(usedQuery, [employee_key]);
+
+        // 3. Fetch unified ledger history (Leave Applications + Monetizations)
+        const historyQuery = `
+            SELECT 
+                created_at as date, 
+                leave_type as type, 
+                'Leave Application' as transaction, 
+                status, 
+                working_days as days, 
+                'Department Head' as approver
+            FROM public.fact_leave_application 
+            WHERE employee_key = $1
+            
+            UNION ALL
+            
+            SELECT 
+                request_date as date, 
+                leave_type as type, 
+                'Leave Monetization' as transaction, 
+                status, 
+                credits_converted as days, 
+                'HR Admin' as approver
+            FROM public.fact_leave_monetization 
+            WHERE employee_key = $1
+            
+            ORDER BY date DESC;
+        `;
+        const history = await pool.query(historyQuery, [employee_key]);
+
+        res.status(200).json({
+            balances: balances.rows,
+            used: used.rows,
+            history: history.rows
+        });
+    } catch (error) {
+        console.error("Error fetching credit ledger:", error);
+        res.status(500).json({ error: "Failed to fetch credit ledger data." });
+    }
+});
+
+// ==========================================
+// LEAVE & ATTENDANCE ROUTES
+// ==========================================
+
 app.post('/api/leave/apply', async (req, res) => {
-    // 1. Destructure with default values
     const { 
         employee_key, leave_type, filingDate, start_date, 
         end_date, remarks, working_days, department, 
-        position, salary, status 
+        position, salary, status, others_specify,
+        vacation_spl_location, abroad_specify, sick_leave_type,
+        illness_specify, study_leave_purpose, others_purpose, commutation,
+        pdfBase64, attachments 
     } = req.body;
 
     try {
-        // 2. Safety check: Use current date if filingDate is missing
         const safeFilingDate = filingDate || new Date().toISOString().split('T')[0];
         const date_key = parseInt(safeFilingDate.replace(/-/g, ''), 10);
+        
+        // Convert the attachments array to a JSON string so it safely stores in the DB
+        const attachmentsJson = attachments && attachments.length > 0 ? JSON.stringify(attachments) : null;
 
         const queryText = `
-            INSERT INTO public.dim_leave_application 
+            INSERT INTO public.fact_leave_application 
             (
                 employee_key, date_key, leave_type, start_date, end_date, 
-                remarks, working_days, department, position, salary, status
+                remarks, working_days, department, position, salary, status,
+                others_specify, vacation_spl_location, abroad_specify,
+                sick_leave_type, illness_specify, study_leave_purpose,
+                others_purpose, commutation, pdf_document, attachment_data
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+            RETURNING id;
         `;
         
-        await pool.query(queryText, [
+        const values = [
             employee_key, date_key, leave_type, start_date, end_date, 
-            remarks, working_days, department, position, salary, status
-        ]);
+            remarks || 'Filed via System', working_days, department, position, salary, status,
+            others_specify, vacation_spl_location, abroad_specify,
+            sick_leave_type, illness_specify, study_leave_purpose,
+            others_purpose, commutation, pdfBase64, attachmentsJson
+        ];
+
+        await pool.query(queryText, values);
         
-        res.status(201).json({ success: true, message: 'Application submitted!' });
+        res.status(201).json({ success: true, message: 'Application submitted successfully!' });
     } catch (error) {
         console.error("Database Insert Error:", error);
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false, message: error.message || 'Failed to submit application.' });
     }
 });
 
-// --- FETCH RECENT LEAVE APPLICATIONS ---
 app.get('/api/leave/recent/:employee_key', async (req, res) => {
     const { employee_key } = req.params;
 
@@ -310,7 +1163,6 @@ app.get('/api/leave/recent/:employee_key', async (req, res) => {
             ORDER BY date_key DESC 
             LIMIT 5
         `;
-        
         const result = await pool.query(queryText, [employee_key]);
         res.status(200).json(result.rows);
     } catch (error) {
@@ -319,7 +1171,6 @@ app.get('/api/leave/recent/:employee_key', async (req, res) => {
     }
 });
 
-// --- ATTENDANCE SUMMARY ROUTE ---
 app.get('/api/attendance/summary/:employee_key', async (req, res) => {
   const { employee_key } = req.params;
 
@@ -331,82 +1182,103 @@ app.get('/api/attendance/summary/:employee_key', async (req, res) => {
       FROM public.fact_attendance
       WHERE employee_key = $1
     `;
-    
     const result = await pool.query(queryText, [employee_key]);
     const stats = result.rows[0];
     
-    // Parse counts (Postgres returns counts as strings)
     const presentDays = parseInt(stats.present_days, 10) || 0;
     const totalDays = parseInt(stats.total_days, 10) || 0;
-    
-    // Calculate percentage safely to avoid division by zero
     const percentage = totalDays === 0 ? 0 : Math.round((presentDays / totalDays) * 100);
 
-    res.status(200).json({ 
-      presentDays, 
-      percentage 
-    });
+    res.status(200).json({ presentDays, percentage });
 
   } catch (error) {
     console.error("Database query error for attendance:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to retrieve attendance metrics' 
-    });
+    res.status(500).json({ success: false, message: 'Failed to retrieve attendance metrics' });
   }
 });
 
-// Logic for your approval route (pseudocode)
-const approveLeave = async (application_id, employee_key, days_used, type) => {
-    // 1. Record the deduction in the Ledger
-    await pool.query(`
-        INSERT INTO public.fact_leave_ledger 
-        (employee_key, leave_type, transaction_type, amount, reference_id, remarks)
-        VALUES ($1, $2, 'Deduction', $3, $4, 'Approved Leave Application')
-    `, [employee_key, type, -days_used, application_id]);
+// ==========================================
+// HOD: LEAVE APPROVALS 
+// ==========================================
 
-    // 2. Update the Balance Table
-    await pool.query(`
-        UPDATE public.dim_leave_balance 
-        SET remaining_credits = remaining_credits - $1,
-            last_updated = CURRENT_TIMESTAMP
-        WHERE employee_key = $2 AND leave_type = $3
-    `, [days_used, employee_key, type]);
-};
+app.get('/api/leave-approvals', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                l.application_id AS id,
+                e.first_name || ' ' || e.last_name AS name,
+                e.department,
+                l.leave_type AS type,
+                l.status,
+                l.start_date AS date,
+                l.working_days
+            FROM public.fact_leave_application l
+            JOIN public.dim_employee e ON l.employee_key = e.employee_key
+            ORDER BY 
+                CASE WHEN l.status = 'Pending' THEN 1 ELSE 2 END,
+                l.application_id DESC;
+        `;
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching leave approvals:", error);
+        res.status(500).json({ error: "Failed to fetch leave requests." });
+    }
+});
 
-// Inside your app.post('/api/salary/update')
-app.post('/api/salary/update', async (req, res) => {
-    const { employee_key, salary_amount, salary_grade, reason } = req.body;
+app.put('/api/leave-approvals/:id', async (req, res) => {
+    const { id } = req.params;
+    const { action } = req.body; 
     const client = await pool.connect();
 
     try {
-        await client.query('BEGIN'); // Start transaction
+        await client.query('BEGIN');
 
-        // 1. Insert into history (The Audit Ledger)
-        await client.query(`
-            INSERT INTO public.dim_salary_history 
-            (employee_key, salary_amount, salary_grade, effective_date, reason)
-            VALUES ($1, $2, $3, CURRENT_DATE, $4)
-        `, [employee_key, salary_amount, salary_grade, reason]);
+        const updateQuery = `
+            UPDATE public.fact_leave_application 
+            SET status = $1 
+            WHERE application_id = $2 
+            RETURNING employee_key, leave_type, working_days;
+        `;
+        const result = await client.query(updateQuery, [action, id]);
 
-        // 2. Update the "Active" salary in the employee table (The State)
-        await client.query(`
-            UPDATE public.dim_employee 
-            SET current_salary_amount = $1, current_salary_grade = $2
-            WHERE employee_key = $3
-        `, [salary_amount, salary_grade, employee_key]);
+        if (result.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: "Leave application not found." });
+        }
 
-        await client.query('COMMIT'); // Save both
-        res.status(200).json({ message: "Salary updated successfully" });
+        if (action === 'Approved') {
+            const { employee_key, leave_type, working_days } = result.rows[0];
+
+            await client.query(`
+                INSERT INTO public.fact_leave_ledger 
+                (employee_key, leave_type, transaction_type, amount, reference_id, remarks)
+                VALUES ($1, $2, 'Deduction', $3, $4, 'Approved Leave Application')
+            `, [employee_key, leave_type, -working_days, id]);
+
+            await client.query(`
+                UPDATE public.leave_balances 
+                SET remaining_credits = remaining_credits - $1,
+                    last_updated = CURRENT_TIMESTAMP
+                WHERE employee_key = $2 AND leave_type = $3
+            `, [working_days, employee_key, leave_type]);
+        }
+
+        await client.query('COMMIT');
+        res.status(200).json({ success: true, message: `Leave firmly ${action}` });
     } catch (error) {
-        await client.query('ROLLBACK'); // If anything fails, undo everything
-        res.status(500).json({ error: "Failed to update salary" });
+        await client.query('ROLLBACK');
+        console.error("Leave approval transaction failed:", error);
+        res.status(500).json({ error: "Failed to process leave approval." });
     } finally {
         client.release();
     }
 });
 
-// Add this to your Express backend routes
+// ==========================================
+// DEPARTMENT MANAGEMENT
+// ==========================================
+
 app.get('/api/departments', async (req, res) => {
     try {
         const query = `
@@ -415,7 +1287,6 @@ app.get('/api/departments', async (req, res) => {
                 d.department_name AS name,
                 COALESCE(e.first_name || ' ' || e.last_name, 'Unassigned') AS head,
                 d.max_capacity AS max,
-                -- Subquery to dynamically count active employees assigned to this department
                 (
                     SELECT COUNT(*)::integer 
                     FROM dim_employee e2 
@@ -426,8 +1297,7 @@ app.get('/api/departments', async (req, res) => {
             LEFT JOIN public.dim_employee e ON d.department_head_key = e.employee_key
             ORDER BY d.department_id ASC;
         `;
-        
-        const result = await pool.query(query); // Assuming you are using 'pg' pool
+        const result = await pool.query(query);
         res.json(result.rows);
     } catch (err) {
         console.error("Error fetching departments:", err);
@@ -435,11 +1305,9 @@ app.get('/api/departments', async (req, res) => {
     }
 });
 
-// POST: Create a new department
 app.post('/api/departments', async (req, res) => {
     const { department_id, department_name, max_capacity } = req.body;
 
-    // Basic validation
     if (!department_id || !department_name || !max_capacity) {
         return res.status(400).json({ error: "Department code, name, and capacity are required." });
     }
@@ -451,14 +1319,11 @@ app.post('/api/departments', async (req, res) => {
             VALUES ($1, $2, $3) 
             RETURNING *;
         `;
-        
         const values = [department_id.toUpperCase(), department_name, parseInt(max_capacity)];
         const result = await pool.query(query, values);
-        
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error("Error creating department:", err);
-        // Catch PostgreSQL unique constraint violation (duplicate ID or Name)
         if (err.code === '23505') {
             return res.status(409).json({ error: "A department with this Code or Name already exists." });
         }
@@ -466,8 +1331,6 @@ app.post('/api/departments', async (req, res) => {
     }
 });
 
-
-// PUT: Update an existing department
 app.put('/api/departments/:id', async (req, res) => {
     const { id } = req.params;
     const { department_name, max_capacity } = req.body;
@@ -485,7 +1348,6 @@ app.put('/api/departments/:id', async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ error: "Department not found." });
         }
-
         res.status(200).json(result.rows[0]);
     } catch (err) {
         console.error("Error updating department:", err);
@@ -494,10 +1356,54 @@ app.put('/api/departments/:id', async (req, res) => {
 });
 
 // ==========================================
-// EMPLOYEE MANAGEMENT ROUTES
+// HR DASHBOARD METRICS
 // ==========================================
 
-// GET: Fetch all active employees for the directory
+app.get('/api/hr/dashboard-stats', async (req, res) => {
+    try {
+        // 1. Total Active Employees
+        const empResult = await pool.query(`
+            SELECT COUNT(*) as total 
+            FROM public.dim_employee 
+            WHERE is_active = true
+        `);
+        const totalWorkforce = parseInt(empResult.rows[0].total) || 0;
+
+        // 2. Pending Profile Edits
+        const profileResult = await pool.query(`
+            SELECT COUNT(*) as pending 
+            FROM public.profile_requests 
+            WHERE status = 'Pending'
+        `);
+        const pendingEdits = parseInt(profileResult.rows[0].pending) || 0;
+
+        // 3. Employees currently on leave (Approved and within current date window)
+        const leaveResult = await pool.query(`
+            SELECT COUNT(DISTINCT employee_key) as on_leave 
+            FROM public.fact_leave_application 
+            WHERE status = 'Approved' 
+            AND CURRENT_DATE >= start_date 
+            AND CURRENT_DATE <= end_date
+        `);
+        const onLeave = parseInt(leaveResult.rows[0].on_leave) || 0;
+
+        res.status(200).json({
+            totalWorkforce: totalWorkforce,
+            activeEmployees: totalWorkforce - onLeave, // Total active minus those currently out
+            onLeave: onLeave,
+            pendingEdits: pendingEdits,
+            anomalies: 18 // Static placeholder for UI layout until the anomaly engine is integrated
+        });
+    } catch (error) {
+        console.error("Error fetching HR stats:", error);
+        res.status(500).json({ error: "Failed to fetch HR dashboard stats" });
+    }
+});
+
+// ==========================================
+// EMPLOYEE DIRECTORY & ONBOARDING
+// ==========================================
+
 app.get('/api/employees', async (req, res) => {
     try {
         const query = `
@@ -520,17 +1426,13 @@ app.get('/api/employees', async (req, res) => {
     }
 });
 
-// POST: Onboard a new employee (Multi-table Transaction)
 app.post('/api/employees', async (req, res) => {
     const { employee_id, first_name, last_name, department, position_title } = req.body;
-    
-    // Check out a client directly from the pool to handle the transaction
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN'); 
 
-        // 1. Insert into dim_employee (The core profile)
         const empQuery = `
             INSERT INTO public.dim_employee 
             (employee_id, first_name, last_name, department, position_title, is_active, hire_date) 
@@ -540,28 +1442,26 @@ app.post('/api/employees', async (req, res) => {
         const empValues = [employee_id.toUpperCase(), first_name, last_name, department, position_title];
         const empResult = await client.query(empQuery, empValues);
         
-        // Grab the newly generated primary key to link the account
         const newEmployeeKey = empResult.rows[0].employee_key;
-
-        // 2. Generate a default system account in dim_accounts
-        // Automatically formats the username to lowercase (e.g., emp-2026-001)
-        const defaultPassword = 'City' + new Date().getFullYear(); // e.g., City2026
+        
+        // Auto-generate a dummy email to satisfy the NOT NULL constraint in user_accounts
+        const defaultEmail = `${employee_id.toLowerCase()}@lipacity.gov.ph`;
+        const defaultPassword = 'City' + new Date().getFullYear();
+        
         const accQuery = `
-            INSERT INTO public.dim_accounts 
-            (employee_key, username, password, system_access_level) 
-            VALUES ($1, $2, $3, 'Employee Self-Service');
+            INSERT INTO public.user_accounts 
+            (employee_key, username, password, system_access_level, email) 
+            VALUES ($1, $2, $3, 'Employee Self-Service', $4);
         `;
-        const accValues = [newEmployeeKey, employee_id.toLowerCase(), defaultPassword];
+        const accValues = [newEmployeeKey, employee_id.toLowerCase(), defaultPassword, defaultEmail];
         await client.query(accQuery, accValues);
-        // 3. Generate the Onboarding Checklist in fact_onboarding
+        
         const onboardQuery = `
-            INSERT INTO public.fact_onboarding 
+            INSERT INTO public.onboarding_tasks 
             (employee_key, target_start_date, setup_status, it_provisioning_done, documents_submitted) 
             VALUES ($1, CURRENT_DATE + INTERVAL '14 days', 'Pending Setup', false, false);
         `;
         await client.query(onboardQuery, [newEmployeeKey]);
-
-        await client.query('COMMIT');
 
         await client.query('COMMIT'); 
         res.status(201).json({ success: true, message: "Employee onboarded successfully." });
@@ -570,7 +1470,6 @@ app.post('/api/employees', async (req, res) => {
         await client.query('ROLLBACK'); 
         console.error("Error onboarding employee:", error);
         
-        // Catch duplicate Employee IDs
         if (error.code === '23505') {
             return res.status(409).json({ error: "An employee with this ID already exists." });
         }
@@ -580,8 +1479,6 @@ app.post('/api/employees', async (req, res) => {
     }
 });
 
-
-// PUT: Update an existing employee profile
 app.put('/api/employees/:key', async (req, res) => {
     const { key } = req.params;
     const { first_name, last_name, department, position_title } = req.body;
@@ -608,10 +1505,71 @@ app.put('/api/employees/:key', async (req, res) => {
 });
 
 // ==========================================
-// PROFILE EDIT REQUESTS ROUTES
+// PAYROLL & LEAVE MONETIZATION
 // ==========================================
 
-// GET: Fetch all profile edit requests
+// GET: Payroll Dashboard Metrics
+app.get('/api/payroll/stats', async (req, res) => {
+    try {
+        // Calculate Total Disbursed (Where status is 'Credited')
+        const disbursedQuery = `
+            SELECT SUM(calculated_amount) as total_disbursed 
+            FROM public.fact_leave_monetization 
+            WHERE status = 'Credited'
+        `;
+        const disbursedResult = await pool.query(disbursedQuery);
+        const totalDisbursed = disbursedResult.rows[0].total_disbursed || 0;
+
+        // Calculate Pending Requests
+        const pendingQuery = `
+            SELECT COUNT(*) as pending_count 
+            FROM public.fact_leave_monetization 
+            WHERE status = 'Pending Review'
+        `;
+        const pendingResult = await pool.query(pendingQuery);
+        const pendingCount = pendingResult.rows[0].pending_count || 0;
+
+        res.status(200).json({
+            disbursed: parseFloat(totalDisbursed),
+            pending: parseInt(pendingCount)
+        });
+    } catch (error) {
+        console.error("Error fetching payroll stats:", error);
+        res.status(500).json({ error: "Failed to fetch payroll statistics." });
+    }
+});
+
+// GET: Full Monetization Ledger
+app.get('/api/payroll/monetizations', async (req, res) => {
+    try {
+        // Join the monetization requests with employee details
+        const query = `
+            SELECT 
+                m.monetization_id,
+                m.leave_type,
+                m.credits_converted,
+                m.calculated_amount,
+                m.status,
+                m.request_date,
+                e.first_name,
+                e.last_name,
+                e.department
+            FROM public.fact_leave_monetization m
+            JOIN public.dim_employee e ON m.employee_key = e.employee_key
+            ORDER BY m.request_date DESC;
+        `;
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching monetization ledger:", error);
+        res.status(500).json({ error: "Failed to fetch monetization records." });
+    }
+});
+
+// ==========================================
+// PROFILE EDIT REQUESTS
+// ==========================================
+
 app.get('/api/profile-requests', async (req, res) => {
     try {
         const query = `
@@ -624,7 +1582,7 @@ app.get('/api/profile-requests', async (req, res) => {
                 r.proof_document_path,
                 r.status,
                 r.request_date
-            FROM public.fact_profile_request r
+            FROM public.profile_requests r
             JOIN public.dim_employee e ON r.employee_key = e.employee_key
             ORDER BY 
                 CASE WHEN r.status = 'Pending' THEN 1 ELSE 2 END, 
@@ -638,19 +1596,17 @@ app.get('/api/profile-requests', async (req, res) => {
     }
 });
 
-// PUT: Approve or Reject a profile edit request
 app.put('/api/profile-requests/:id', async (req, res) => {
     const { id } = req.params;
-    const { action, reviewer_key } = req.body; // 'Approved' or 'Rejected'
+    const { action, reviewer_key } = req.body; 
 
     try {
         const query = `
-            UPDATE public.fact_profile_request 
+            UPDATE public.profile_requests 
             SET status = $1, reviewed_by_key = $2, reviewed_date = CURRENT_TIMESTAMP 
             WHERE request_id = $3 
             RETURNING *;
         `;
-        // Pass the reviewer's employee_key if available, otherwise null
         const values = [action, reviewer_key || null, id];
         const result = await pool.query(query, values);
 
@@ -666,10 +1622,9 @@ app.put('/api/profile-requests/:id', async (req, res) => {
 });
 
 // ==========================================
-// ONBOARDING TRACKER ROUTES
+// ONBOARDING TRACKER
 // ==========================================
 
-// GET: Fetch all active onboarding checklists
 app.get('/api/onboarding', async (req, res) => {
     try {
         const query = `
@@ -682,7 +1637,7 @@ app.get('/api/onboarding', async (req, res) => {
                 o.setup_status, 
                 o.it_provisioning_done, 
                 o.documents_submitted 
-            FROM public.fact_onboarding o
+            FROM public.onboarding_tasks o
             JOIN public.dim_employee e ON o.employee_key = e.employee_key
             ORDER BY o.onboarding_id DESC;
         `;
@@ -694,14 +1649,13 @@ app.get('/api/onboarding', async (req, res) => {
     }
 });
 
-// PUT: Update the checklist status
 app.put('/api/onboarding/:id', async (req, res) => {
     const { id } = req.params;
     const { it_provisioning_done, documents_submitted, setup_status } = req.body;
 
     try {
         const query = `
-            UPDATE public.fact_onboarding 
+            UPDATE public.onboarding_tasks 
             SET it_provisioning_done = $1, documents_submitted = $2, setup_status = $3 
             WHERE onboarding_id = $4 
             RETURNING *;
@@ -720,96 +1674,10 @@ app.put('/api/onboarding/:id', async (req, res) => {
 });
 
 // ==========================================
-// HOD: LEAVE APPROVALS ROUTES
-// ==========================================
-
-// GET: Fetch all leave requests for the HOD dashboard
-app.get('/api/leave-approvals', async (req, res) => {
-    try {
-        const query = `
-            SELECT 
-                l.application_id AS id,
-                e.first_name || ' ' || e.last_name AS name,
-                e.department,
-                l.leave_type AS type,
-                l.status,
-                l.start_date AS date,
-                l.working_days
-            FROM public.dim_leave_application l
-            JOIN public.dim_employee e ON l.employee_key = e.employee_key
-            ORDER BY 
-                CASE WHEN l.status = 'Pending' THEN 1 ELSE 2 END,
-                l.application_id DESC;
-        `;
-        const result = await pool.query(query);
-        res.status(200).json(result.rows);
-    } catch (error) {
-        console.error("Error fetching leave approvals:", error);
-        res.status(500).json({ error: "Failed to fetch leave requests." });
-    }
-});
-
-// PUT: Approve or Reject a leave application (Includes Ledger Deduction)
-app.put('/api/leave-approvals/:id', async (req, res) => {
-    const { id } = req.params;
-    const { action } = req.body; // Expects 'Approved' or 'Rejected'
-    
-    const client = await pool.connect();
-
-    try {
-        await client.query('BEGIN');
-
-        // 1. Update the request status and return the core details needed for deduction
-        const updateQuery = `
-            UPDATE public.dim_leave_application 
-            SET status = $1 
-            WHERE application_id = $2 
-            RETURNING employee_key, leave_type, working_days;
-        `;
-        const result = await client.query(updateQuery, [action, id]);
-
-        if (result.rows.length === 0) {
-            await client.query('ROLLBACK');
-            return res.status(404).json({ error: "Leave application not found." });
-        }
-
-        // 2. If Approved, dynamically deduct from the Ledger and Balance tables
-        if (action === 'Approved') {
-            const { employee_key, leave_type, working_days } = result.rows[0];
-
-            // Record the deduction in the Ledger
-            await client.query(`
-                INSERT INTO public.fact_leave_ledger 
-                (employee_key, leave_type, transaction_type, amount, reference_id, remarks)
-                VALUES ($1, $2, 'Deduction', $3, $4, 'Approved Leave Application')
-            `, [employee_key, leave_type, -working_days, id]);
-
-            // Update the Active Balance Table
-            await client.query(`
-                UPDATE public.dim_leave_balance 
-                SET remaining_credits = remaining_credits - $1,
-                    last_updated = CURRENT_TIMESTAMP
-                WHERE employee_key = $2 AND leave_type = $3
-            `, [working_days, employee_key, leave_type]);
-        }
-
-        await client.query('COMMIT');
-        res.status(200).json({ success: true, message: `Leave firmly ${action}` });
-
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.error("Leave approval transaction failed:", error);
-        res.status(500).json({ error: "Failed to process leave approval." });
-    } finally {
-        client.release();
-    }
-});
-
-// ==========================================
 // IT OPERATIONS: ROLE MANAGEMENT (RBAC)
 // ==========================================
 
-// GET: Fetch all system accounts and their current roles
+// GET: Fetch all users and their roles
 app.get('/api/roles', async (req, res) => {
     try {
         const query = `
@@ -817,9 +1685,10 @@ app.get('/api/roles', async (req, res) => {
                 a.username,
                 e.employee_id AS id,
                 e.first_name || ' ' || e.last_name AS name,
-                e.department,
-                a.system_access_level AS current_role
-            FROM public.dim_accounts a
+                e.department AS dept,
+                a.system_access_level AS "currentRole",
+                CASE WHEN e.is_active = true THEN 'Active' ELSE 'Suspended' END AS status
+            FROM public.user_accounts a
             JOIN public.dim_employee e ON a.employee_key = e.employee_key
             ORDER BY 
                 CASE WHEN a.system_access_level = 'Disabled' THEN 2 ELSE 1 END,
@@ -833,14 +1702,14 @@ app.get('/api/roles', async (req, res) => {
     }
 });
 
-// PUT: Update an account's system access level
+// PUT: Update user system_access_level
 app.put('/api/roles/:username', async (req, res) => {
     const { username } = req.params;
     const { role } = req.body;
     
     try {
         const query = `
-            UPDATE public.dim_accounts 
+            UPDATE public.user_accounts 
             SET system_access_level = $1 
             WHERE username = $2 
             RETURNING username, system_access_level;
@@ -858,7 +1727,217 @@ app.put('/api/roles/:username', async (req, res) => {
     }
 });
 
+// GET: Fetch all password reset requests for the IT Dashboard
+app.get('/api/password-reset-requests', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                request_id,
+                employee_id_input,
+                first_name,
+                last_name,
+                department,
+                position_title,
+                status,
+                requested_at
+            FROM public.password_reset_requests
+            ORDER BY 
+                CASE WHEN status = 'Pending' THEN 1 ELSE 2 END,
+                requested_at DESC;
+        `;
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching password reset requests:", error);
+        res.status(500).json({ error: "Failed to fetch password reset requests." });
+    }
+});
 
+// PUT: Update password reset request status (e.g., mark as 'Resolved')
+app.put('/api/password-reset-requests/:id', async (req, res) => {
+    const { id } = req.params;
+    const { status, resolved_by } = req.body;
+    
+    try {
+        const query = `
+            UPDATE public.password_reset_requests 
+            SET status = $1, resolved_at = CURRENT_TIMESTAMP, resolved_by = $2
+            WHERE request_id = $3 
+            RETURNING *;
+        `;
+        const result = await pool.query(query, [status, resolved_by || null, id]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Request not found." });
+        }
+        res.status(200).json({ success: true, message: `Request marked as ${status}` });
+    } catch (error) {
+        console.error("Error updating password reset request:", error);
+        res.status(500).json({ error: "Failed to update request." });
+    }
+});
+
+// ==========================================
+// IT DASHBOARD: PASSWORD RESET MANAGEMENT
+// ==========================================
+
+// GET: Fetch all password reset requests for the IT Dashboard
+app.get('/api/password-reset-requests', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                request_id,
+                employee_key,
+                employee_id_input,
+                first_name,
+                middle_name,
+                last_name,
+                department,
+                position_title,
+                status,
+                requested_at
+            FROM public.password_reset_requests
+            ORDER BY 
+                CASE WHEN status = 'Pending' THEN 1 ELSE 2 END,
+                requested_at DESC;
+        `;
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching password reset requests:", error);
+        res.status(500).json({ error: "Failed to fetch password reset requests." });
+    }
+});
+
+// PUT: Approve request, generate Temp Password, and update User Account
+app.put('/api/password-reset-requests/:id/approve', async (req, res) => {
+    const { id } = req.params;
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+        
+        // 1. Get the requested record to find the employee_key
+        const reqQuery = await client.query(
+            'SELECT employee_key FROM public.password_reset_requests WHERE request_id = $1', 
+            [id]
+        );
+        
+        if (reqQuery.rows.length === 0) throw new Error('Request not found');
+        
+        const employeeKey = reqQuery.rows[0].employee_key;
+        if (!employeeKey) throw new Error('Cannot approve an unmatched request automatically.');
+
+        // 2. Generate a Temporary Password (e.g., Temp@8392)
+        const tempPassword = `Temp@${Math.floor(1000 + Math.random() * 9000)}`;
+        
+        // 3. Update the actual employee's password in user_accounts
+        await client.query(
+            `UPDATE public.user_accounts SET password = $1 WHERE employee_key = $2`, 
+            [tempPassword, employeeKey]
+        );
+        
+        // 4. Mark the request as Approved
+        await client.query(
+            `UPDATE public.password_reset_requests 
+             SET status = 'Approved', resolved_at = CURRENT_TIMESTAMP 
+             WHERE request_id = $1`, 
+            [id]
+        );
+        
+        await client.query('COMMIT');
+        
+        // Send the temporary password back to the frontend to show in the modal
+        res.status(200).json({ success: true, tempPassword });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Error approving password reset:", error);
+        res.status(500).json({ message: error.message || "Failed to approve request." });
+    } finally {
+        client.release();
+    }
+});
+
+// PUT: Reject the password reset request
+app.put('/api/password-reset-requests/:id/reject', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query(`
+            UPDATE public.password_reset_requests 
+            SET status = 'Rejected', resolved_at = CURRENT_TIMESTAMP 
+            WHERE request_id = $1
+        `, [id]);
+        
+        res.status(200).json({ success: true, message: "Request rejected." });
+    } catch (error) {
+        console.error("Error rejecting password reset:", error);
+        res.status(500).json({ message: "Failed to reject request." });
+    }
+});
+
+// ==========================================
+// SYSTEM SETTINGS & CONFIGURATION
+// ==========================================
+
+// GET: Fetch System Configurations
+app.get('/api/system-settings', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT setting_key, setting_value FROM public.system_settings');
+        // Convert rows [{setting_key: 'x', setting_value: 'y'}] into a single object {x: 'y'}
+        const settingsObj = result.rows.reduce((acc, row) => {
+            acc[row.setting_key] = row.setting_value;
+            return acc;
+        }, {});
+        res.status(200).json(settingsObj);
+    } catch (error) {
+        console.error("Error fetching settings:", error);
+        res.status(500).json({ error: "Failed to fetch settings." });
+    }
+});
+
+// PUT: Bulk Update System Configurations
+app.put('/api/system-settings', async (req, res) => {
+    const settings = req.body;
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+        
+        // Loop through the provided object and update existing keys
+        for (const [key, value] of Object.entries(settings)) {
+            // Ignore the updated_by key for the dynamic loop, handle it below if necessary
+            if (key !== 'updated_by') {
+                await client.query(
+                    `UPDATE public.system_settings 
+                     SET setting_value = $1, updated_at = CURRENT_TIMESTAMP, updated_by = $2 
+                     WHERE setting_key = $3`,
+                    [value, settings.updated_by || null, key]
+                );
+            }
+        }
+        
+        await client.query('COMMIT');
+        res.status(200).json({ success: true, message: "Settings updated successfully." });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Error saving settings:", error);
+        res.status(500).json({ error: "Failed to save settings." });
+    } finally {
+        client.release();
+    }
+});
+
+// POST: Simulated Action Handlers for IT Danger Zone
+// Because this is a capstone, we simulate the delay to show the UI loading states perfectly
+app.post('/api/system-action/:action', async (req, res) => {
+    const { action } = req.params;
+    
+    // Simulate server processing time (1.5 seconds)
+    setTimeout(() => {
+        console.log(`IT Operation executed: [${action.toUpperCase()}]`);
+        res.status(200).json({ success: true, message: `${action} executed successfully.` });
+    }, 1500);
+});
 
 // Start listening for API calls
 app.listen(PORT, () => {

@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Server, Shield, Database, Terminal, User, Clock, Settings,
-  ChevronLeft, ChevronRight, Menu, X, Home, UserCheck, History, CreditCard, GraduationCap
+  ChevronLeft, ChevronRight, Menu, X, Home, UserCheck, History, CreditCard, GraduationCap,
+  KeyRound
 } from 'lucide-react';
 import './sidebar.css'; 
 
@@ -52,6 +53,7 @@ export default function ItSidebar() {
     { path: '/role-management', icon: Shield, label: 'Role Management (RBAC)' },
     { path: '/database-metrics', icon: Database, label: 'Database Metrics' },
     { path: '/api-gateway', icon: Terminal, label: 'API Gateway Log' },
+    { path: '/password-reset-requests', icon: KeyRound, label: 'Password Reset Requests' },
     { path: '/system-settings', icon: Settings, label: 'Global Settings' },
   ];
 
@@ -101,14 +103,16 @@ export default function ItSidebar() {
         {/* BRAND / LOGO AREA */}
         <div className="sidebar-brand">
           {!isCollapsed ? (
-            <img src="/leaplogo.png" alt="LEAP-A Logo" style={{ height: '65px', width: 'auto', objectFit: 'contain' }} />
+            <img src="/leaplogo.png" alt="LEAP-A Logo" className="sidebar-logo-img" />
           ) : (
             <img src="/leap-asidebar.png" alt="LEAP-A" className="sidebar-logo-icon" />
           )}
         </div>
 
         {/* IT OPERATIONS SECTION */}
-        {!isCollapsed && <div className="sidebar-section-label">IT Operations</div>}
+        <div className="sidebar-section-label">
+          {!isCollapsed && "IT Operations"}
+        </div>
         <ul className="sidebar-menu">
           {itOperationsItems.map((item) => (
             <li
@@ -118,14 +122,16 @@ export default function ItSidebar() {
               onMouseEnter={(e) => handleMouseEnter(e, item.label)}
               onMouseLeave={handleMouseLeave}
             >
-              <item.icon size={18} className="sidebar-item-icon" />
+              <item.icon size={20} className="sidebar-item-icon" />
               {!isCollapsed && <span className="sidebar-item-label">{item.label}</span>}
             </li>
           ))}
         </ul>
 
         {/* PERSONAL EMPLOYEE RECORDS SECTION */}
-        {!isCollapsed && <div className="sidebar-section-label" style={{ marginTop: '16px' }}>My Employee Records</div>}
+        <div className="sidebar-section-label">
+          {!isCollapsed && "My Employee Records"}
+        </div>
         <ul className="sidebar-menu">
           {employeeMenuItems.map((item) => (
             <li
@@ -135,14 +141,16 @@ export default function ItSidebar() {
               onMouseEnter={(e) => handleMouseEnter(e, item.label)}
               onMouseLeave={handleMouseLeave}
             >
-              <item.icon size={18} className="sidebar-item-icon" />
+              <item.icon size={20} className="sidebar-item-icon" />
               {!isCollapsed && <span className="sidebar-item-label">{item.label}</span>}
             </li>
           ))}
         </ul>
 
         {/* ACCOUNT SECTION */}
-        {!isCollapsed && <div className="sidebar-section-label" style={{ marginTop: '16px' }}>Account</div>}
+        <div className="sidebar-section-label">
+          {!isCollapsed && "Account"}
+        </div>
         <ul className="sidebar-menu">
           {accountMenuItems.map((item) => (
             <li
@@ -152,7 +160,7 @@ export default function ItSidebar() {
               onMouseEnter={(e) => handleMouseEnter(e, item.label)}
               onMouseLeave={handleMouseLeave}
             >
-              <item.icon size={18} className="sidebar-item-icon" />
+              <item.icon size={20} className="sidebar-item-icon" />
               {!isCollapsed && <span className="sidebar-item-label">{item.label}</span>}
             </li>
           ))}
@@ -161,11 +169,11 @@ export default function ItSidebar() {
         {/* FOOTER AREA */}
         <div className="sidebar-footer">
           <div className="datetime-box">
-            <Clock size={18} className="datetime-icon" />
+            <Clock size={20} className="datetime-icon" />
             {!isCollapsed && (
               <div className="datetime-text">
                 <span>{formattedDate}</span>
-                <span className="time-label">Time: <span className="time-value" style={{ color: '#5a0000' }}>{formattedTime}</span></span>
+                <span className="time-label">Time: <span className="time-value">{formattedTime}</span></span>
               </div>
             )}
           </div>

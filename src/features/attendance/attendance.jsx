@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search, Calendar, AlertTriangle, CheckCircle, XCircle
@@ -10,44 +10,60 @@ import './attendance.css';
 export default function Attendance({ onLogout, user }) {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState('2026-05');
+  
+  // Set default to current project timeline
+  const [selectedMonth, setSelectedMonth] = useState('2026-09');
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  
+  // Dynamic Metric States
+  const [metrics, setMetrics] = useState({
+    present: 0,
+    tardy: 0,
+    absent: 0,
+    avgDelay: 0,
+    totalWorkingDays: 22 // Assuming a standard 22 working day month
+  });
 
-  // Mock attendance records
-  const [attendanceRecords, setAttendanceRecords] = useState([
-    {
-      date: 'May 18, 2026',
-      timeIn: '7:51:05 AM',
-      timeOut: '3:49:08 PM',
-      status: 'Present',
-      remarks: 'Biometric Verified'
-    },
-    {
-      date: 'May 17, 2026',
-      timeIn: '8:04:12 AM',
-      timeOut: '5:01:22 PM',
-      status: 'Late',
-      remarks: 'Grace period (4 mins)'
-    },
-    {
-      date: 'May 16, 2026',
-      timeIn: '7:48:30 AM',
-      timeOut: '4:02:15 PM',
-      status: 'Present',
-      remarks: 'Biometric Verified'
-    }
-  ]);
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      if (!user?.employee_key) return;
+      
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${apiUrl}/api/attendance/${user.employee_key}?month=${selectedMonth}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          setAttendanceRecords(data);
+          
+          // Calculate dynamic metrics from the returned dataset
+          const present = data.filter(r => r.status === 'Present').length;
+          const tardy = data.filter(r => r.status === 'Tardy' || r.tardy_minutes > 0).length;
+          const absent = data.filter(r => r.status === 'Absent').length;
+          
+          const totalDelay = data.reduce((sum, r) => sum + (r.tardy_minutes || 0), 0);
+          const avgDelay = tardy > 0 ? Math.round(totalDelay / tardy) : 0;
+          
+          setMetrics({ present, tardy, absent, avgDelay, totalWorkingDays: 22 });
+        }
+      } catch (error) {
+        console.error("Failed to fetch attendance:", error);
+      }
+    };
+
+    fetchAttendance();
+  }, [user, selectedMonth]);
 
   const filteredRecords = attendanceRecords.filter((rec) =>
-    rec.date.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    rec.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    rec.remarks.toLowerCase().includes(searchQuery.toLowerCase())
+    (rec.date && rec.date.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (rec.status && rec.status.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (rec.remarks && rec.remarks.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
     <div className="dashboard-container">
       <RoleSidebar user={user} />
 
-      {/* Added 'fade-in-up' class for smooth page entrance transition */}
       <main className="dashboard-main-content fade-in-up">
         {/* UNIFIED TOP HEADER CONTAINER */}
         <div className="content-top-header">
@@ -60,7 +76,6 @@ export default function Attendance({ onLogout, user }) {
             </h1>
           </div>
 
-          {/* Reusable Header Dropdown Control */}
           <Header user={user} onLogout={onLogout} />
         </div>
 
@@ -70,17 +85,22 @@ export default function Attendance({ onLogout, user }) {
           <div className="att-metric-card card-present hover-lift">
             <div className="card-top-accent accent-green"></div>
             <div className="att-card-header">
-              <span className="att-card-title"><CheckCircle size={16} color="#16a34a" /> Days Present</span>
-              <span className="att-card-ratio">18/31</span>
+              <span className="att-card-title">
+                <CheckCircle size={16} color="#16a34a" /> Days Present
+              </span>
+              <span className="att-card-ratio">{metrics.present}/{metrics.totalWorkingDays}</span>
             </div>
             <div className="att-main-stat text-green">
-              18 <span className="stat-unit">Days</span>
+              {metrics.present} <span className="stat-unit">Days</span>
             </div>
             <div className="att-progress-bar">
-              <div className="att-progress-fill fill-green" style={{ width: '58%' }}></div>
+              <div 
+                className="att-progress-fill fill-green" 
+                style={{ width: `${Math.min((metrics.present / metrics.totalWorkingDays) * 100, 100)}%` }}
+              ></div>
             </div>
             <div className="att-card-footer">
-              Avg. Time In: <strong>7:51 AM</strong>
+              Avg. Time In: <strong>07:51 AM</strong>
             </div>
           </div>
 
@@ -88,16 +108,21 @@ export default function Attendance({ onLogout, user }) {
           <div className="att-metric-card card-tardiness hover-lift">
             <div className="card-top-accent accent-amber"></div>
             <div className="att-card-header">
-              <span className="att-card-title"><AlertTriangle size={16} color="#d97706" /> Tardiness</span>
+              <span className="att-card-title">
+                <AlertTriangle size={16} color="#d97706" /> Tardiness
+              </span>
             </div>
             <div className="att-main-stat text-amber">
-              2 <span className="stat-unit">Times</span>
+              {metrics.tardy} <span className="stat-unit">Times</span>
             </div>
             <div className="att-progress-bar">
-              <div className="att-progress-fill fill-amber" style={{ width: '15%' }}></div>
+              <div 
+                className="att-progress-fill fill-amber" 
+                style={{ width: `${Math.min((metrics.tardy / 5) * 100, 100)}%` }}
+              ></div>
             </div>
             <div className="att-card-footer">
-              Avg. Delay: <strong>+ 4 Minutes</strong>
+              Avg. Delay: <strong>{metrics.avgDelay > 0 ? `+ ${metrics.avgDelay} Minutes` : 'None'}</strong>
             </div>
           </div>
 
@@ -105,16 +130,21 @@ export default function Attendance({ onLogout, user }) {
           <div className="att-metric-card card-absence hover-lift">
             <div className="card-top-accent accent-slate"></div>
             <div className="att-card-header">
-              <span className="att-card-title"><XCircle size={16} color="#64748b" /> Absence</span>
+              <span className="att-card-title">
+                <XCircle size={16} color="#64748b" /> Absence
+              </span>
             </div>
             <div className="att-main-stat text-slate">
-              0 <span className="stat-unit">Days</span>
+              {metrics.absent} <span className="stat-unit">Days</span>
             </div>
             <div className="att-progress-bar">
-              <div className="att-progress-fill fill-slate" style={{ width: '0%' }}></div>
+              <div 
+                className="att-progress-fill fill-slate" 
+                style={{ width: `${Math.min((metrics.absent / 3) * 100, 100)}%` }}
+              ></div>
             </div>
             <div className="att-card-footer">
-              <strong>Excellent Streak!</strong>
+              <strong>{metrics.absent === 0 ? 'Excellent Streak!' : 'Careful tracking advised'}</strong>
             </div>
           </div>
         </section>
@@ -146,7 +176,7 @@ export default function Attendance({ onLogout, user }) {
         {/* DATA TABLE CARD */}
         <section className="data-table-container-card">
           <div className="table-header-title-banner">
-            <span>Attendance Ledger Table</span>
+            <span className="table-header-title">Attendance Ledger Table</span>
             <span className="table-header-caption">Logs updated in real-time</span>
           </div>
 

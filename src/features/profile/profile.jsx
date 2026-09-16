@@ -14,7 +14,8 @@ import './profile.css';
 
 export default function MyProfile({ onLogout, user, onUserUpdate }) {
     const [isEditing, setIsEditing] = useState(false);
-    
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const [formData, setFormData] = useState({
         first_name: '',
         middle_name: '',
@@ -24,6 +25,10 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
         email: ''
     });
 
+    // Permission check: Only HR Admin and Super Admin can edit restricted fields like Name
+    const canEditName = user?.role === 'HR Admin' || user?.role === 'Super Admin';
+
+    // Synchronize state with user prop changes
     useEffect(() => {
         if (user) {
             setFormData({
@@ -31,8 +36,8 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
                 middle_name: user.middle_name || '',
                 last_name: user.last_name || '',
                 civil_status: user.civil_status || '',
-                contact_number: user.contact_number || '', 
-                email: user.email || ''                    
+                contact_number: user.contact_number || '',
+                email: user.email || ''
             });
         }
     }, [user]);
@@ -64,23 +69,30 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
         }
 
         try {
+            setIsSubmitting(true);
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-            
+
             const response = await fetch(`${apiUrl}/api/profile/${user.employee_key}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
             });
-                
+
             if (response.ok) {
-                onUserUpdate(formData);
+                const updatedData = await response.json().catch(() => null);
+                if (onUserUpdate) {
+                    onUserUpdate(updatedData || { ...user, ...formData });
+                }
                 setIsEditing(false);
                 alert("Profile updated successfully!");
             } else {
-                throw new Error("Server rejected the update.");
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.message || "Server rejected the update.");
             }
         } catch (err) {
             alert("Failed to update profile: " + err.message);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -88,16 +100,24 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
         return `${first || ''} ${last || ''}`.trim() || 'Employee Name';
     };
 
+    const formatDate = (dateString) => {
+        if (!dateString) return '—';
+        const date = new Date(dateString);
+        return isNaN(date.getTime())
+            ? '—'
+            : date.toLocaleDateString(undefined, { timeZone: 'UTC' });
+    };
+
     const renderSidebar = () => {
         switch (user?.role) {
             case 'Super Admin':
-                return <ItSidebar />;
+                return <ItSidebar user={user} />;
             case 'HR Admin':
-                return <HrSidebar />;
+                return <HrSidebar user={user} />;
             case 'Department Head':
-                return <HodSidebar />;
+                return <HodSidebar user={user} />;
             default:
-                return <Sidebar />;
+                return <Sidebar user={user} />;
         }
     };
 
@@ -106,27 +126,23 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
             {renderSidebar()}
 
             <main className="profile-main-content">
-                
-                {/* TOP HEADER */}
                 <header className="profile-top-bar">
                     <div className="profile-top-title">
                         <h2>My Profile</h2>
                     </div>
-
-                    {/* Shared Header Component */}
                     <Header user={user} onLogout={onLogout} />
                 </header>
 
-                {/* HERO BANNER */}
                 <div className="profile-hero-card">
                     <div className="profile-identity-group">
                         <div className="avatar-wrapper">
                             <div className="avatar-circle">
                                 <span className="avatar-initials">
-                                    {formData.first_name?.[0] || ''}{formData.last_name?.[0] || ''}
+                                    {formData.first_name?.[0]?.toUpperCase() || ''}
+                                    {formData.last_name?.[0]?.toUpperCase() || ''}
                                 </span>
                             </div>
-                            <div className="avatar-edit-overlay">
+                            <div className="avatar-edit-overlay" title="Change profile picture">
                                 <Camera size={14} />
                             </div>
                         </div>
@@ -145,10 +161,7 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
                     </div>
                 </div>
 
-                {/* INFORMATION GRID */}
                 <div className="profile-sections-grid">
-                    
-                    {/* PERSONAL INFORMATION CARD */}
                     <div className="info-card">
                         <div className="info-card-header">
                             <h3>Personal Information</h3>
@@ -158,14 +171,14 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
                                 <span className="field-label">Employee ID</span>
                                 <span className="field-value">{user?.employee_id || '—'}</span>
                             </div>
-                            
+
                             <div className="data-field-item">
                                 <span className="field-label">First Name</span>
-                                {isEditing ? (
-                                    <input 
-                                        className="field-input" 
-                                        value={formData.first_name} 
-                                        onChange={(e) => setFormData({...formData, first_name: e.target.value})} 
+                                {isEditing && canEditName ? (
+                                    <input
+                                        className="field-input"
+                                        value={formData.first_name}
+                                        onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                                     />
                                 ) : (
                                     <span className="field-value">{formData.first_name || '—'}</span>
@@ -174,11 +187,11 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
 
                             <div className="data-field-item">
                                 <span className="field-label">Middle Name</span>
-                                {isEditing ? (
-                                    <input 
-                                        className="field-input" 
-                                        value={formData.middle_name} 
-                                        onChange={(e) => setFormData({...formData, middle_name: e.target.value})} 
+                                {isEditing && canEditName ? (
+                                    <input
+                                        className="field-input"
+                                        value={formData.middle_name}
+                                        onChange={(e) => setFormData({ ...formData, middle_name: e.target.value })}
                                     />
                                 ) : formData.middle_name ? (
                                     <span className="field-value">{formData.middle_name}</span>
@@ -189,11 +202,11 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
 
                             <div className="data-field-item">
                                 <span className="field-label">Last Name</span>
-                                {isEditing ? (
-                                    <input 
-                                        className="field-input" 
-                                        value={formData.last_name} 
-                                        onChange={(e) => setFormData({...formData, last_name: e.target.value})} 
+                                {isEditing && canEditName ? (
+                                    <input
+                                        className="field-input"
+                                        value={formData.last_name}
+                                        onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
                                     />
                                 ) : (
                                     <span className="field-value">{formData.last_name || '—'}</span>
@@ -203,7 +216,7 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
                             <div className="data-field-item">
                                 <span className="field-label">Date of Birth</span>
                                 <span className="field-value">
-                                    {user?.date_of_birth ? new Date(user.date_of_birth).toLocaleDateString() : '—'}
+                                    {formatDate(user?.date_of_birth)}
                                 </span>
                             </div>
 
@@ -214,7 +227,19 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
 
                             <div className="data-field-item">
                                 <span className="field-label">Civil Status</span>
-                                {formData.civil_status ? (
+                                {isEditing ? (
+                                    <select
+                                        className="field-input"
+                                        value={formData.civil_status}
+                                        onChange={(e) => setFormData({ ...formData, civil_status: e.target.value })}
+                                    >
+                                        <option value="">Select Civil Status</option>
+                                        <option value="Single">Single</option>
+                                        <option value="Married">Married</option>
+                                        <option value="Widowed">Widowed</option>
+                                        <option value="Separated">Separated</option>
+                                    </select>
+                                ) : formData.civil_status ? (
                                     <span className="field-value">{formData.civil_status}</span>
                                 ) : (
                                     <span className="unset-pill">Not Set</span>
@@ -224,10 +249,10 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
                             <div className="data-field-item">
                                 <span className="field-label">Contact No.</span>
                                 {isEditing ? (
-                                    <input 
-                                        className="field-input" 
-                                        value={formData.contact_number} 
-                                        onChange={(e) => setFormData({...formData, contact_number: e.target.value.replace(/[^0-9]/g, '')})} 
+                                    <input
+                                        className="field-input"
+                                        value={formData.contact_number}
+                                        onChange={(e) => setFormData({ ...formData, contact_number: e.target.value.replace(/[^0-9+]/g, '') })}
                                     />
                                 ) : formData.contact_number ? (
                                     <span className="field-value">{formData.contact_number}</span>
@@ -239,11 +264,11 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
                             <div className="data-field-item full-width">
                                 <span className="field-label">Email Address</span>
                                 {isEditing ? (
-                                    <input 
-                                        type="email" 
-                                        className="field-input" 
-                                        value={formData.email} 
-                                        onChange={(e) => setFormData({...formData, email: e.target.value})} 
+                                    <input
+                                        type="email"
+                                        className="field-input"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     />
                                 ) : formData.email ? (
                                     <span className="field-value">{formData.email}</span>
@@ -254,21 +279,25 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
                         </div>
 
                         <div className="profile-card-footer">
-                            <button 
-                                onClick={() => isEditing ? handleUpdate() : setIsEditing(true)} 
+                            <button
+                                onClick={() => isEditing ? handleUpdate() : setIsEditing(true)}
                                 className="btn-primary-maroon"
+                                disabled={isSubmitting}
                             >
-                                {isEditing ? "Save Changes" : "Edit Details"}
+                                {isSubmitting ? "Saving..." : isEditing ? "Save Changes" : "Edit Details"}
                             </button>
                             {isEditing && (
-                                <button onClick={handleCancel} className="btn-secondary-cancel">
+                                <button
+                                    onClick={handleCancel}
+                                    className="btn-secondary-cancel"
+                                    disabled={isSubmitting}
+                                >
                                     Cancel
                                 </button>
                             )}
                         </div>
                     </div>
 
-                    {/* EMPLOYMENT INFORMATION CARD */}
                     <div className="info-card">
                         <div className="info-card-header">
                             <h3>Employment Information</h3>
@@ -278,7 +307,7 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
                                 <span className="field-label">Position</span>
                                 <span className="field-value">{user?.position_title || '—'}</span>
                             </div>
-                            
+
                             <div className="data-field-item">
                                 <span className="field-label">Department</span>
                                 <span className="field-value">{user?.department || '—'}</span>
@@ -306,20 +335,19 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
                             <div className="data-field-item">
                                 <span className="field-label">Date Hired</span>
                                 <span className="field-value">
-                                    {user?.hire_date ? new Date(user.hire_date).toLocaleDateString() : '—'}
+                                    {formatDate(user?.hire_date)}
                                 </span>
                             </div>
 
                             <div className="data-field-item">
                                 <span className="field-label">Years of Service</span>
-                                <span className="field-value">{user?.years_of_service || '—'}</span>
+                                <span className="field-value">{user?.years_of_service ?? '—'}</span>
                             </div>
                         </div>
                     </div>
 
                 </div>
 
-                {/* ACCOUNT SECURITY CARD */}
                 <div className="info-card">
                     <div className="info-card-header">
                         <h3>Account Security</h3>

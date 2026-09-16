@@ -1,4 +1,4 @@
-// src/components/Sidebar.jsx
+// src/components/sidebar.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import './sidebar.css';
 
-export default function Sidebar() {
+export default function Sidebar({ user }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -50,13 +50,22 @@ export default function Sidebar() {
     setIsMobileOpen(false); 
   };
 
-  const mainMenuItems = [
+  const fullMenuItems = [
     { path: '/dashboard', icon: Home, label: 'Dashboard' },
     { path: '/attendance', icon: UserCheck, label: 'My Attendance' },
     { path: '/leavehistory', icon: History, label: 'My Leave History' },
     { path: '/creditledger', icon: CreditCard, label: 'My Credit Ledger' },
     { path: '/trainingrecords', icon: GraduationCap, label: 'My Training Records' },
   ];
+
+  // Restricted Self-Service (OJT/Contractual) doesn't get leave-related items
+  const restrictedMenuItems = fullMenuItems.filter(
+    item => !['/leavehistory', '/creditledger'].includes(item.path)
+  );
+
+  const mainMenuItems = user?.role === 'Restricted Self-Service'
+    ? restrictedMenuItems
+    : fullMenuItems;
 
   const generalMenuItems = [
     { path: '/profile', icon: User, label: 'My Profile' },
@@ -79,7 +88,7 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* MOBILE OVERLAY: Darkens the screen behind the sidebar and closes it if tapped */}
+      {/* MOBILE OVERLAY */}
       {isMobileOpen && (
         <div className="sidebar-mobile-overlay" onClick={() => setIsMobileOpen(false)} />
       )}
@@ -106,7 +115,9 @@ export default function Sidebar() {
         </div>
 
         {/* MAIN NAVIGATION SECTION */}
-        {!isCollapsed && <div className="sidebar-section-label">Main Menu</div>}
+        <div className="sidebar-section-label">
+          {!isCollapsed && "Main Menu"}
+        </div>
         <ul className="sidebar-menu">
           {mainMenuItems.map((item) => (
             <li
@@ -116,14 +127,16 @@ export default function Sidebar() {
               onMouseEnter={(e) => handleMouseEnter(e, item.label)}
               onMouseLeave={handleMouseLeave}
             >
-              <item.icon size={18} className="sidebar-item-icon" />
+              <item.icon size={20} className="sidebar-item-icon" />
               {!isCollapsed && <span className="sidebar-item-label">{item.label}</span>}
             </li>
           ))}
         </ul>
 
         {/* GENERAL SECTION */}
-        {!isCollapsed && <div className="sidebar-section-label" style={{ marginTop: '16px' }}>Account & Support</div>}
+        <div className="sidebar-section-label">
+          {!isCollapsed && "Account & Support"}
+        </div>
         <ul className="sidebar-menu">
           {generalMenuItems.map((item) => (
             <li
@@ -133,7 +146,7 @@ export default function Sidebar() {
               onMouseEnter={(e) => handleMouseEnter(e, item.label)}
               onMouseLeave={handleMouseLeave}
             >
-              <item.icon size={18} className="sidebar-item-icon" />
+              <item.icon size={20} className="sidebar-item-icon" />
               {!isCollapsed && <span className="sidebar-item-label">{item.label}</span>}
             </li>
           ))}
@@ -142,7 +155,7 @@ export default function Sidebar() {
         {/* FOOTER AREA */}
         <div className="sidebar-footer">
           <div className="datetime-box">
-            <Clock size={18} className="datetime-icon" />
+            <Clock size={20} className="datetime-icon" />
             {!isCollapsed && (
               <div className="datetime-text">
                 <span>{formattedDate}</span>

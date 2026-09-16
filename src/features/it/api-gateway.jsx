@@ -1,101 +1,220 @@
-import React from 'react';
-import ItSidebar from '../../components/it-sidebar';
-import { Bell, Terminal, Search, Clock, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { 
+  Terminal, 
+  Search, 
+  Clock, 
+  AlertCircle, 
+  Activity, 
+  Zap, 
+  CheckCircle2, 
+  ShieldAlert
+} from "lucide-react";
+import ItSidebar from "../../components/it-sidebar.jsx";
+import Header from "../../components/Header.jsx";
+import "./api-gateway.css";
+
+const INITIAL_LOGS = [
+  { id: 1, time: "14:02:11", method: "GET", endpoint: "/api/employee/leave-balance", status: 200, latency: "45ms" },
+  { id: 2, time: "14:01:55", method: "POST", endpoint: "/api/ml/forecast/workforce", status: 200, latency: "820ms" },
+  { id: 3, time: "14:01:12", method: "POST", endpoint: "/api/ml/anomaly-detect", status: 200, latency: "1.2s" },
+  { id: 4, time: "13:59:44", method: "PUT", endpoint: "/api/profile/update", status: 403, latency: "12ms" },
+  { id: 5, time: "13:55:10", method: "GET", endpoint: "/api/reports/department/D02", status: 200, latency: "110ms" },
+  { id: 6, time: "13:50:22", method: "DELETE", endpoint: "/api/admin/cache", status: 200, latency: "85ms" },
+];
 
 export default function ApiGateway({ onLogout, user }) {
-  const logs = [
-    { time: '14:02:11', method: 'GET', endpoint: '/api/employee/leave-balance', status: 200, latency: '45ms' },
-    { time: '14:01:55', method: 'POST', endpoint: '/api/ml/forecast/workforce', status: 200, latency: '820ms' },
-    { time: '14:01:12', method: 'POST', endpoint: '/api/ml/anomaly-detect', status: 200, latency: '1.2s' },
-    { time: '13:59:44', method: 'PUT', endpoint: '/api/profile/update', status: 403, latency: '12ms' },
-    { time: '13:55:10', method: 'GET', endpoint: '/api/reports/department/D02', status: 200, latency: '110ms' },
-  ];
+  const [searchTerm, setSearchTerm] = useState("");
+  const [liveLogs, setLiveLogs] = useState(INITIAL_LOGS);
+
+  // Simulate real-time API Gateway traffic every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLiveLogs(prevLogs => {
+        const endpoints = [
+          "/api/leave-applications/department", 
+          "/api/employees", 
+          "/api/attendance/summary", 
+          "/api/login", 
+          "/api/departments"
+        ];
+        const methods = ["GET", "POST", "PUT"];
+        const statuses = [200, 200, 200, 200, 201, 401, 500, 403, 404]; // Weighted for success
+        
+        const now = new Date();
+        const newLog = {
+          id: Date.now(),
+          time: now.toLocaleTimeString('en-GB', { hour12: false }), // HH:MM:SS format
+          method: methods[Math.floor(Math.random() * methods.length)],
+          endpoint: endpoints[Math.floor(Math.random() * endpoints.length)],
+          status: statuses[Math.floor(Math.random() * statuses.length)],
+          latency: `${Math.floor(Math.random() * 150) + 15}ms`
+        };
+        
+        // Keep only the 15 most recent logs to prevent memory bloat
+        return [newLog, ...prevLogs].slice(0, 15);
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const filteredLogs = liveLogs.filter((log) =>
+    log.endpoint.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.method.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.status.toString().includes(searchTerm)
+  );
+
+  const totalRequests = liveLogs.length;
+  // Guard against division by zero just in case
+  const successRate = totalRequests > 0 
+    ? ((liveLogs.filter(l => l.status === 200 || l.status === 201).length / totalRequests) * 100).toFixed(0) 
+    : 0;
+  
+  // Calculate a dynamic average latency from the live data
+  const avgLatencyMs = liveLogs.reduce((acc, log) => {
+    let ms = parseInt(log.latency);
+    if (log.latency.includes('s') && !log.latency.includes('ms')) ms *= 1000;
+    return acc + ms;
+  }, 0) / (totalRequests || 1);
 
   return (
-    <div className="dashboard-container hod-view-wrapper">
-      <ItSidebar />
+    <div className="apig-container">
+      {/* SIDEBAR */}
+      <ItSidebar user={user} />
 
-      <div className="dashboard-main-content">
-        <header className="dashboard-global-header">
-          <div className="welcome-greeting page-title-layout">
-            <Terminal size={22} className="title-icon-svg" /> 
-            <div className="title-text-group">
-              <h2>API Gateway Log</h2>
-              <p className="subtitle-department">Portal: <span className="highlight-maroon">IT Operations</span></p>
-            </div>
+      {/* MAIN CONTENT AREA */}
+      <main className="apig-main-content fade-in-up">
+        
+        {/* STANDARDIZED HEADER BLOCK */}
+        <header className="tr-header">
+          <div className="tr-header-title">
+            <span className="tr-header-badge">
+              <span className="tr-badge-dot"></span> IT OPERATIONS PORTAL
+            </span>
+            <h2>
+              <span className="tr-title-dark">API Gateway </span>
+              <span className="tr-title-maroon">Traffic Log</span>
+            </h2>
           </div>
-          
-          <div className="header-actions">
-            <button className="notification-bell-btn">
-              <Bell size={18} fill="#ffffff" color="#ffffff" />
-            </button>
-            <div className="user-profile-badge">
-              <span className="profile-icon-avatar">👤</span>
-              <span className="profile-name-string">{`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Super Admin'}</span>
-            </div>
-            <button className="logout-action-btn" onClick={onLogout}>Log Out</button>
-          </div>
+
+          <Header user={user} onLogout={onLogout} />
         </header>
 
-        <div className="table-filter-utilities-row" style={{ marginTop: '24px' }}>
-          <div className="search-bar-input-wrapper" style={{ width: '300px' }}>
-            <Search size={16} className="search-lens-embed" />
-            <input type="text" className="utility-search-field" placeholder="Filter endpoint (e.g., /api/ml/)" />
+        {/* METRICS ROW */}
+        <div className="apig-stat-row">
+          <div className="apig-stat-card">
+            <div className="apig-stat-icon-box maroon">
+              <Activity size={20} />
+            </div>
+            <div className="apig-stat-info">
+              <span className="apig-stat-label">TOTAL TRAFFIC</span>
+              <span className="apig-stat-value">{totalRequests} Req/min</span>
+              <span className="apig-stat-sub">Active gateway connections</span>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#4b5563' }}>
-              <Clock size={14} /> Auto-refreshing every 5s
-            </span>
+
+          <div className="apig-stat-card">
+            <div className="apig-stat-icon-box green">
+              <CheckCircle2 size={20} />
+            </div>
+            <div className="apig-stat-info">
+              <span className="apig-stat-label">SUCCESS RATE</span>
+              <span className="apig-stat-value">{successRate}%</span>
+              <span className="apig-stat-sub">HTTP 200 OK Status</span>
+            </div>
+          </div>
+
+          <div className="apig-stat-card">
+            <div className="apig-stat-icon-box amber">
+              <Zap size={20} />
+            </div>
+            <div className="apig-stat-info">
+              <span className="apig-stat-label">AVG LATENCY</span>
+              <span className="apig-stat-value">{Math.round(avgLatencyMs)}ms</span>
+              <span className="apig-stat-sub">Across all endpoints</span>
+            </div>
           </div>
         </div>
 
-        <section className="content-data-box table-box-margin card-shadow-wrap" style={{ marginTop: '24px' }}>
-          <div className="box-header-title-maroon-bar" style={{ backgroundColor: '#111827' }}>
-            Live Traffic Monitor
+        {/* UTILITY SEARCH BAR */}
+        <div className="apig-utilities-row">
+          <div className="apig-search-wrapper">
+            <Search size={18} className="apig-search-icon" />
+            <input
+              type="text"
+              className="apig-search-input"
+              placeholder="Search endpoint path, method, or status..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <div className="table-responsive-scroll">
-            <table className="record-grid-system">
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>Method</th>
-                  <th>Endpoint Path</th>
-                  <th>Response Code</th>
-                  <th>Latency</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map((log, i) => (
-                  <tr key={i}>
-                    <td style={{ color: '#6b7280', fontSize: '12px' }}>{log.time}</td>
-                    <td>
-                      <span style={{ 
-                        fontWeight: '700', 
-                        color: log.method === 'GET' ? '#0284c7' : log.method === 'POST' ? '#059669' : '#d97706',
-                        fontSize: '12px' 
-                      }}>
-                        {log.method}
-                      </span>
-                    </td>
-                    <td style={{ fontFamily: 'monospace', color: '#1f2937' }}>{log.endpoint}</td>
-                    <td>
-                      <span style={{ 
-                        fontWeight: '700', 
-                        color: log.status === 200 ? '#059669' : '#dc2626'
-                      }}>
-                        {log.status} {log.status !== 200 && <AlertCircle size={12} style={{ display: 'inline', marginBottom: '-2px' }}/>}
-                      </span>
-                    </td>
-                    <td style={{ color: log.latency.includes('s') && !log.latency.includes('ms') ? '#dc2626' : '#4b5563' }}>
-                      {log.latency}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+          <div className="apig-refresh-pill">
+            <Clock size={16} className="spin-slow" />
+            <span>Auto-refreshing every <strong>5s</strong></span>
           </div>
-        </section>
-      </div>
+        </div>
+
+        {/* TRAFFIC TABLE CARD */}
+        <div className="apig-card">
+          <div className="apig-card-header">
+            <div className="apig-header-title-group">
+              <Terminal size={18} />
+              <span>Live Traffic Monitor</span>
+            </div>
+            <span className="apig-active-count">
+              Showing {filteredLogs.length} of {totalRequests} events
+            </span>
+          </div>
+
+          <div className="apig-card-body">
+            {filteredLogs.length === 0 ? (
+              <div className="apig-empty-state">
+                <ShieldAlert size={32} />
+                <p>No endpoint logs matching standard search query "{searchTerm}"</p>
+              </div>
+            ) : (
+              <div className="apig-table-wrapper">
+                <table className="apig-table">
+                  <thead>
+                    <tr>
+                      <th>Timestamp</th>
+                      <th>Method</th>
+                      <th>Endpoint Path</th>
+                      <th>Response Code</th>
+                      <th>Latency</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLogs.map((log) => (
+                      <tr key={log.id}>
+                        <td className="apig-time-cell">{log.time}</td>
+                        <td>
+                          <span className={`apig-method-badge ${log.method.toLowerCase()}`}>
+                            {log.method}
+                          </span>
+                        </td>
+                        <td className="apig-endpoint-cell">{log.endpoint}</td>
+                        <td>
+                          <span className={`apig-status-pill ${log.status === 200 || log.status === 201 ? "success" : "error"}`}>
+                            {log.status}
+                            {log.status !== 200 && log.status !== 201 && <AlertCircle size={14} />}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`apig-latency-text ${log.latency.includes("s") && !log.latency.includes("ms") ? "slow" : ""}`}>
+                            {log.latency}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

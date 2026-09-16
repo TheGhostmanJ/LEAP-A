@@ -1,0 +1,277 @@
+/* ==========================================================================
+   DATABASE METRICS MODULE - STYLESHEET (ENHANCED READABILITY)
+   ========================================================================== */
+
+.dbm-container {
+  display: flex;
+  height: 100vh;
+  max-height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: #f4f5f7;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #1f2937;
+}
+
+.dbm-main-content {
+  flex: 1;
+  height: 100vh;
+  padding: 28px 36px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+/* TOP METRICS & ACTIONS ROW */
+.dbm-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 36px;
+  margin-bottom: 24px;
+}
+
+.dbm-stat-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.dbm-stat-card.action-card {
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  gap: 8px;
+  background-color: #ffffff;
+}
+
+.dbm-stat-icon-box {
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dbm-stat-icon-box.maroon {
+  background-color: #fde8e8;
+  color: #680000;
+}
+
+.dbm-stat-icon-box.green {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.dbm-stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.dbm-stat-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #6b7280;
+  letter-spacing: 0.5px;
+}
+
+.dbm-stat-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.dbm-stat-sub {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+/* ACTION BUTTON STYLING */
+.dbm-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background-color: #680000;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 18px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.dbm-action-btn:hover:not(:disabled) {
+  background-color: #4a0000;
+  box-shadow: 0 2px 4px rgba(104, 0, 0, 0.2);
+}
+
+.dbm-action-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.dbm-action-subtext {
+  font-size: 11px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.dbm-action-subtext strong {
+  color: #1f2937;
+}
+
+/* CARD & TABLE CONTAINER */
+.dbm-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.dbm-card-header {
+  background-color: #680000;
+  color: #ffffff;
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dbm-header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.dbm-header-badge-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dbm-card-body {
+  padding: 0;
+}
+
+/* TABLE STYLING */
+.dbm-table-wrapper {
+  overflow-x: auto;
+}
+
+.dbm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  text-align: left;
+}
+
+.dbm-table th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 14px 22px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dbm-table td {
+  padding: 16px 22px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.dbm-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dbm-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.dbm-table-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dbm-table-icon {
+  color: #680000;
+}
+
+.dbm-table-name code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 700;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.dbm-numeric-cell {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.dbm-size-cell {
+  color: #475569;
+  font-weight: 600;
+}
+
+.dbm-bloat-cell {
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* STATUS BADGES */
+.dbm-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dbm-status-badge.healthy {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* ANIMATIONS */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

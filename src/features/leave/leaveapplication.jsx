@@ -1,7 +1,21 @@
 // src/features/leave/LeaveApplication.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, UserCheck, Plane, Stethoscope, GraduationCap, Layers, Send, Eye, AlertCircle, Paperclip, CheckCircle, Loader2 } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  FileText, 
+  UserCheck, 
+  Plane, 
+  Stethoscope, 
+  GraduationCap, 
+  Layers, 
+  Send, 
+  Eye, 
+  AlertCircle, 
+  Paperclip, 
+  CheckCircle, 
+  Loader2 
+} from 'lucide-react';
 import RoleSidebar from '../../components/RoleSidebar.jsx';
 import LeavePreviewModal from "./leave-preview-modal";
 import UnsavedChangesModal from "./unsavedchangesmodal";
@@ -13,9 +27,7 @@ import './leaveapplication.css';
 export default function LeaveApplication({ user, onLogout }) {
   const navigate = useNavigate();
   const [showPreview, setShowPreview] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // From User's version
-  
-  // Modal & Draft States from Groupmate
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState(null);
   const [isDirty, setIsDirty] = useState(false);
@@ -74,7 +86,9 @@ export default function LeaveApplication({ user, onLogout }) {
     fetchCredits();
   }, [user]);
 
-  const cscValidation = validateCSCApplication(formData, userCredits);
+  const cscValidation = typeof validateCSCApplication === 'function'
+    ? validateCSCApplication(formData, userCredits)
+    : { isValid: true, errors: [], requiredDocs: [] };
 
   const activeRequiredDocs = cscValidation.requiredDocs || cscValidation.requiredFiles || [];
 
@@ -89,7 +103,6 @@ export default function LeaveApplication({ user, onLogout }) {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
 
-  // Sync End Date based on Working Days
   const calculateEndDate = (startDateStr, daysCount) => {
     if (!startDateStr || !daysCount || daysCount <= 0) return startDateStr;
     let currentDate = new Date(startDateStr);
@@ -135,7 +148,10 @@ export default function LeaveApplication({ user, onLogout }) {
     }
 
     setIsDirty(true);
-    setAttachedFiles((prev) => ({ ...prev, [docLabel]: file }));
+    setAttachedFiles((prev) => ({
+      ...prev,
+      [docLabel]: file
+    }));
   };
 
   const fileToBase64Async = (file) => {
@@ -184,31 +200,32 @@ export default function LeaveApplication({ user, onLogout }) {
       const blob = new Blob([uint8Array], { type: 'application/pdf' });
       const reader = new FileReader();
       reader.onloadend = () => {
-        resolve(reader.result.split(',')[1]);
+        const base64String = reader.result.split(',')[1];
+        resolve(base64String);
       };
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
   };
 
-  // USER'S FIX: The main submission sequence hitting your local Express API
   const submitApplication = async () => {
     setIsSubmitting(true);
     try {
-      // Process attachments into Base64
-      const processedAttachments = [];
-      for (const [requirement, fileObj] of Object.entries(attachedFiles)) {
-        if (fileObj) {
-          const encoded = await fileToBase64Async(fileObj);
-          processedAttachments.push({ requirementLabel: requirement, ...encoded });
-        }
-      }
-
-      // Generate the CS Form PDF if the helper exists
       let pdfBase64 = null;
       if (typeof buildLeavePdfBytes === 'function') {
         const pdfBytes = await buildLeavePdfBytes(formData, user);
         pdfBase64 = await uint8ToBase64Async(pdfBytes);
+      }
+
+      const processedAttachments = [];
+      for (const [requirement, fileObj] of Object.entries(attachedFiles)) {
+        if (fileObj) {
+          const encoded = await fileToBase64Async(fileObj);
+          processedAttachments.push({
+            requirementLabel: requirement,
+            ...encoded
+          });
+        }
       }
 
       const payload = {
@@ -229,36 +246,31 @@ export default function LeaveApplication({ user, onLogout }) {
         end_date: formData.inclusiveDateTo,
         commutation: formData.commutation,
         status: 'Pending',
-        filingDate: formData.filingDate,
-        attachments: processedAttachments,
-        pdf_document: pdfBase64
+        date_key: formData.filingDate,
+        remarks: 'Filed via System',
+        pdfBase64,
+        attachments: processedAttachments
       };
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${apiUrl}/api/leave/apply`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      // 1. Submit payload to Database via Service
+      await leaveService.submitApplication(payload);
 
-      if (response.ok) {
-        localStorage.removeItem('leave_application_draft'); 
-        setIsDirty(false);
-        alert('Application submitted successfully.');
-        navigate('/dashboard'); 
-      } else {
-        const errorData = await response.json();
-        alert(`Submission failed: ${errorData.message || 'Unknown error'}`);
-      }
+      // 2. Clear state and draft cache
+      localStorage.removeItem('leave_application_draft');
+      setIsDirty(false);
+      setShowPreview(false);
+
+      // 3. Confirm & Redirect to Dashboard
+      alert('Leave application submitted and saved successfully!');
+      navigate('/dashboard');
     } catch (err) {
       console.error('Failed to process submission:', err);
-      alert('Error processing application submission. Please check your connection.');
+      alert('Error saving leave application to the database. Please check your network connection.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // USER'S FIX: Triggers validation, then fires API (Bypasses Preview Modal)
   const handleFormSubmit = (e) => {
     e.preventDefault();
 
@@ -282,7 +294,7 @@ export default function LeaveApplication({ user, onLogout }) {
       return;
     }
 
-    submitApplication(); 
+    submitApplication();
   };
 
   const showVacationSpl = formData.leaveType === 'Vacation Leave' || formData.leaveType === 'Special Privilege Leave';
@@ -312,7 +324,7 @@ export default function LeaveApplication({ user, onLogout }) {
           </header>
 
           <form onSubmit={handleFormSubmit} className="official-form-layout">
-            
+
             {/* SECTION 1: APPLICANT DETAILS */}
             <section className="form-section-card form-section-readonly">
               <div className="card-header">
@@ -633,15 +645,15 @@ export default function LeaveApplication({ user, onLogout }) {
                 Cancel
               </button>
               <div className="primary-actions">
-                <button 
-                  type="button" 
-                  className="form-btn-preview" 
+                <button
+                  type="button"
+                  className="form-btn-preview"
                   onClick={() => setShowPreview(true)}
                 >
                   <Eye size={16} /> Preview
                 </button>
                 <button type="submit" className="form-btn-submit" disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 size={16} className="spinner" /> : <Send size={16} />} 
+                  {isSubmitting ? <Loader2 size={16} className="spinner" /> : <Send size={16} />}
                   {isSubmitting ? 'Submitting...' : 'Submit Application'}
                 </button>
               </div>

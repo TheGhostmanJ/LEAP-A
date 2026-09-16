@@ -8,7 +8,6 @@ import ItSidebar from './it-sidebar.jsx';
 export default function RoleSidebar(props) {
   const { user } = props;
 
-  // Fallback if no user is passed
   if (!user) return <Sidebar {...props} />;
 
   switch (user.role) {
@@ -18,8 +17,11 @@ export default function RoleSidebar(props) {
       return <HodSidebar {...props} />;
     case 'Super Admin':
       return <ItSidebar {...props} />;
+    case 'Restricted Self-Service':
+    case 'Employee Self-Service':
     default:
-      // Employee Self-Service gets the standard sidebar
+      // Both self-service tiers share the standard sidebar —
+      // sidebar.jsx filters its own nav items based on user.role
       return <Sidebar {...props} />;
   }
 }

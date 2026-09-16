@@ -1,19 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Eye, EyeOff, AlertCircle, X, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { loginUser } from './services/authService';
-import { GoogleLogin } from '@react-oauth/google';
 import AuthSplashScreen from '../../components/AuthSplashScreen';
 import './login.css';
 
 export default function Login({ onLoginSuccess }) {
   const navigate = useNavigate();
+  
+  // Carousel State
   const [currentSlide, setCurrentSlide] = useState(0);
+  
+  // Auth & UI State
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
+  const [captchaToken, setCaptchaToken] = useState(null);
+  
+  const recaptchaRef = useRef(null);
 
   const carouselData = [
     {
@@ -53,53 +60,32 @@ export default function Login({ onLoginSuccess }) {
     setCurrentSlide((prev) => (prev === carouselData.length - 1 ? 0 : prev + 1));
   };
 
-  // --- MERGED: Live Backend Authentication with New UI Splash Screen ---
+  const handleCaptchaChange = (token) => {
+    setCaptchaToken(token);
+    if (token) setErrorMessage('');
+  };
+
+  const handleCaptchaExpired = () => {
+    setCaptchaToken(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
+
+    if (!captchaToken) {
+      setErrorMessage("Please complete the reCAPTCHA verification before logging in.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     const username = e.target.elements.username.value;
     const password = e.target.elements.password.value;
 
     try {
-      const data = await loginUser(username, password);
-
-      if (data.success) {
-        // Trigger splash animation & clear old session flags
-        sessionStorage.removeItem('splash_shown');
-        setShowSplash(true);
-
-        setTimeout(() => {
-          if (typeof onLoginSuccess === 'function') {
-            onLoginSuccess(data.user);
-          }
-        }, 400); // Speed up transition delay to 400ms
-      } else {
-        setErrorMessage(data.message || "Invalid username or password");
-        setIsSubmitting(false);
-      }
-    } catch (err) {
-      setErrorMessage("Incorrect username or password. Please try again.");
-      setIsSubmitting(false);
-    }
-  };
-
-  // --- MERGED: Google Authentication with Environment Variable URL ---
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      setIsSubmitting(true);
-      setErrorMessage('');
-
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${apiUrl}/api/login/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: credentialResponse.credential })
-      });
-
-      const data = await response.json();
-
+      const data = await loginUser(username, password, captchaToken);
+      
       if (data.success) {
         sessionStorage.removeItem('splash_shown');
         setShowSplash(true);
@@ -110,12 +96,19 @@ export default function Login({ onLoginSuccess }) {
           }
         }, 400);
       } else {
-        setErrorMessage(data.message || "Google email not registered in system.");
+        setErrorMessage(data.message || "Invalid username or password.");
         setIsSubmitting(false);
+        recaptchaRef.current?.reset();
+        setCaptchaToken(null);
       }
     } catch (err) {
-      setErrorMessage("Google Authentication failed. Please try again.");
+      console.error("Login endpoint error details:", err);
+      const serverErrorMsg = err?.response?.data?.message || err?.message;
+      setErrorMessage(serverErrorMsg || "Bad Request (400). Please verify your inputs or reCAPTCHA configuration.");
+      
       setIsSubmitting(false);
+      recaptchaRef.current?.reset();
+      setCaptchaToken(null);
     }
   };
 
@@ -197,7 +190,23 @@ export default function Login({ onLoginSuccess }) {
                   <input type="checkbox" className="checkbox-input" name="rememberMe" />
                   <span>Remember me</span>
                 </label>
-                <a href="#forgot" className="forgot-password-link">Forgot Password?</a>
+                <button
+                  type="button"
+                  onClick={() => navigate('/change-password-request')}
+                  className="forgot-password-link"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+
+              {/* CAPTCHA */}
+              <div className="captcha-wrapper" style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
+                <ReCAPTCHA
+                  ref={recaptchaRef}
+                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                  onChange={handleCaptchaChange}
+                  onExpired={handleCaptchaExpired}
+                />
               </div>
 
               {/* Legal Footnote */}
@@ -212,29 +221,15 @@ export default function Login({ onLoginSuccess }) {
                 <button
                   type="submit"
                   className={`submit-button ${isSubmitting ? 'submit-button-disabled' : ''}`}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !captchaToken}
                 >
                   {isSubmitting ? 'Authenticating...' : 'Login'}
                 </button>
               </div>
             </form>
-
-            <div className="divider-text">
-              <span>─ OR ─</span>
-            </div>
-
-            <div className="google-login-wrapper">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => setErrorMessage("Google Sign-In was aborted or failed.")}
-                useOneTap
-                uxMode="redirect"
-              />
-            </div>
-
           </div>
 
-          {/* RIGHT PANEL: Gradient Info Display */}
+          {/* RIGHT PANEL: Carousel Display */}
           <div className="right-panel">
             <div className="logo-wrapper">
               <img src="/leaplogo.png" alt="LEAP-A Logo" className="logo-image" />
@@ -274,7 +269,6 @@ export default function Login({ onLoginSuccess }) {
               </div>
               <button type="button" onClick={handleNext} className="arrow-button"><ChevronRight size={22} /></button>
             </div>
-
           </div>
 
         </div>

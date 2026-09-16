@@ -2,17 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Home, BarChart3, AlertTriangle, FileText, 
+  Home, BarChart3, AlertTriangle, FileText,
   User, Clock, Users, Building2, Banknote,
   ChevronLeft, ChevronRight, ClipboardList, Menu, X,
-  UserCheck, History, CreditCard, GraduationCap
+  UserCheck, History, CreditCard, GraduationCap, Calendar
 } from 'lucide-react';
-import './sidebar.css'; 
-import './sidebar.jsx';
+import './sidebar.css';
 
 export default function HrSidebar() {
   const navigate = useNavigate();
-  const location = useLocation(); 
+  const location = useLocation();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -47,7 +46,7 @@ export default function HrSidebar() {
 
   const handleNavClick = (path) => {
     navigate(path);
-    setIsMobileOpen(false); 
+    setIsMobileOpen(false);
   };
 
   const analyticsMenuItems = [
@@ -58,7 +57,7 @@ export default function HrSidebar() {
   ];
 
   const operationsMenuItems = [
-    { path: '/onboarding', icon: ClipboardList, label: 'Employee Onboarding' },
+    { path: '/event-management', icon: Calendar, label: 'Event Management' },
     { path: '/departments', icon: Building2, label: 'Department Setup' },
     { path: '/payroll', icon: Banknote, label: 'Payroll & Ledger' },
     { path: '/profile-requests', icon: Users, label: 'Profile Management' },
@@ -110,14 +109,16 @@ export default function HrSidebar() {
         {/* BRAND / LOGO AREA */}
         <div className="sidebar-brand">
           {!isCollapsed ? (
-            <img src="/leaplogo.png" alt="LEAP-A Logo" className="sidebar-logo-img" style={{ height: '65px', width: 'auto', objectFit: 'contain' }} />
+            <img src="/leaplogo.png" alt="LEAP-A Logo" className="sidebar-logo-img" />
           ) : (
             <img src="/leap-asidebar.png" alt="LEAP-A" className="sidebar-logo-icon" />
           )}
         </div>
 
         {/* MANAGEMENT ANALYTICS SECTION */}
-        {!isCollapsed && <div className="sidebar-section-label">Management Analytics</div>}
+        <div className="sidebar-section-label">
+          {!isCollapsed && "Management Analytics"}
+        </div>
         <ul className="sidebar-menu">
           {analyticsMenuItems.map((item) => (
             <li
@@ -127,14 +128,16 @@ export default function HrSidebar() {
               onMouseEnter={(e) => handleMouseEnter(e, item.label)}
               onMouseLeave={handleMouseLeave}
             >
-              <item.icon size={18} className="sidebar-item-icon" />
+              <item.icon size={20} className="sidebar-item-icon" />
               {!isCollapsed && <span className="sidebar-item-label">{item.label}</span>}
             </li>
           ))}
         </ul>
 
         {/* HR OPERATIONS SECTION */}
-        {!isCollapsed && <div className="sidebar-section-label" style={{ marginTop: '16px' }}>HR Operations</div>}
+        <div className="sidebar-section-label">
+          {!isCollapsed && "HR Operations"}
+        </div>
         <ul className="sidebar-menu">
           {operationsMenuItems.map((item) => (
             <li
@@ -144,14 +147,16 @@ export default function HrSidebar() {
               onMouseEnter={(e) => handleMouseEnter(e, item.label)}
               onMouseLeave={handleMouseLeave}
             >
-              <item.icon size={18} className="sidebar-item-icon" />
+              <item.icon size={20} className="sidebar-item-icon" />
               {!isCollapsed && <span className="sidebar-item-label">{item.label}</span>}
             </li>
           ))}
         </ul>
 
         {/* PERSONAL EMPLOYEE RECORDS SECTION */}
-        {!isCollapsed && <div className="sidebar-section-label" style={{ marginTop: '16px' }}>My Employee Records</div>}
+        <div className="sidebar-section-label">
+          {!isCollapsed && "My Employee Records"}
+        </div>
         <ul className="sidebar-menu">
           {employeeMenuItems.map((item) => (
             <li
@@ -161,14 +166,16 @@ export default function HrSidebar() {
               onMouseEnter={(e) => handleMouseEnter(e, item.label)}
               onMouseLeave={handleMouseLeave}
             >
-              <item.icon size={18} className="sidebar-item-icon" />
+              <item.icon size={20} className="sidebar-item-icon" />
               {!isCollapsed && <span className="sidebar-item-label">{item.label}</span>}
             </li>
           ))}
         </ul>
 
         {/* ACCOUNT SECTION */}
-        {!isCollapsed && <div className="sidebar-section-label" style={{ marginTop: '16px' }}>Account</div>}
+        <div className="sidebar-section-label">
+          {!isCollapsed && "Account"}
+        </div>
         <ul className="sidebar-menu">
           {accountMenuItems.map((item) => (
             <li
@@ -178,7 +185,7 @@ export default function HrSidebar() {
               onMouseEnter={(e) => handleMouseEnter(e, item.label)}
               onMouseLeave={handleMouseLeave}
             >
-              <item.icon size={18} className="sidebar-item-icon" />
+              <item.icon size={20} className="sidebar-item-icon" />
               {!isCollapsed && <span className="sidebar-item-label">{item.label}</span>}
             </li>
           ))}
@@ -187,11 +194,11 @@ export default function HrSidebar() {
         {/* FOOTER AREA */}
         <div className="sidebar-footer">
           <div className="datetime-box">
-            <Clock size={18} className="datetime-icon" />
+            <Clock size={20} className="datetime-icon" />
             {!isCollapsed && (
               <div className="datetime-text">
                 <span>{formattedDate}</span>
-                <span className="time-label">Time: <span className="time-value" style={{ color: '#5a0000' }}>{formattedTime}</span></span>
+                <span className="time-label">Time: <span className="time-value">{formattedTime}</span></span>
               </div>
             )}
           </div>

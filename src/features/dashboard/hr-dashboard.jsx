@@ -1,184 +1,152 @@
-// src/pages/hr-dashboard/HrDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users,
   FileCheck,
   AlertTriangle,
-  ArrowRight,
-  Ban
+  ChevronRight,
+  ShieldAlert,
+  TrendingUp,
+  UserCheck
 } from 'lucide-react';
 
-/* =========================================================
-   🛠️ IMPORT CUSTOM HR SIDEBAR & SHARED HEADER
-   ========================================================= */
+/* COMPONENTS & STYLES */
 import HrSidebar from '../../components/hr-sidebar.jsx';
 import Header from '../../components/Header.jsx';
-import './hod-dashboard.css'; // Reusing common dashboard styles
+import './hr-dashboard.css';
 
 export default function HrDashboard({ onLogout, user }) {
   const navigate = useNavigate();
-  const [recentLeaves, setRecentLeaves] = useState([]);
+  
+  // State to hold dynamic database metrics
+  const [stats, setStats] = useState({
+    totalWorkforce: 0,
+    activeEmployees: 0,
+    onLeave: 0,
+    pendingEdits: 0,
+    anomalies: 18 // Static placeholder until the anomaly engine is built
+  });
 
-  // Fetch recent leave data on component load
   useEffect(() => {
-    const fetchRecentLeaves = async () => {
+    const fetchStats = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL;
-        const response = await fetch(`${apiUrl}/api/leave/recent/${user.employee_key}`);
-        if (response.ok) {
-          const data = await response.json();
-          setRecentLeaves(data);
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const res = await fetch(`${apiUrl}/api/hr/dashboard-stats`);
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
         }
-      } catch (err) {
-        console.error("Error loading leave history:", err);
+      } catch (error) {
+        console.error("Failed to fetch HR dashboard stats", error);
       }
     };
-
-    if (user?.employee_key) fetchRecentLeaves();
-  }, [user]);
+    
+    fetchStats();
+  }, []);
 
   return (
-    <div className="dashboard-container hod-view-wrapper">
+    <div className="hr-dash-container">
       {/* Navigation Column */}
       <HrSidebar />
 
       {/* Main Viewport Area */}
-      <main className="dashboard-main-content fade-in-up">
+      <main className="hr-dash-main-content fade-in-up">
         
-        {/* STANDARDIZED GLOBAL HEADER */}
-        <header className="dashboard-global-header">
-          <div className="welcome-greeting">
-            Welcome, <span className="highlight-name">{user?.first_name || 'HR Admin'}</span>!
+        {/* TOP GLOBAL HEADER ROW */}
+        <header className="hr-dash-top-header">
+          <div className="hr-header-brand-title">
+            <span className="hr-badge-chip">
+              <span className="hr-chip-dot"></span> Executive Control Panel
+            </span>
+            <h2>City HR Management System</h2>
           </div>
 
-          {/* Revised Shared Header Component */}
           <Header user={user} onLogout={onLogout} />
         </header>
 
-        {/* METRICS ROW - City-Wide Scope */}
-        <section className="metrics-summary-row">
+        {/* METRICS ROW - Overview Cards */}
+        <section className="hr-metrics-grid">
           
           {/* Card 1: Total City Workforce */}
-          <div className="metric-card-block hover-lift">
-            <div className="card-title-bar">
-              <Users size={16} className="tr-icon-maroon" />
+          <div className="hr-metric-card" onClick={() => navigate('/department-reports')}>
+            <div className="hr-card-label-row">
+              <Users size={18} className="hr-icon-maroon" />
               <span>Total City Workforce</span>
             </div>
-            <div className="card-main-stat">1,450</div>
-            <div className="team-distribution-subtext">
-              <span className="team-tag team-a">● Active <b>1,410</b></span>
-              <span className="team-tag team-b">● On Leave <b>40</b></span>
+            <div className="hr-metric-stat">{stats.totalWorkforce.toLocaleString()}</div>
+            <div className="hr-card-subtext">
+              <span className="hr-tag hr-tag-success">● Active <b>{stats.activeEmployees.toLocaleString()}</b></span>
+              <span className="hr-tag hr-tag-neutral">● On Leave <b>{stats.onLeave.toLocaleString()}</b></span>
             </div>
           </div>
 
           {/* Card 2: Pending Profile Edits */}
-          <div className="metric-card-block hover-lift">
-            <div className="card-title-bar">
-              <FileCheck size={16} className="tr-icon-amber" />
+          <div className="hr-metric-card" onClick={() => navigate('/profile-requests')}>
+            <div className="hr-card-label-row">
+              <FileCheck size={18} className="hr-icon-amber" />
               <span>Pending Profile Edits</span>
             </div>
-            <div className="card-main-stat">12</div>
-            <div className="approval-breakdown-subtext">
-              <span className="badge-stat label-vacation">Civil Status <b>5</b></span>
-              <span className="badge-stat label-sick">Contact Info <b>7</b></span>
+            <div className="hr-metric-stat">{stats.pendingEdits}</div>
+            <div className="hr-card-subtext">
+              <span className="hr-pill-info">Awaiting HR Review</span>
             </div>
           </div>
 
           {/* Card 3: Master Anomaly Alerts */}
-          <div className="metric-card-block hover-lift">
-            <div className="card-title-bar">
-              <AlertTriangle size={16} className="tr-icon-maroon" />
+          <div className="hr-metric-card" onClick={() => navigate('/anomaly-alerts')}>
+            <div className="hr-card-label-row">
+              <AlertTriangle size={18} className="hr-icon-maroon" />
               <span>Master Anomaly Alerts</span>
             </div>
-            <div className="card-main-stat text-alert-red">18</div>
-            <div className="anomaly-breakdown-pills">
-              <span className="pill risk-high">5 High</span>
-              <span className="pill risk-medium">8 Med</span>
-              <span className="pill risk-low">5 Low</span>
+            <div className="hr-metric-stat hr-text-alert">{stats.anomalies}</div>
+            <div className="hr-card-subtext">
+              <span className="hr-risk-pill high">5 High</span>
+              <span className="hr-risk-pill med">8 Med</span>
+              <span className="hr-risk-pill low">5 Low</span>
             </div>
           </div>
 
         </section>
 
-        {/* MIDDLE SECTION Split Row */}
-        <section className="dashboard-split-content-panel">
+        {/* QUICK NAVIGATION HUB */}
+        <section className="hr-quick-actions-section">
+          <h3 className="hr-section-title">HR Management Modules</h3>
           
-          {/* Left Block: Requests Table */}
-          <div className="content-data-box table-box-width">
-            <div className="box-header-title">Pending Leave Application Requests</div>
-            <div className="table-responsive-scroll">
-              <table className="data-display-table">
-                <thead>
-                  <tr>
-                    <th>Employee Name</th>
-                    <th>Leave Type</th>
-                    <th>Date</th>
-                    <th>File</th>
-                    <th>Remarks</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Juan Dela Cruz</td>
-                    <td>Sick Leave</td>
-                    <td>May 16, 2026</td>
-                    <td className="link-cell">View File</td>
-                    <td className="link-cell">Edit</td>
-                  </tr>
-                  <tr>
-                    <td>Susan Reyes</td>
-                    <td>Vacation Leave</td>
-                    <td>May 10, 2026</td>
-                    <td className="link-cell">View File</td>
-                    <td className="link-cell">Edit</td>
-                  </tr>
-                  <tr>
-                    <td>Alice Lee</td>
-                    <td>Maternity Leave</td>
-                    <td>May 6, 2026</td>
-                    <td className="link-cell">View File</td>
-                    <td className="link-cell">Edit</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div className="box-footer-action-link" onClick={() => navigate('/department-reports')}>
-              <span>View All Requests <ArrowRight size={12} style={{ display: 'inline', marginLeft: '4px' }} /></span>
-            </div>
-          </div>
-
-          {/* Right Block: Forecast Visual Placeholder */}
-          <div className="content-data-box forecast-box-width">
-            <div className="box-header-title">Workforce Availability</div>
-            <div className="forecast-chart-mock-body">
-              <div className="chart-header-stats">
-                <span>Peak: <b>95% Consistency</b></span>
-                <span>Avg. Check-In: <b>07:51 AM</b></span>
+          <div className="hr-actions-grid">
+            
+            <div className="hr-action-card" onClick={() => navigate('/department-reports')}>
+              <div className="hr-action-icon-wrapper">
+                <UserCheck size={22} />
               </div>
-              <div className="mock-graph-graphic-line">
-                <div className="wave-placeholder-line"></div>
+              <div className="hr-action-details">
+                <h4>Global Department Reports</h4>
+                <p>Track city-wide attendance trends, department allocations, and leave histories.</p>
               </div>
-              <div className="chart-footer-caption" onClick={() => navigate('/workforce-forecast')}>
-                <span>View Full Forecast <ArrowRight size={12} style={{ display: 'inline', marginLeft: '4px' }} /></span>
+              <ChevronRight className="hr-action-arrow" size={20} />
+            </div>
+
+            <div className="hr-action-card" onClick={() => navigate('/workforce-forecast')}>
+              <div className="hr-action-icon-wrapper">
+                <TrendingUp size={22} />
               </div>
+              <div className="hr-action-details">
+                <h4>Workforce Analytics & Forecast</h4>
+                <p>Review predictive staffing metrics, peak check-in schedules, and coverage trends.</p>
+              </div>
+              <ChevronRight className="hr-action-arrow" size={20} />
             </div>
-          </div>
 
-        </section>
-
-        {/* BOTTOM SECTION Staffing Risk Banner */}
-        <section className="staffing-risk-alert-banner hover-lift">
-          <div className="alert-banner-inner">
-            <div className="alert-icon-title">
-              <Ban size={20} className="tr-icon-maroon" />
-              <h4>Staffing Risk Alert</h4>
+            <div className="hr-action-card" onClick={() => navigate('/anomaly-alerts')}>
+              <div className="hr-action-icon-wrapper alert-style">
+                <ShieldAlert size={22} />
+              </div>
+              <div className="hr-action-details">
+                <h4>Anomaly & Risk Monitor</h4>
+                <p>Address flagged operational risks, critical bottlenecks, and schedule overlaps.</p>
+              </div>
+              <ChevronRight className="hr-action-arrow" size={20} />
             </div>
-            <p className="alert-description-text">
-              Estimated availability: <span className="danger-text-percentage">58%</span> <br />
-              System predicts severe staffing risk for the team during this period. Overlapping leave requests and seasonal trend analysis indicate a critical bottleneck. Immediate attention is required (Refer to Capitulo 6.2/8). Prescriptive rescheduling recommended.
-            </p>
-            <button className="view-report-banner-btn" onClick={() => navigate('/anomaly-alerts')}>View Report</button>
+
           </div>
         </section>
 
