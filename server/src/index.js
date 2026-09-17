@@ -966,6 +966,16 @@ app.post('/api/anomalies/run-ai-scan', async (req, res) => {
         }
 
     } catch (error) {
+        // 🔴 ENHANCED DEBUGGING: Find out EXACTLY why the scan failed
+        let errorMessage = error.message;
+        
+        if (error.response) {
+            // Python API was reached, but Python crashed or sent an error
+            errorMessage = `Python Engine Error: ${JSON.stringify(error.response.data)}`;
+        } else if (error.request) {
+            // Node.js couldn't reach Python AT ALL (Bad URL, trailing slash, or offline)
+            errorMessage = `Could not connect to Python Engine at ${process.env.PYTHON_API_URL}. Is it offline?`;
+        }
         console.error("ML Scan Error:", error.message);
         res.status(500).json({ error: "Failed to run AI Anomaly Scan." });
     }
