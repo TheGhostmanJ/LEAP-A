@@ -1,5 +1,4 @@
-// src/components/it-sidebar.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Server, Shield, Database, Terminal, User, Clock, Settings,
@@ -12,6 +11,9 @@ export default function ItSidebar() {
   const navigate = useNavigate();
   const location = useLocation(); 
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // 1. Create a reference to the scrollable sidebar container
+  const sidebarRef = useRef(null);
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebar_collapsed');
@@ -30,6 +32,19 @@ export default function ItSidebar() {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // 2. Restore scroll position on load
+  useEffect(() => {
+    const savedScrollPosition = sessionStorage.getItem('itSidebarScroll');
+    if (sidebarRef.current && savedScrollPosition) {
+      sidebarRef.current.scrollTop = parseInt(savedScrollPosition, 10);
+    }
+  }, []);
+
+  // 3. Save scroll position exactly as the user scrolls
+  const handleScroll = (e) => {
+    sessionStorage.setItem('itSidebarScroll', e.target.scrollTop);
+  };
 
   const formattedDate = currentTime.toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric'
@@ -99,7 +114,12 @@ export default function ItSidebar() {
         {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      <aside className={`dashboard-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'sidebar-mobile-open' : ''}`}>
+      {/* ATTACHED REF AND ONSCROLL HANDLER HERE */}
+      <aside 
+        className={`dashboard-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'sidebar-mobile-open' : ''}`}
+        ref={sidebarRef}
+        onScroll={handleScroll}
+      >
         {/* BRAND / LOGO AREA */}
         <div className="sidebar-brand">
           {!isCollapsed ? (

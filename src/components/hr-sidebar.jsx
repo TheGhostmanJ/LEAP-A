@@ -1,5 +1,5 @@
 // src/components/hr-sidebar.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, BarChart3, AlertTriangle, FileText,
@@ -13,6 +13,7 @@ export default function HrSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const sidebarRef = useRef(null);
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebar_collapsed');
@@ -39,6 +40,18 @@ export default function HrSidebar() {
   const formattedTime = currentTime.toLocaleTimeString('en-US', {
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
   });
+
+  useEffect(() => {
+    const savedScrollPosition = sessionStorage.getItem('hrSidebarScroll');
+    if (sidebarRef.current && savedScrollPosition) {
+      sidebarRef.current.scrollTop = parseInt(savedScrollPosition, 10);
+    }
+  }, []);
+
+  // 3. Whenever the user scrolls, save the new exact position
+  const handleScroll = (e) => {
+    sessionStorage.setItem('hrSidebarScroll', e.target.scrollTop);
+  };
 
   const getMenuClass = (path) => {
     return location.pathname === path ? "sidebar-item active" : "sidebar-item";
