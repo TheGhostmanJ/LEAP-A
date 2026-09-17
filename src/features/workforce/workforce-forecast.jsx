@@ -6,7 +6,8 @@ import {
   AlertCircle, 
   SlidersHorizontal, 
   ArrowRight,
-  Loader2
+  Loader2,
+  CheckCircle2
 } from 'lucide-react';
 
 /* SIDEBAR & HEADER COMPONENTS */
