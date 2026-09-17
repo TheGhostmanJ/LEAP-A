@@ -7,7 +7,8 @@ import {
   SlidersHorizontal, 
   ArrowRight, 
   X,
-  Loader2
+  Loader2,
+  Cpu // Added a cool AI chip icon for the button
 } from 'lucide-react';
 
 /* SIDEBAR & HEADER COMPONENTS */
@@ -21,6 +22,7 @@ export default function AnomalyAlert({ onLogout, user }) {
   const [alerts, setAlerts] = useState([]);
   const [stats, setStats] = useState({ totalFlagged: 0, highRisk: 0, resolvedThisMonth: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [isScanning, setIsScanning] = useState(false); // NEW: Track ML Scan status
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchAnomalies = async () => {
@@ -47,6 +49,31 @@ export default function AnomalyAlert({ onLogout, user }) {
   useEffect(() => {
     if (user) fetchAnomalies();
   }, [user]);
+
+  // NEW: Function to trigger the Python Machine Learning Scan
+  const handleRunAIScan = async () => {
+    setIsScanning(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/anomalies/run-ai-scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        alert(data.message); // Show HR the results ("Scan complete. Found X anomalies.")
+        fetchAnomalies();    // Refresh the table to show the newly caught employees!
+      } else {
+        alert(`Scan failed: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error running AI scan:', error);
+      alert('Failed to communicate with the ML Engine.');
+    } finally {
+      setIsScanning(false);
+    }
+  };
 
   const handleAction = async (alertId, actionStatus) => {
     try {
@@ -158,19 +185,44 @@ export default function AnomalyAlert({ onLogout, user }) {
         </section>
 
         {/* SEARCH & FILTER CONTROLS BAR */}
-        <div className="aa-controls-row">
-          <div className="aa-search-wrapper">
-            <Search size={18} className="aa-search-icon" />
-            <input 
-              type="text" 
-              placeholder="Search employee or anomaly pattern..." 
-              className="aa-search-input" 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+        <div className="aa-controls-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div className="aa-search-wrapper">
+              <Search size={18} className="aa-search-icon" />
+              <input 
+                type="text" 
+                placeholder="Search employee or anomaly pattern..." 
+                className="aa-search-input" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <button type="button" className="aa-filter-btn" aria-label="Filter records">
+              <SlidersHorizontal size={18} />
+            </button>
           </div>
-          <button type="button" className="aa-filter-btn" aria-label="Filter records">
-            <SlidersHorizontal size={18} />
+
+          {/* NEW: RUN ML SCAN BUTTON */}
+          <button 
+            type="button" 
+            onClick={handleRunAIScan}
+            disabled={isScanning}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              backgroundColor: isScanning ? '#9ca3af' : '#800000',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '8px',
+              fontWeight: '600',
+              cursor: isScanning ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            {isScanning ? <Loader2 size={18} className="spin" /> : <Cpu size={18} />}
+            {isScanning ? 'Running Isolation Forest...' : 'Run ML Security Scan'}
           </button>
         </div>
 
@@ -201,7 +253,7 @@ export default function AnomalyAlert({ onLogout, user }) {
                 ) : filteredAlerts.length === 0 ? (
                   <tr>
                     <td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
-                      No active anomalies detected.
+                      No active anomalies detected. Click "Run ML Security Scan" to analyze behavior.
                     </td>
                   </tr>
                 ) : (
