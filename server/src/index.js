@@ -409,56 +409,6 @@ app.post('/api/password-reset-requests', async (req, res) => {
   }
 });
 
-// GET: Fetch ALL Leaves & Analytics Summary for Employee Dashboard and Leave History
-app.get('/api/leave-applications/:employee_key', async (req, res) => {
-    const { employee_key } = req.params;
-
-    try {
-        // FIXED: Changed date_key to start_date_key, and added date_filed for the React table
-        const historyQuery = `
-            SELECT 
-                id AS application_id, 
-                start_date_key AS date_key, 
-                created_at AS date_filed,
-                leave_type, 
-                start_date, 
-                end_date, 
-                remarks, 
-                hod_remarks,
-                working_days, 
-                status, 
-                created_at,
-                pdf_document,
-                attachment_data
-            FROM public.fact_leave_application
-            WHERE employee_key = $1
-            ORDER BY created_at DESC;
-        `;
-        const historyResult = await pool.query(historyQuery, [employee_key]);
-
-        const summaryQuery = `
-            SELECT leave_type, SUM(ABS(amount)) AS used_days
-            FROM public.fact_leave_ledger
-            WHERE employee_key = $1 AND transaction_type = 'Deduction'
-            GROUP BY leave_type;
-        `;
-        const summaryResult = await pool.query(summaryQuery, [employee_key]);
-        
-        const summaryObj = {};
-        summaryResult.rows.forEach(row => {
-            summaryObj[row.leave_type] = { used: parseFloat(row.used_days) || 0 };
-        });
-
-        res.status(200).json({
-            history: historyResult.rows,
-            summary: summaryObj
-        });
-    } catch (error) {
-        console.error("Error fetching dashboard leave data:", error);
-        res.status(500).json({ error: "Failed to fetch dashboard data." });
-    }
-});
-
 // ==========================================
 // NOTIFICATIONS SYSTEM
 // ==========================================
@@ -589,10 +539,10 @@ app.get('/api/attendance/:employee_key', async (req, res) => {
 });
 
 // ==========================================
-// HOD: DEPARTMENT LEAVE APPLICATIONS
+// LEAVE & ATTENDANCE ROUTES
 // ==========================================
 
-// GET: Fetch leave applications for a specific department (For HOD Approvals)
+// 1. GET: Fetch leave applications for a specific department (For HOD Approvals)
 app.get('/api/leave-applications/department', async (req, res) => {
     const { name } = req.query;
 
@@ -601,7 +551,7 @@ app.get('/api/leave-applications/department', async (req, res) => {
     }
 
     try {
-        // FIXED: Using start_date_key and pulling the new attachment/PDF columns
+        // Mapped exactly to your fact_leave_application columns!
         const query = `
             SELECT 
                 f.id AS application_id, 
@@ -617,9 +567,10 @@ app.get('/api/leave-applications/department', async (req, res) => {
                 f.pdf_document,
                 f.attachment_data,
                 f.employee_key,
+                f.position,         -- Pulled from fact_leave_application
+                f.department,       -- Pulled from fact_leave_application
                 e.first_name,
-                e.last_name,
-                e.position_title
+                e.last_name
             FROM public.fact_leave_application f
             JOIN public.dim_employee e ON f.employee_key = e.employee_key
             WHERE f.department = $1
@@ -628,8 +579,57 @@ app.get('/api/leave-applications/department', async (req, res) => {
         const result = await pool.query(query, [name]);
         res.status(200).json(result.rows);
     } catch (error) {
-        console.error("Error fetching department leave applications:", error);
-        res.status(500).json({ error: "Failed to fetch department leave requests." });
+        console.error("Error fetching department leave applications:", error.message);
+        res.status(500).json({ error: `Database error: ${error.message}` });
+    }
+});
+
+// 2. GET: Fetch ALL Leaves & Analytics Summary for Employee Leave History
+app.get('/api/leave-applications/:employee_key', async (req, res) => {
+    const { employee_key } = req.params;
+
+    try {
+        const historyQuery = `
+            SELECT 
+                f.id AS application_id, 
+                f.start_date_key AS date_key, 
+                f.created_at AS date_filed,
+                f.leave_type, 
+                f.start_date, 
+                f.end_date, 
+                f.remarks, 
+                f.hod_remarks,
+                f.working_days, 
+                f.status, 
+                f.created_at,
+                f.pdf_document,
+                f.attachment_data
+            FROM public.fact_leave_application f
+            WHERE f.employee_key = $1
+            ORDER BY f.created_at DESC;
+        `;
+        const historyResult = await pool.query(historyQuery, [employee_key]);
+
+        const summaryQuery = `
+            SELECT leave_type, SUM(ABS(amount)) AS used_days
+            FROM public.fact_leave_ledger
+            WHERE employee_key = $1 AND transaction_type = 'Deduction'
+            GROUP BY leave_type;
+        `;
+        const summaryResult = await pool.query(summaryQuery, [employee_key]);
+        
+        const summaryObj = {};
+        summaryResult.rows.forEach(row => {
+            summaryObj[row.leave_type] = { used: parseFloat(row.used_days) || 0 };
+        });
+
+        res.status(200).json({
+            history: historyResult.rows,
+            summary: summaryObj
+        });
+    } catch (error) {
+        console.error("Error fetching employee leave data:", error.message);
+        res.status(500).json({ error: `Database error: ${error.message}` });
     }
 });
 
