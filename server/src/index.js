@@ -592,51 +592,44 @@ app.get('/api/attendance/:employee_key', async (req, res) => {
 // HOD: DEPARTMENT LEAVE APPLICATIONS
 // ==========================================
 
-// GET: Fetch all department leave requests (includes the new hod_remarks)
+// GET: Fetch leave applications for a specific department (For HOD Approvals)
 app.get('/api/leave-applications/department', async (req, res) => {
     const { name } = req.query;
-    
+
     if (!name) {
-        return res.status(400).json({ error: "Department name parameter is required." });
+        return res.status(400).json({ error: "Department name is required" });
     }
 
     try {
+        // FIXED: Using start_date_key and pulling the new attachment/PDF columns
         const query = `
             SELECT 
-                l.id AS application_id,
-                l.id,
-                l.employee_key,
-                l.leave_type,
-                l.start_date,
-                l.end_date,
-                l.remarks,
-                l.hod_remarks,
-                l.working_days,
-                l.status,
-                l.created_at,
-                l.start_date_key,
-                l.end_date_key,
+                f.id AS application_id, 
+                f.start_date_key AS date_key, 
+                f.created_at AS date_filed,
+                f.leave_type, 
+                f.start_date, 
+                f.end_date, 
+                f.remarks, 
+                f.hod_remarks,
+                f.working_days, 
+                f.status,
+                f.pdf_document,
+                f.attachment_data,
+                f.employee_key,
                 e.first_name,
-                e.middle_name,
                 e.last_name,
-                e.department,
-                e.position_title,
-                e.salary_grade
-            FROM public.fact_leave_application l
-            JOIN public.dim_employee e ON l.employee_key = e.employee_key
-            WHERE e.department = $1
-            ORDER BY 
-                CASE WHEN l.status = 'Pending' THEN 1 
-                     WHEN l.status = 'Needs Revision' THEN 2
-                     ELSE 3 END,
-                l.created_at DESC;
+                e.position_title
+            FROM public.fact_leave_application f
+            JOIN public.dim_employee e ON f.employee_key = e.employee_key
+            WHERE f.department = $1
+            ORDER BY f.created_at DESC;
         `;
-        
         const result = await pool.query(query, [name]);
-        res.status(200).json({ applications: result.rows });
+        res.status(200).json(result.rows);
     } catch (error) {
-        console.error("Error fetching department applications:", error);
-        res.status(500).json({ error: "Failed to fetch department applications." });
+        console.error("Error fetching department leave applications:", error);
+        res.status(500).json({ error: "Failed to fetch department leave requests." });
     }
 });
 
