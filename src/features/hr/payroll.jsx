@@ -10,13 +10,11 @@ export default function Payroll({ onLogout, user }) {
   const [stats, setStats] = useState({ disbursed: 0, pending: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch Data from Backend
   useEffect(() => {
     const fetchData = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
         
-        // Fetch both routes simultaneously
         const [statsRes, listRes] = await Promise.all([
           fetch(`${apiUrl}/api/payroll/stats`),
           fetch(`${apiUrl}/api/payroll/monetizations`)
@@ -40,7 +38,6 @@ export default function Payroll({ onLogout, user }) {
     fetchData();
   }, []);
 
-  // Format currency helper
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
@@ -49,16 +46,15 @@ export default function Payroll({ onLogout, user }) {
     }).format(amount || 0);
   };
 
-  // Format shorthand numbers (e.g., 142500 -> 142.5K)
   const formatCompactNumber = (num) => {
     if (num >= 1000000) return `₱ ${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `₱ ${(num / 1000).toFixed(1)}K`;
     return formatCurrency(num);
   };
 
-  // Client-side Search Filter
+  // Safe filter logic to prevent crashes
   const filteredMonetizations = monetizations.filter((req) => {
-    const fullName = `${req.first_name} ${req.last_name}`.toLowerCase();
+    const fullName = `${req.first_name || ''} ${req.last_name || ''}`.toLowerCase();
     const query = searchQuery.toLowerCase();
     return (
       fullName.includes(query) ||
@@ -68,145 +64,113 @@ export default function Payroll({ onLogout, user }) {
   });
 
   return (
-    <div className="payroll-layout-wrapper">
-      <HrSidebar />
+    <div style={{ display: 'flex', width: '100vw', height: '100vh', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
+      <HrSidebar user={user} />
 
-      <div className="payroll-main-container">
-        {/* Top Header */}
-        <header className="payroll-global-header">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+        <header style={{ padding: '16px 32px', backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           <Header user={user} onLogout={onLogout} />
         </header>
 
-        {/* Content Body */}
-        <main className="payroll-main-content fade-in-up">
-          <div className="payroll-page">
-            
-            {/* Title Section */}
-            <div className="payroll-header-row">
-              <div className="payroll-title-layout">
-                <div className="payroll-title-icon-badge">
-                  <Banknote size={26} />
-                </div>
-                <div>
-                  <h1 className="payroll-title">Payroll & Ledger</h1>
-                  <p className="payroll-subtitle">
-                    Portal: <span className="payroll-subtitle-accent">HR Operations</span>
-                  </p>
-                </div>
+        <main style={{ padding: '32px' }} className="fade-in-up">
+          <div className="page-title-layout">
+            <div className="title-icon-badge">
+              <Banknote size={26} className="title-icon-svg" />
+            </div>
+            <div className="title-text-group">
+              <h2>Payroll & Ledger</h2>
+              <p className="subtitle-department">
+                Portal: <span className="highlight-maroon">HR Operations</span>
+              </p>
+            </div>
+          </div>
+
+          <section className="payroll-metrics-row" style={{ display: 'flex', gap: '24px', marginTop: '24px' }}>
+            <div className="payroll-stat-card hover-lift" style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ backgroundColor: '#d1fae5', padding: '12px', borderRadius: '50%' }}>
+                <DollarSign size={24} color="#059669" />
+              </div>
+              <div>
+                <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Monetization Disbursed</div>
+                <div className="text-green-value" style={{ fontSize: '24px', fontWeight: 800 }}>{formatCompactNumber(stats.disbursed)}</div>
               </div>
             </div>
 
-            {/* Metrics Dashboard Row */}
-            <section className="payroll-metrics-grid">
-              <div className="payroll-stat-card hover-lift">
-                <div className="stat-icon-wrapper stat-green-bg">
-                  <DollarSign size={22} className="stat-icon-green" />
-                </div>
-                <div className="stat-content">
-                  <span className="stat-label">Monetization Disbursed</span>
-                  <div className="stat-value-group">
-                    <span className="stat-number text-green">{formatCompactNumber(stats.disbursed)}</span>
-                    {stats.disbursed > 0 && (
-                      <span className="stat-trend positive">
-                        <ArrowUpRight size={14} /> Active
-                      </span>
-                    )}
-                  </div>
-                  <span className="stat-subtext">Current Year Total</span>
-                </div>
+            <div className="payroll-stat-card hover-lift" style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ backgroundColor: '#fee2e2', padding: '12px', borderRadius: '50%' }}>
+                <TrendingUp size={24} color="#dc2626" />
               </div>
-
-              <div className="payroll-stat-card hover-lift">
-                <div className="stat-icon-wrapper stat-maroon-bg">
-                  <TrendingUp size={22} className="stat-icon-maroon" />
-                </div>
-                <div className="stat-content">
-                  <span className="stat-label">Pending Requests</span>
-                  <div className="stat-value-group">
-                    <span className="stat-number">{stats.pending}</span>
-                    {stats.pending > 0 && <span className="stat-badge-inline">Requires Action</span>}
-                  </div>
-                  <span className="stat-subtext">Awaiting HR Review</span>
-                </div>
+              <div>
+                <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Pending Requests</div>
+                <div className="text-dark-value" style={{ fontSize: '24px', fontWeight: 800 }}>{stats.pending}</div>
               </div>
-            </section>
+            </div>
+          </section>
 
-            {/* Utilities Toolbar */}
-            <div className="payroll-utility-bar">
-              <div className="payroll-search-wrapper">
-                <Search size={18} className="payroll-search-icon" />
-                <input
-                  type="text"
-                  className="payroll-search-input"
-                  placeholder="Search employee, department, or ref ID..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-
-              <button className="btn-export-green">
-                <FileDown size={18} /> Export Master Ledger
-              </button>
+          <div className="payroll-utility-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#fff', padding: '8px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', width: '350px' }}>
+              <Search size={18} color="#64748b" style={{ marginRight: '8px' }} />
+              <input
+                type="text"
+                placeholder="Search employee, department, or ref ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ border: 'none', outline: 'none', width: '100%', fontSize: '14px' }}
+              />
             </div>
 
-            {/* Data Table Container */}
-            <section className="payroll-card-container">
-              <div className="payroll-card-header">
-                Leave Monetization Requests
-              </div>
+            <button className="export-btn" style={{ color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', cursor: 'pointer' }}>
+              <FileDown size={18} /> Export Master Ledger
+            </button>
+          </div>
 
-              <div className="payroll-table-scroll">
-                <table className="payroll-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '12%' }}>Ref ID</th>
-                      <th style={{ width: '22%' }}>Employee Name</th>
-                      <th style={{ width: '20%' }}>Department</th>
-                      <th style={{ width: '16%' }}>Leave Type</th>
-                      <th style={{ width: '14%' }}>Credits Converted</th>
-                      <th style={{ width: '16%' }}>Calculated Amount</th>
-                      <th style={{ width: '15%' }} className="text-center">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {isLoading ? (
-                      <tr>
-                        <td colSpan="7" className="payroll-empty-cell">Loading ledger records...</td>
-                      </tr>
-                    ) : filteredMonetizations.length === 0 ? (
-                      <tr>
-                        <td colSpan="7" className="payroll-empty-cell">
-                          No matching monetization records found.
+          <section className="payroll-table-card" style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', marginTop: '24px', overflow: 'hidden' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', fontWeight: '700', fontSize: '16px' }}>
+              Leave Monetization Requests
+            </div>
+
+            <div className="table-responsive-scroll">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8fafc', color: '#64748b', fontSize: '13px', textTransform: 'uppercase' }}>
+                    <th style={{ padding: '16px 24px', width: '12%' }}>Ref ID</th>
+                    <th style={{ padding: '16px 24px', width: '22%' }}>Employee Name</th>
+                    <th style={{ padding: '16px 24px', width: '20%' }}>Department</th>
+                    <th style={{ padding: '16px 24px', width: '16%' }}>Leave Type</th>
+                    <th style={{ padding: '16px 24px', width: '14%' }}>Credits Converted</th>
+                    <th style={{ padding: '16px 24px', width: '16%' }}>Calculated Amount</th>
+                    <th style={{ padding: '16px 24px', width: '15%' }} className="text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    <tr><td colSpan="7" style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>Loading ledger records...</td></tr>
+                  ) : filteredMonetizations.length === 0 ? (
+                    <tr><td colSpan="7" style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>No matching monetization records found.</td></tr>
+                  ) : (
+                    filteredMonetizations.map((req) => (
+                      <tr key={req.monetization_id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '16px 24px' }} className="ref-id-cell">{req.monetization_id}</td>
+                        <td style={{ padding: '16px 24px' }} className="employee-name-cell">{req.first_name} {req.last_name}</td>
+                        <td style={{ padding: '16px 24px' }}>{req.department}</td>
+                        <td style={{ padding: '16px 24px' }}>{req.leave_type}</td>
+                        <td style={{ padding: '16px 24px' }}><strong>{Number(req.credits_converted)}</strong> Days</td>
+                        <td style={{ padding: '16px 24px' }} className="amount-cell">{formatCurrency(req.calculated_amount)}</td>
+                        <td style={{ padding: '16px 24px' }} className="text-center">
+                          <span className={`status-badge status-${(req.status || 'pending').replace(/\s+/g, '-').toLowerCase()}`}>
+                            {req.status === 'Pending Review' && <Clock size={13} style={{marginRight: '4px'}}/>}
+                            {req.status === 'Approved' && <CheckCircle2 size={13} style={{marginRight: '4px'}}/>}
+                            {req.status === 'Credited' && <DollarSign size={13} style={{marginRight: '4px'}}/>}
+                            {req.status}
+                          </span>
                         </td>
                       </tr>
-                    ) : (
-                      filteredMonetizations.map((req) => (
-                        <tr key={req.monetization_id}>
-                          <td className="ref-id-cell">{req.monetization_id}</td>
-                          <td className="employee-name-cell">{req.first_name} {req.last_name}</td>
-                          <td className="dept-cell">{req.department}</td>
-                          <td>{req.leave_type}</td>
-                          <td className="days-cell">
-                            <strong>{Number(req.credits_converted)}</strong> Days
-                          </td>
-                          <td className="amount-cell">{formatCurrency(req.calculated_amount)}</td>
-                          <td className="text-center">
-                            <span className={`status-badge status-${req.status.replace(/\s+/g, '-').toLowerCase()}`}>
-                              {req.status === 'Pending Review' && <Clock size={13} />}
-                              {req.status === 'Approved' && <CheckCircle2 size={13} />}
-                              {req.status === 'Credited' && <DollarSign size={13} />}
-                              {req.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-          </div>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </main>
       </div>
     </div>

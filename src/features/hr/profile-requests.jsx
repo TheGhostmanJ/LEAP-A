@@ -93,7 +93,7 @@ export default function ProfileRequests({ onLogout, user }) {
   };
 
   const filteredEmployees = employees.filter((emp) => {
-    const fullName = `${emp.first_name} ${emp.last_name}`.toLowerCase();
+    const fullName = `${emp.first_name || ''} ${emp.last_name || ''}`.toLowerCase();
     const empId = (emp.employee_id || '').toLowerCase();
     const dept = (emp.department || '').toLowerCase();
     const query = employeeSearchTerm.toLowerCase();
@@ -153,7 +153,7 @@ export default function ProfileRequests({ onLogout, user }) {
   };
 
   const filteredRequests = requests.filter((req) =>
-    req.employee.toLowerCase().includes(requestSearchTerm.toLowerCase())
+    (req.employee || '').toLowerCase().includes(requestSearchTerm.toLowerCase())
   );
 
   useEffect(() => {
@@ -162,191 +162,177 @@ export default function ProfileRequests({ onLogout, user }) {
   }, []);
 
   return (
-    <div className="profile-layout-wrapper">
-      <HrSidebar />
+    <div style={{ display: 'flex', width: '100vw', height: '100vh', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
+      <HrSidebar user={user} />
 
-      <div className="profile-main-container">
-        {/* Top Header */}
-        <header className="profile-global-header">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+        <header style={{ padding: '16px 32px', backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           <Header user={user} onLogout={onLogout} />
         </header>
 
-        {/* Content Body */}
-        <main className="profile-main-content">
-          <div className="profile-page">
+        <main style={{ padding: '32px' }} className="fade-in-up">
             
-            {/* Title Section */}
-            <div className="profile-header-row">
-              <div className="profile-title-layout">
-                <div className="profile-title-icon-badge">
-                  <UserCheck size={26} />
-                </div>
-                <div>
-                  <h1 className="profile-title">Employee Profile Management</h1>
-                  <p className="profile-subtitle">
-                    Portal: <span className="profile-subtitle-accent">HR Operations</span>
-                  </p>
-                </div>
-              </div>
+          <div className="page-title-layout">
+            <div className="title-icon-badge">
+              <UserCheck size={26} className="title-icon-svg" />
             </div>
+            <div className="title-text-group">
+              <h2>Employee Profile Management</h2>
+              <p className="subtitle-department">
+                Portal: <span className="highlight-maroon">HR Operations</span>
+              </p>
+            </div>
+          </div>
 
-            {/* SECTION 1: PROFILE EDIT REQUESTS */}
-            <section className="profile-card-container">
-              <div className="profile-card-header">
-                <span>Pending Data Alteration Requests</span>
-                <div className="bar-search-input-wrapper">
-                  <Search size={16} className="bar-search-icon" />
-                  <input
-                    type="text"
-                    placeholder="Filter requests..."
-                    className="bar-search-field"
-                    value={requestSearchTerm}
-                    onChange={(e) => setRequestSearchTerm(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="profile-table-scroll">
-                <table className="profile-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '22%' }}>Employee</th>
-                      <th style={{ width: '18%' }}>Field to Change</th>
-                      <th style={{ width: '18%' }}>Current Record</th>
-                      <th style={{ width: '18%' }}>Requested Change</th>
-                      <th style={{ width: '14%' }}>Supporting Document</th>
-                      <th style={{ width: '10%' }} className="text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {isReqLoading ? (
-                      <tr>
-                        <td colSpan="6" className="profile-status-cell">Loading requests...</td>
-                      </tr>
-                    ) : filteredRequests.length === 0 ? (
-                      <tr>
-                        <td colSpan="6" className="profile-status-cell">No requests found.</td>
-                      </tr>
-                    ) : (
-                      filteredRequests.map((req) => (
-                        <tr key={req.id}>
-                          <td className="employee-name-cell">{req.employee}</td>
-                          <td className="field-cell">{req.field}</td>
-                          <td className="old-value-cell">{req.oldValue}</td>
-                          <td className="new-value-cell">{req.newValue}</td>
-                          <td>
-                            {req.proofAttached ? (
-                              <span className="attachment-link">
-                                <Paperclip size={15} /> View Attachment
-                              </span>
-                            ) : (
-                              <span className="no-attachment-note">Provided in-person</span>
-                            )}
-                          </td>
-                          <td className="actions-cell">
-                            {req.status === 'Pending' ? (
-                              <>
-                                <button
-                                  className="action-btn-green"
-                                  onClick={() => handleAction(req.id, 'Approved')}
-                                  title="Approve Request"
-                                >
-                                  <CheckCircle size={18} />
-                                </button>
-                                <button
-                                  className="action-btn-red"
-                                  onClick={() => handleAction(req.id, 'Rejected')}
-                                  title="Reject Request"
-                                >
-                                  <XCircle size={18} />
-                                </button>
-                              </>
-                            ) : (
-                              <span className={`status-badge status-${req.status.toLowerCase()}`}>
-                                {req.status}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            {/* SECTION 2: EMPLOYEE DIRECTORY & ROSTER */}
-            <div className="directory-utility-bar">
-              <div className="directory-search-wrapper">
-                <Search size={18} className="directory-search-icon" />
+          {/* SECTION 1: PROFILE EDIT REQUESTS */}
+          <section className="profile-requests-card" style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', marginTop: '24px', overflow: 'hidden' }}>
+            <div className="flex-header-bar" style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
+              <span style={{ fontWeight: '700', fontSize: '16px' }}>Pending Data Alteration Requests</span>
+              <div className="bar-search-input-wrapper" style={{ border: '1px solid #cbd5e1' }}>
+                <Search size={16} color="#64748b" />
                 <input
                   type="text"
-                  className="directory-search-input"
-                  placeholder="Search by name, ID, or department..."
-                  value={employeeSearchTerm}
-                  onChange={(e) => setEmployeeSearchTerm(e.target.value)}
+                  placeholder="Filter requests..."
+                  className="bar-search-field"
+                  value={requestSearchTerm}
+                  onChange={(e) => setRequestSearchTerm(e.target.value)}
                 />
               </div>
-              <button className="btn-onboard-maroon" onClick={handleOpenCreateModal}>
-                <UserPlus size={18} /> Onboard Employee
-              </button>
             </div>
 
-            <section className="profile-card-container">
-              <div className="profile-card-header">
-                Active Employee Roster ({filteredEmployees.length} found)
-              </div>
+            <div className="table-full-height-wrapper">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8fafc', color: '#64748b', fontSize: '13px', textTransform: 'uppercase' }}>
+                    <th style={{ padding: '16px 24px', width: '22%' }}>Employee</th>
+                    <th style={{ padding: '16px 24px', width: '18%' }}>Field to Change</th>
+                    <th style={{ padding: '16px 24px', width: '18%' }}>Current Record</th>
+                    <th style={{ padding: '16px 24px', width: '18%' }}>Requested Change</th>
+                    <th style={{ padding: '16px 24px', width: '14%' }}>Supporting Document</th>
+                    <th style={{ padding: '16px 24px', width: '10%' }} className="text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isReqLoading ? (
+                    <tr><td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>Loading requests...</td></tr>
+                  ) : filteredRequests.length === 0 ? (
+                    <tr><td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>No pending alteration requests found.</td></tr>
+                  ) : (
+                    filteredRequests.map((req) => (
+                      <tr key={req.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '16px 24px' }} className="employee-name-cell">{req.employee}</td>
+                        <td style={{ padding: '16px 24px' }}>{req.field}</td>
+                        <td style={{ padding: '16px 24px' }} className="old-value-cell">{req.oldValue}</td>
+                        <td style={{ padding: '16px 24px' }} className="new-value-cell">{req.newValue}</td>
+                        <td style={{ padding: '16px 24px' }}>
+                          {req.proofAttached ? (
+                            <span className="attachment-link">
+                              <Paperclip size={15} /> View Attachment
+                            </span>
+                          ) : (
+                            <span className="no-attachment-note">Provided in-person</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '16px 24px' }} className="actions-cell">
+                          {req.status === 'Pending' ? (
+                            <>
+                              <button
+                                style={{ backgroundColor: '#d1fae5', color: '#059669', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}
+                                onClick={() => handleAction(req.id, 'Approved')}
+                                title="Approve Request"
+                              >
+                                <CheckCircle size={18} />
+                              </button>
+                              <button
+                                style={{ backgroundColor: '#fee2e2', color: '#dc2626', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}
+                                onClick={() => handleAction(req.id, 'Rejected')}
+                                title="Reject Request"
+                              >
+                                <XCircle size={18} />
+                              </button>
+                            </>
+                          ) : (
+                            <span className={`status-badge status-${req.status.toLowerCase()}`}>
+                              {req.status}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-              <div className="profile-table-scroll">
-                <table className="profile-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '18%' }}>Employee ID</th>
-                      <th style={{ width: '25%' }}>Full Name</th>
-                      <th style={{ width: '27%' }}>Department</th>
-                      <th style={{ width: '20%' }}>Position Title</th>
-                      <th style={{ width: '10%' }} className="text-center">Manage</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {isEmpLoading ? (
-                      <tr>
-                        <td colSpan="5" className="profile-status-cell">Loading employee records...</td>
-                      </tr>
-                    ) : empError ? (
-                      <tr>
-                        <td colSpan="5" className="profile-status-cell error-text">Error: {empError}</td>
-                      </tr>
-                    ) : filteredEmployees.length === 0 ? (
-                      <tr>
-                        <td colSpan="5" className="profile-status-cell">No matching employees found.</td>
-                      </tr>
-                    ) : (
-                      filteredEmployees.map((emp) => (
-                        <tr key={emp.employee_key}>
-                          <td className="emp-id-cell">{emp.employee_id}</td>
-                          <td className="employee-name-cell">
-                            {emp.first_name} {emp.last_name}
-                          </td>
-                          <td className="dept-cell">{emp.department}</td>
-                          <td className="position-cell">{emp.position_title}</td>
-                          <td className="actions-cell">
-                            <button
-                              className="btn-manage-profile"
-                              onClick={() => handleOpenEditModal(emp)}
-                            >
-                              <Settings size={15} /> Profile
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
+          {/* SECTION 2: EMPLOYEE DIRECTORY & ROSTER */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '32px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#fff', padding: '8px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', width: '350px' }}>
+              <Search size={18} color="#64748b" style={{ marginRight: '8px' }} />
+              <input
+                type="text"
+                placeholder="Search by name, ID, or department..."
+                value={employeeSearchTerm}
+                onChange={(e) => setEmployeeSearchTerm(e.target.value)}
+                style={{ border: 'none', outline: 'none', width: '100%', fontSize: '14px' }}
+              />
+            </div>
+            <button 
+              onClick={handleOpenCreateModal}
+              style={{ backgroundColor: '#800020', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', cursor: 'pointer' }}
+            >
+              <UserPlus size={18} /> Onboard Employee
+            </button>
           </div>
+
+          <section style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', fontWeight: '700', fontSize: '16px' }}>
+              Active Employee Roster ({filteredEmployees.length} found)
+            </div>
+
+            <div className="table-full-height-wrapper">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8fafc', color: '#64748b', fontSize: '13px', textTransform: 'uppercase' }}>
+                    <th style={{ padding: '16px 24px', width: '18%' }}>Employee ID</th>
+                    <th style={{ padding: '16px 24px', width: '25%' }}>Full Name</th>
+                    <th style={{ padding: '16px 24px', width: '27%' }}>Department</th>
+                    <th style={{ padding: '16px 24px', width: '20%' }}>Position Title</th>
+                    <th style={{ padding: '16px 24px', width: '10%' }} className="text-center">Manage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isEmpLoading ? (
+                    <tr><td colSpan="5" style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>Loading employee records...</td></tr>
+                  ) : empError ? (
+                    <tr><td colSpan="5" style={{ padding: '24px', textAlign: 'center', color: '#dc2626' }}>Error: {empError}</td></tr>
+                  ) : filteredEmployees.length === 0 ? (
+                    <tr><td colSpan="5" style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>No matching employees found.</td></tr>
+                  ) : (
+                    filteredEmployees.map((emp) => (
+                      <tr key={emp.employee_key} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '16px 24px', color: '#6b7280', fontFamily: 'monospace', fontWeight: 600 }}>{emp.employee_id}</td>
+                        <td style={{ padding: '16px 24px', fontWeight: 600 }}>
+                          {emp.first_name} {emp.last_name}
+                        </td>
+                        <td style={{ padding: '16px 24px' }}>{emp.department}</td>
+                        <td style={{ padding: '16px 24px' }}>{emp.position_title}</td>
+                        <td style={{ padding: '16px 24px' }} className="actions-cell">
+                          <button
+                            onClick={() => handleOpenEditModal(emp)}
+                            style={{ backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '500', padding: '6px 12px' }}
+                          >
+                            <Settings size={15} /> Profile
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
         </main>
       </div>
 
@@ -368,14 +354,15 @@ export default function ProfileRequests({ onLogout, user }) {
                   type="text"
                   placeholder="e.g., LIPA-2026-102"
                   required
-                  className={`modal-form-input ${isEditMode ? 'input-disabled' : ''}`}
+                  className="modal-form-input"
+                  style={{ backgroundColor: isEditMode ? '#f1f5f9' : '#fff' }}
                   value={empFormData.employee_id}
                   onChange={(e) => setEmpFormData({...empFormData, employee_id: e.target.value})}
                   disabled={isEditMode}
                 />
               </div>
 
-              <div className="form-grid-two-col">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="form-field-group">
                   <label>First Name <span className="required-star">*</span></label>
                   <input
