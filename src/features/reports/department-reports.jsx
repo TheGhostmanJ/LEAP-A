@@ -6,7 +6,9 @@ import {
   Search, 
   SlidersHorizontal, 
   Download,
-  Loader2
+  Loader2,
+  TrendingDown,
+  ShieldAlert
 } from 'lucide-react';
 
 /* SIDEBAR & HEADER COMPONENTS */
@@ -18,36 +20,53 @@ import './department-reports.css';
 
 export default function DepartmentReports({ onLogout, user }) {
   const [reportData, setReportData] = useState(null);
+  const [wfData, setWfData] = useState(null);
+  const [anData, setAnData] = useState(null);
+  
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const fetchReportData = async () => {
+  // 1. Role-Based Security & Filtering
+  const isGlobal = user?.role === 'HR Admin' || user?.role === 'Super Admin';
+  const displayDepartment = isGlobal ? 'All Departments (Global)' : user?.department || 'Unassigned';
+
+  const fetchAllData = async () => {
     if (!user) return;
     setIsLoading(true);
+    
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const deptQuery = user.department ? `?name=${encodeURIComponent(user.department)}` : '';
       
-      const response = await fetch(`${apiUrl}/api/reports/department${deptQuery}`);
-      if (response.ok) {
-        const data = await response.json();
-        setReportData(data);
-      }
+      // If Global, pass empty string. If HOD, pass their specific department.
+      const repQuery = isGlobal ? '' : `?name=${encodeURIComponent(user.department || '')}`;
+      const mlQuery = isGlobal ? '' : `?department=${encodeURIComponent(user.department || '')}`;
+      
+      // 2. Fetch all 3 APIs simultaneously for a unified report
+      const [repRes, wfRes, anRes] = await Promise.all([
+        fetch(`${apiUrl}/api/reports/department${repQuery}`),
+        fetch(`${apiUrl}/api/workforce-forecast${mlQuery}`),
+        fetch(`${apiUrl}/api/anomalies${mlQuery}`)
+      ]);
+
+      if (repRes.ok) setReportData(await repRes.json());
+      if (wfRes.ok) setWfData(await wfRes.json());
+      if (anRes.ok) setAnData(await anRes.json());
+      
     } catch (error) {
-      console.error("Failed to load report data:", error);
+      console.error("Failed to load unified report data:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchReportData();
+    fetchAllData();
   }, [user]);
 
   const handleGenerateReport = () => {
     setIsGenerating(true);
     setTimeout(() => {
-      fetchReportData();
+      fetchAllData();
       setIsGenerating(false);
     }, 1200); // Simulate processing time for UX
   };
@@ -59,6 +78,7 @@ export default function DepartmentReports({ onLogout, user }) {
   const renderSidebar = () => {
     switch (user?.role) {
       case 'HR Admin':
+      case 'Super Admin':
         return <HrSidebar user={user} />;
       case 'Department Head':
       default:
@@ -75,18 +95,27 @@ export default function DepartmentReports({ onLogout, user }) {
     return 'olive';
   };
 
-  // Calculate the maximum total in a month to scale the Bar Chart properly
+  // Helper to draw the mini ML Workforce SVG Line
+  const generateSvgPath = () => {
+    if (!wfData || !wfData.forecast) return "";
+    const points = wfData.forecast.map((day, index) => {
+      const x = (index / 29) * 100;
+      const clampedVal = Math.max(75, Math.min(100, day.availablePercentage));
+      const y = ((100 - clampedVal) / 25) * 100; 
+      return `${x},${y}`;
+    });
+    return points.join(' '); 
+  };
+
   const maxMonthlyLeaves = reportData?.monthlyData ? 
     Math.max(...Object.values(reportData.monthlyData).map(m => 
       Object.values(m).reduce((a, b) => a + b, 0)
-    )) : 10; // Fallback to avoid division by 0
+    )) : 10;
 
   return (
     <div className="dr-dashboard-container">
-      {/* Fixed Navigation Column */}
       {renderSidebar()}
 
-      {/* Main Viewport Content Surface */}
       <main className="dr-main-content fade-in-up">
         
         {/* STANDARDIZED GLOBAL HEADER */}
@@ -95,14 +124,13 @@ export default function DepartmentReports({ onLogout, user }) {
             <FileText size={28} className="dr-icon-maroon" /> 
             <div className="dr-title-text">
               <h2>
-                <span className="dr-title-dark">Department</span> <span className="dr-title-maroon">Reports</span>
+                <span className="dr-title-dark">{isGlobal ? 'Global' : 'Department'}</span> <span className="dr-title-maroon">Reports</span>
               </h2>
               <p className="dr-subtitle">
-                Department: <span className="dr-highlight-maroon">{user?.department || 'City Administration'}</span>
+                Scope: <span className="dr-highlight-maroon">{displayDepartment}</span>
               </p>
             </div>
           </div>
-          
           <Header user={user} onLogout={onLogout} />
         </header>
 
@@ -122,10 +150,11 @@ export default function DepartmentReports({ onLogout, user }) {
             <div className="dr-field-group">
               <label htmlFor="report-type-select">Report Type</label>
               <div className="dr-input-wrapper">
-                <select id="report-type-select" defaultValue="leave">
-                  <option value="leave">Leave & Attendance Report</option>
-                  <option value="workforce">Workforce Forecast</option>
-                  <option value="anomaly">Anomaly Alert</option>
+                <select id="report-type-select" defaultValue="comprehensive">
+                  <option value="comprehensive">Comprehensive Dashboard</option>
+                  <option value="leave">Leave & Attendance Only</option>
+                  <option value="workforce">Workforce Forecast Only</option>
+                  <option value="anomaly">Anomaly Alerts Only</option>
                 </select>
                 <ChevronDown size={18} className="dr-input-icon right-icon pointer-none" />
               </div>
@@ -159,12 +188,13 @@ export default function DepartmentReports({ onLogout, user }) {
 
         {/* 2x2 DATA VISUALIZATIONS GRID LAYOUT */}
         {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-            <Loader2 size={32} className="spin" style={{ color: '#800000' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px', color: '#64748b' }}>
+            <Loader2 size={32} className="spin" style={{ color: '#800000', marginBottom: '16px' }} />
+            <p>Compiling comprehensive ML and Department Data...</p>
           </div>
         ) : !reportData ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', color: '#64748b' }}>
-            No report data available for this department.
+            No report data available for this scope.
           </div>
         ) : (
           <div className="dr-quad-grid">
@@ -174,9 +204,7 @@ export default function DepartmentReports({ onLogout, user }) {
               <div className="dr-card-header">Leave Distribution Type (YTD)</div>
               <div className="dr-card-body flex-center">
                 <div className="dr-pie-wrapper">
-                  <div className="dr-pie-circle">
-                    {/* Simulated CSS Pie overlay - Uses CSS conic-gradients if implemented in CSS, otherwise falls back to ring */}
-                  </div>
+                  <div className="dr-pie-circle"></div>
                   <div className="dr-pie-legend">
                     {reportData.distribution.length === 0 ? (
                       <span>No leave data recorded.</span>
@@ -238,35 +266,73 @@ export default function DepartmentReports({ onLogout, user }) {
               </div>
             </div>
 
-            {/* Card 3: Workforce Report */}
+            {/* Card 3: Workforce Report (Now connected to Python ML Prophet) */}
             <div className="dr-chart-card">
-              <div className="dr-card-header">Workforce Report (Rolling 30 Days)</div>
-              <div className="dr-card-body">
-                <div className="dr-line-chart-frame">
-                  <div className="dr-trendline-area">
-                    <div className="dr-critical-badge">Availability consistently &gt;90%</div>
+              <div className="dr-card-header">Workforce Forecast (30 Days)</div>
+              <div className="dr-card-body" style={{ padding: '16px' }}>
+                <div className="dr-line-chart-frame" style={{ height: '140px', position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: 0, right: 0, fontSize: '12px', color: '#64748b' }}>
+                    Active Staff: <strong>{wfData?.totalStaff || 0}</strong>
                   </div>
-                  <div className="dr-timeline-x">
-                    {Array.from({ length: 15 }, (_, i) => <span key={i + 1}>{i * 2 + 1}</span>)}
+                  
+                  {/* ML Generated Mini-Graph */}
+                  <div style={{ width: '100%', height: '100%', paddingTop: '20px' }}>
+                    <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+                      <polyline 
+                        points={generateSvgPath()} 
+                        fill="none" 
+                        stroke="#800000" 
+                        strokeWidth="2"
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    </svg>
                   </div>
                 </div>
+                
+                {wfData?.alerts?.some(a => a.type === 'critical') ? (
+                  <div style={{ marginTop: '12px', padding: '8px', backgroundColor: '#fef2f2', borderLeft: '3px solid #dc2626', color: '#991b1b', fontSize: '13px' }}>
+                    <TrendingDown size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom'}} />
+                    <strong>Warning:</strong> Predicted availability drops below 90% soon.
+                  </div>
+                ) : (
+                  <div style={{ marginTop: '12px', padding: '8px', backgroundColor: '#ecfdf5', borderLeft: '3px solid #059669', color: '#065f46', fontSize: '13px' }}>
+                    <strong>Stable:</strong> Operations projected to remain above 90% capacity.
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Card 4: Anomaly Report */}
+            {/* Card 4: Anomaly Report (Now connected to Python ML Isolation Forest) */}
             <div className="dr-chart-card">
-              <div className="dr-card-header">Anomaly Report</div>
-              <div className="dr-card-body">
-                <div className="dr-anomaly-frame">
-                  <div className="dr-anomaly-stats">
-                    <span>Peak: <strong>{reportData.anomaly.peak}</strong></span>
-                    <span>Avg. Check-In: <strong>{reportData.anomaly.avgCheckIn}</strong></span>
+              <div className="dr-card-header">Anomaly Intelligence Report</div>
+              <div className="dr-card-body" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', textAlign: 'center' }}>
+                    <span style={{ display: 'block', fontSize: '24px', fontWeight: '700', color: '#800000' }}>
+                      {anData?.stats?.totalFlagged || 0}
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>Active Alerts</span>
                   </div>
-                  <div className="dr-wave-area">
-                    <div className="pulse-node pos-a"></div>
-                    <div className="pulse-node pos-b"></div>
+                  <div style={{ padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', textAlign: 'center' }}>
+                    <span style={{ display: 'block', fontSize: '24px', fontWeight: '700', color: '#059669' }}>
+                      {anData?.stats?.resolvedThisMonth || 0}
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>Resolved (YTD)</span>
                   </div>
                 </div>
+
+                {anData?.stats?.highRisk > 0 ? (
+                  <div style={{ padding: '10px', backgroundColor: '#fff1f2', border: '1px solid #ffe4e6', borderRadius: '6px', fontSize: '13px', color: '#be123c', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ShieldAlert size={16} />
+                    <span><strong>Action Required:</strong> {anData.stats.highRisk} employees marked as High-Risk behavioral anomalies.</span>
+                  </div>
+                ) : (
+                  <div style={{ padding: '10px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', color: '#475569', textAlign: 'center' }}>
+                    No high-risk anomalies detected.
+                  </div>
+                )}
+
               </div>
             </div>
 
