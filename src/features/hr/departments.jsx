@@ -68,11 +68,12 @@ export default function Departments({ onLogout, user }) {
   };
 
   const handleConfigureClick = (dept) => {
-    setEditingDeptId(dept.id);
+    // Safely pull either the snake_case DB names or standard names
+    setEditingDeptId(dept.department_id || dept.id);
     setFormData({
-      department_id: dept.id,
-      department_name: dept.name,
-      max_capacity: dept.max
+      department_id: dept.department_id || dept.id,
+      department_name: dept.department_name || dept.name,
+      max_capacity: dept.max_capacity || dept.max
     });
     setIsEditModalOpen(true);
   };
@@ -105,25 +106,27 @@ export default function Departments({ onLogout, user }) {
     }
   };
 
-  const filteredDepartments = departments.filter((dept) =>
-    dept.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    dept.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Safely check names to prevent White Screen of Death crashes
+  const filteredDepartments = departments.filter((dept) => {
+    const deptName = dept.department_name || dept.name || '';
+    const deptId = dept.department_id || dept.id || '';
+    
+    return deptName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           deptId.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   return (
     <div className="dept-layout-wrapper">
-      <HrSidebar />
+      {/* FIXED: Passed user prop to sidebar */}
+      <HrSidebar user={user} />
 
       <div className="dept-main-container">
-        {/* Top Navbar Header */}
         <header className="dept-global-header">
           <Header user={user} onLogout={onLogout} />
         </header>
 
-        {/* Page Content Body */}
         <main className="dept-main-content">
-          <div className="dept-page">
-            {/* Header Title Section */}
+          <div className="dept-page fade-in-up">
             <div className="dept-header-row">
               <div className="dept-title-layout">
                 <div className="dept-title-icon-badge">
@@ -138,7 +141,6 @@ export default function Departments({ onLogout, user }) {
               </div>
             </div>
 
-            {/* Actions Bar */}
             <div className="dept-utility-bar">
               <div className="dept-search-wrapper">
                 <Search size={18} className="dept-search-icon" />
@@ -161,7 +163,6 @@ export default function Departments({ onLogout, user }) {
               </button>
             </div>
 
-            {/* Table Container */}
             <section className="dept-card-container">
               <div className="dept-card-header">
                 Organizational Structure
@@ -194,17 +195,24 @@ export default function Departments({ onLogout, user }) {
                       </tr>
                     ) : (
                       filteredDepartments.map((dept) => {
-                        const capacityPct = dept.max > 0 ? (dept.headcount / dept.max) * 100 : 0;
+                        // Safe fallbacks for database column names
+                        const code = dept.department_id || dept.id;
+                        const name = dept.department_name || dept.name;
+                        const head = dept.head_name || dept.head || 'Unassigned';
+                        const current = parseInt(dept.current_headcount || dept.headcount || 0);
+                        const max = parseInt(dept.max_capacity || dept.max || 1);
+                        
+                        const capacityPct = max > 0 ? (current / max) * 100 : 0;
 
                         return (
-                          <tr key={dept.id}>
-                            <td className="dept-code-cell">{dept.id}</td>
-                            <td className="dept-name-cell">{dept.name}</td>
-                            <td className="dept-head-cell">{dept.head || 'Unassigned'}</td>
+                          <tr key={code}>
+                            <td className="dept-code-cell">{code}</td>
+                            <td className="dept-name-cell">{name}</td>
+                            <td className="dept-head-cell">{head}</td>
                             <td>
                               <div className="dept-headcount-badge">
                                 <Users size={15} color="#7a1220" />
-                                <span>{dept.headcount} / {dept.max}</span>
+                                <span>{current} / {max}</span>
                               </div>
                             </td>
                             <td>

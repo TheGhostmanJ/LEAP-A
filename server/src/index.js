@@ -1267,32 +1267,73 @@ app.put('/api/leave-approvals/:id', async (req, res) => {
 });
 
 // ==========================================
-// DEPARTMENT MANAGEMENT
+// HR DEPARTMENT MANAGEMENT
 // ==========================================
 
+// GET: Fetch all departments with live headcount and assigned Head
 app.get('/api/departments', async (req, res) => {
     try {
         const query = `
             SELECT 
-                d.department_id AS id,
-                d.department_name AS name,
-                COALESCE(e.first_name || ' ' || e.last_name, 'Unassigned') AS head,
-                d.max_capacity AS max,
+                d.department_id, 
+                d.department_name, 
+                d.max_capacity,
                 (
-                    SELECT COUNT(*)::integer 
-                    FROM dim_employee e2 
-                    WHERE e2.department = d.department_name 
-                    AND e2.is_active = true
-                ) AS headcount
+                    SELECT COUNT(*) 
+                    FROM public.dim_employee 
+                    WHERE department = d.department_name 
+                      AND employment_status = 'Active'
+                ) AS current_headcount,
+                (
+                    SELECT first_name || ' ' || last_name 
+                    FROM public.dim_employee 
+                    WHERE department = d.department_name 
+                      AND role = 'Department Head' 
+                    LIMIT 1
+                ) AS head_name
             FROM public.dim_department d
-            LEFT JOIN public.dim_employee e ON d.department_head_key = e.employee_key
-            ORDER BY d.department_id ASC;
+            ORDER BY d.department_name ASC;
         `;
         const result = await pool.query(query);
-        res.json(result.rows);
-    } catch (err) {
-        console.error("Error fetching departments:", err);
-        res.status(500).json({ error: "Internal server error retrieving organizational structure." });
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching departments:", error);
+        res.status(500).json({ error: "Failed to fetch departments." });
+    }
+});
+
+// POST: Create a new department
+app.post('/api/departments', async (req, res) => {
+    const { department_id, department_name, max_capacity } = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO public.dim_department (department_id, department_name, max_capacity) 
+             VALUES ($1, $2, $3)`,
+            [department_id, department_name, max_capacity]
+        );
+        res.status(201).json({ success: true, message: "Department created." });
+    } catch (error) {
+        if (error.code === '23505') {
+            return res.status(409).json({ error: "Department code already exists." });
+        }
+        res.status(500).json({ error: "Failed to create department." });
+    }
+});
+
+// PUT: Update an existing department
+app.put('/api/departments/:id', async (req, res) => {
+    const { id } = req.params;
+    const { department_name, max_capacity } = req.body;
+    try {
+        await pool.query(
+            `UPDATE public.dim_department 
+             SET department_name = $1, max_capacity = $2 
+             WHERE department_id = $3`,
+            [department_name, max_capacity, id]
+        );
+        res.status(200).json({ success: true, message: "Department updated." });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to update department." });
     }
 });
 
