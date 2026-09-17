@@ -1,4 +1,3 @@
-// src/components/hr-sidebar.jsx
 import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -13,6 +12,8 @@ export default function HrSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // 1. The reference hook
   const sidebarRef = useRef(null);
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -41,21 +42,19 @@ export default function HrSidebar() {
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
   });
 
+  // 2. The restore logic
   useEffect(() => {
     const savedScrollPosition = sessionStorage.getItem('hrSidebarScroll');
     if (sidebarRef.current && savedScrollPosition) {
-      
-      // Delay the scroll by a split-second until the DOM is fully painted
       setTimeout(() => {
         if (sidebarRef.current) {
           sidebarRef.current.scrollTop = parseInt(savedScrollPosition, 10);
         }
       }, 10); 
-      
     }
   }, []);
 
-  // 3. Whenever the user scrolls, save the new exact position
+  // 3. The save logic
   const handleScroll = (e) => {
     sessionStorage.setItem('hrSidebarScroll', e.target.scrollTop);
   };
@@ -125,7 +124,12 @@ export default function HrSidebar() {
         {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      <aside className={`dashboard-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'sidebar-mobile-open' : ''}`}>
+      {/* FIXED: ATTACHED THE REF AND SCROLL TRACKER HERE */}
+      <aside 
+        className={`dashboard-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'sidebar-mobile-open' : ''}`}
+        ref={sidebarRef}
+        onScroll={handleScroll}
+      >
         {/* BRAND / LOGO AREA */}
         <div className="sidebar-brand">
           {!isCollapsed ? (
