@@ -55,7 +55,7 @@ export default function WorkforceForecast({ onLogout, user }) {
     }
   };
 
-  // Helper to draw the SVG Line graph dynamically based on 30-day percentages
+// Helper to draw the SVG Line graph dynamically based on 30-day percentages
   const generateSvgPath = () => {
     if (!forecastData || !forecastData.forecast) return "";
     const points = forecastData.forecast.map((day, index) => {
@@ -65,7 +65,9 @@ export default function WorkforceForecast({ onLogout, user }) {
       const y = ((100 - clampedVal) / 25) * 100; 
       return `${x},${y}`;
     });
-    return `M ${points.join(' L ')}`;
+    
+    // FIXED: <polyline> just wants space-separated coordinates, no 'M' or 'L'
+    return points.join(' '); 
   };
 
   return (
