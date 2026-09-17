@@ -44,7 +44,14 @@ export default function HrSidebar() {
   useEffect(() => {
     const savedScrollPosition = sessionStorage.getItem('hrSidebarScroll');
     if (sidebarRef.current && savedScrollPosition) {
-      sidebarRef.current.scrollTop = parseInt(savedScrollPosition, 10);
+      
+      // Delay the scroll by a split-second until the DOM is fully painted
+      setTimeout(() => {
+        if (sidebarRef.current) {
+          sidebarRef.current.scrollTop = parseInt(savedScrollPosition, 10);
+        }
+      }, 10); 
+      
     }
   }, []);
 
