@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useLayoutEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Server, Shield, Database, Terminal, User, Clock, Settings,
@@ -12,7 +12,6 @@ export default function ItSidebar() {
   const location = useLocation(); 
   const [currentTime, setCurrentTime] = useState(new Date());
   
-  // 1. Create a reference to the scrollable sidebar container
   const sidebarRef = useRef(null);
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -33,17 +32,28 @@ export default function ItSidebar() {
     return () => clearInterval(timer);
   }, []);
 
-  // 2. Restore scroll position on load
-  useEffect(() => {
+  // 🔴 UPGRADED: useLayoutEffect fires synchronously BEFORE the screen paints!
+  useLayoutEffect(() => {
     const savedScrollPosition = sessionStorage.getItem('itSidebarScroll');
+    
     if (sidebarRef.current && savedScrollPosition) {
+      // 1. Try setting it immediately before paint
       sidebarRef.current.scrollTop = parseInt(savedScrollPosition, 10);
+      
+      // 2. Fallback for slower DOM rendering
+      setTimeout(() => {
+        if (sidebarRef.current) {
+          sidebarRef.current.scrollTop = parseInt(savedScrollPosition, 10);
+        }
+      }, 50);
     }
-  }, []);
+  }, [location.pathname]); 
 
-  // 3. Save scroll position exactly as the user scrolls
+  // 🔴 DEBUGGING ADDED: This will print the scroll number in your browser console
   const handleScroll = (e) => {
-    sessionStorage.setItem('itSidebarScroll', e.target.scrollTop);
+    const currentScroll = e.target.scrollTop;
+    console.log("IT Sidebar is scrolling at position:", currentScroll); 
+    sessionStorage.setItem('itSidebarScroll', currentScroll);
   };
 
   const formattedDate = currentTime.toLocaleDateString('en-US', {
@@ -100,12 +110,10 @@ export default function ItSidebar() {
 
   return (
     <>
-      {/* MOBILE OVERLAY */}
       {isMobileOpen && (
         <div className="sidebar-mobile-overlay" onClick={() => setIsMobileOpen(false)} />
       )}
 
-      {/* MOBILE FLOATING TOGGLE BUTTON */}
       <button
         className="mobile-floating-toggle"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
@@ -114,13 +122,11 @@ export default function ItSidebar() {
         {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      {/* ATTACHED REF AND ONSCROLL HANDLER HERE */}
       <aside 
         className={`dashboard-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'sidebar-mobile-open' : ''}`}
         ref={sidebarRef}
         onScroll={handleScroll}
       >
-        {/* BRAND / LOGO AREA */}
         <div className="sidebar-brand">
           {!isCollapsed ? (
             <img src="/leaplogo.png" alt="LEAP-A Logo" className="sidebar-logo-img" />
@@ -129,7 +135,6 @@ export default function ItSidebar() {
           )}
         </div>
 
-        {/* IT OPERATIONS SECTION */}
         <div className="sidebar-section-label">
           {!isCollapsed && "IT Operations"}
         </div>
@@ -148,7 +153,6 @@ export default function ItSidebar() {
           ))}
         </ul>
 
-        {/* PERSONAL EMPLOYEE RECORDS SECTION */}
         <div className="sidebar-section-label">
           {!isCollapsed && "My Employee Records"}
         </div>
@@ -167,7 +171,6 @@ export default function ItSidebar() {
           ))}
         </ul>
 
-        {/* ACCOUNT SECTION */}
         <div className="sidebar-section-label">
           {!isCollapsed && "Account"}
         </div>
@@ -186,7 +189,6 @@ export default function ItSidebar() {
           ))}
         </ul>
 
-        {/* FOOTER AREA */}
         <div className="sidebar-footer">
           <div className="datetime-box">
             <Clock size={20} className="datetime-icon" />
@@ -198,7 +200,6 @@ export default function ItSidebar() {
             )}
           </div>
 
-          {/* BOTTOM TOGGLE BUTTON */}
           <button
             type="button"
             className="sidebar-bottom-toggle-btn desktop-toggle-only"
@@ -210,7 +211,6 @@ export default function ItSidebar() {
           </button>
         </div>
 
-        {/* FLOATING TOOLTIP */}
         {hoveredItem && (
           <div
             className="sidebar-floating-tooltip"

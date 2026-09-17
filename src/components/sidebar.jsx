@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useLayoutEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, UserCheck, History, CreditCard, GraduationCap, User, HelpCircle, Clock,
@@ -35,17 +35,27 @@ export default function Sidebar({ user }) {
     return () => clearInterval(timer);
   }, []);
 
-  // 2. Restore scroll position on load
-  useEffect(() => {
+  // 🔴 UPGRADED: useLayoutEffect + location.pathname
+  useLayoutEffect(() => {
     const savedScrollPosition = sessionStorage.getItem('mainSidebarScroll');
     if (sidebarRef.current && savedScrollPosition) {
+      // Set it immediately
       sidebarRef.current.scrollTop = parseInt(savedScrollPosition, 10);
+      
+      // Fallback for slower page loads
+      setTimeout(() => {
+        if (sidebarRef.current) {
+          sidebarRef.current.scrollTop = parseInt(savedScrollPosition, 10);
+        }
+      }, 50);
     }
-  }, []);
+  }, [location.pathname]); // This makes it fire EVERY time you change pages!
 
   // 3. Save scroll position exactly as the user scrolls
   const handleScroll = (e) => {
-    sessionStorage.setItem('mainSidebarScroll', e.target.scrollTop);
+    const currentScroll = e.target.scrollTop;
+    console.log("Main Sidebar is scrolling at position:", currentScroll);
+    sessionStorage.setItem('mainSidebarScroll', currentScroll);
   };
 
   const formattedDate = currentTime.toLocaleDateString('en-US', {
