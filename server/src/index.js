@@ -1288,7 +1288,7 @@ app.get('/api/departments', async (req, res) => {
                     SELECT first_name || ' ' || last_name 
                     FROM public.dim_employee 
                     WHERE department = d.department_name 
-                      AND role = 'Department Head' 
+                      AND position_title ILIKE '%Head%' -- FIXED: Uses position_title instead of role
                     LIMIT 1
                 ) AS head_name
             FROM public.dim_department d
@@ -1297,8 +1297,9 @@ app.get('/api/departments', async (req, res) => {
         const result = await pool.query(query);
         res.status(200).json(result.rows);
     } catch (error) {
-        console.error("Error fetching departments:", error);
-        res.status(500).json({ error: "Failed to fetch departments." });
+        // Sending the exact database error to the browser for easier debugging!
+        console.error("Error fetching departments:", error.message);
+        res.status(500).json({ error: `Database error: ${error.message}` });
     }
 });
 
