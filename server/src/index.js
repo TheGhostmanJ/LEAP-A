@@ -1,5 +1,6 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+const axios = require('axios');
 
 const express = require('express');
 const cors = require('cors');
@@ -753,7 +754,7 @@ app.get('/api/reports/department', async (req, res) => {
 });
 
 // ==========================================
-// WORKFORCE FORECAST & ANALYTICS
+// WORKFORCE FORECAST & ANALYTICS (WITH ML ENGINE BRIDGE)
 // ==========================================
 
 app.get('/api/workforce-forecast', async (req, res) => {
@@ -776,7 +777,7 @@ app.get('/api/workforce-forecast', async (req, res) => {
         `, params);
         const pendingLeaves = parseInt(pendingRes.rows[0].pending) || 0;
 
-        // 3. Fetch all overlapping Approved/Pending leaves for the next 30 days
+        // 3. Fetch SQL historical overlaps (Used as a fallback if Python ML is offline)
         const leavesQuery = `
             SELECT start_date, end_date, status 
             FROM public.fact_leave_application
@@ -788,7 +789,26 @@ app.get('/api/workforce-forecast', async (req, res) => {
         const leavesRes = await pool.query(leavesQuery, params);
         const activeLeaves = leavesRes.rows;
 
-        // 4. Calculate daily availability over 30 days
+        // 4. 🔥 BRIDGE TO PYTHON ML ENGINE 🔥
+        let mlPredictions = null;
+        try {
+            const pythonApiUrl = process.env.PYTHON_API_URL || 'http://127.0.0.1:5000';
+            const mlResponse = await axios.get(`${pythonApiUrl}/api/forecast/workforce`, {
+                params: { department: department || '' }
+            });
+            
+            if (mlResponse.data && mlResponse.data.forecast) {
+                mlPredictions = {}; // Convert array to a fast dictionary lookup
+                mlResponse.data.forecast.forEach(item => {
+                    mlPredictions[item.date] = item.predicted_absences;
+                });
+                console.log("✅ ML Engine Forecast applied successfully.");
+            }
+        } catch (mlError) {
+            console.warn("⚠️ ML Engine offline. Falling back to SQL date overlaps.");
+        }
+
+        // 5. Calculate daily availability over 30 days
         const forecast = [];
         let onLeaveToday = 0;
         const requiredStaff = Math.ceil(totalStaff * 0.90); // 90% operational requirement
@@ -800,17 +820,29 @@ app.get('/api/workforce-forecast', async (req, res) => {
             const targetDate = new Date(today);
             targetDate.setDate(targetDate.getDate() + i);
             
-            // Skip weekends for calculation logic
             const isWeekend = targetDate.getDay() === 0 || targetDate.getDay() === 6;
             
+            // Format date to YYYY-MM-DD to match Python output
+            const yyyy = targetDate.getFullYear();
+            const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(targetDate.getDate()).padStart(2, '0');
+            const targetDateStr = `${yyyy}-${mm}-${dd}`;
+            
             let absences = 0;
-            activeLeaves.forEach(leave => {
-                const s = new Date(leave.start_date);
-                const e = new Date(leave.end_date);
-                if (targetDate >= s && targetDate <= e && leave.status === 'Approved') {
-                    absences++;
-                }
-            });
+
+            // 🧠 DECISION LOGIC: Use ML if available, otherwise fallback to SQL
+            if (mlPredictions && mlPredictions[targetDateStr] !== undefined) {
+                absences = mlPredictions[targetDateStr]; // Python Prophet Prediction
+            } else {
+                // SQL Overlap Fallback
+                activeLeaves.forEach(leave => {
+                    const s = new Date(leave.start_date);
+                    const e = new Date(leave.end_date);
+                    if (targetDate >= s && targetDate <= e && leave.status === 'Approved') {
+                        absences++;
+                    }
+                });
+            }
 
             if (i === 0) onLeaveToday = absences;
 
@@ -822,11 +854,11 @@ app.get('/api/workforce-forecast', async (req, res) => {
                 isWeekend,
                 available,
                 absences,
-                availablePercentage: isWeekend ? 100 : percentage // Assume full availability on weekends to flatten chart
+                availablePercentage: isWeekend ? 100 : percentage // Assume full availability on weekends
             });
         }
 
-        // 5. Generate Breakdowns and Alerts
+        // 6. Generate Breakdowns and Alerts
         const breakdowns = [];
         const alerts = [];
         let suggestion = null;
@@ -834,7 +866,6 @@ app.get('/api/workforce-forecast', async (req, res) => {
         const criticalDays = forecast.filter(f => f.availablePercentage < 90 && !f.isWeekend);
         
         if (criticalDays.length > 0) {
-            // Group critical days
             const firstCrit = criticalDays[0].dateStr;
             const lastCrit = criticalDays[criticalDays.length - 1].dateStr;
             
@@ -854,7 +885,6 @@ app.get('/api/workforce-forecast', async (req, res) => {
             suggestion = `For the ${firstCrit} risk period, deferring ${requiredStaff - criticalDays[0].available} pending leave requests restores the minimum 90% operational requirement.`;
         }
 
-        // Check for concurrent pending leaves
         if (pendingLeaves > 3) {
             alerts.push({
                 type: 'warning',
@@ -865,7 +895,7 @@ app.get('/api/workforce-forecast', async (req, res) => {
 
         res.status(200).json({
             totalStaff,
-            availableToday: totalStaff - onLeaveToday,
+            availableToday: Math.max(0, totalStaff - onLeaveToday),
             onLeaveToday,
             pendingLeaves,
             forecast,
@@ -877,6 +907,67 @@ app.get('/api/workforce-forecast', async (req, res) => {
     } catch (error) {
         console.error("Error generating workforce forecast:", error);
         res.status(500).json({ error: "Failed to generate workforce forecast." });
+    }
+});
+
+// POST: Ask Python ML to scan for anomalies and save them to the database
+app.post('/api/anomalies/run-ai-scan', async (req, res) => {
+    try {
+        const pythonApiUrl = process.env.PYTHON_API_URL || 'http://127.0.0.1:5000';
+        
+        // 1. Tell the Python Engine to run the Isolation Forest
+        console.log("Triggering ML Anomaly Scan...");
+        const mlResponse = await axios.get(`${pythonApiUrl}/api/detect-anomalies`);
+        
+        if (!mlResponse.data.anomalies || mlResponse.data.anomalies.length === 0) {
+            return res.status(200).json({ success: true, message: "Scan complete. No new anomalies detected." });
+        }
+
+        const anomalies = mlResponse.data.anomalies;
+        const client = await pool.connect();
+
+        try {
+            await client.query('BEGIN');
+
+            // 2. Loop through the AI's findings and save them to the database
+            for (const anomaly of anomalies) {
+                // Check if this exact anomaly pattern was already flagged recently to prevent spam
+                const checkQuery = `
+                    SELECT alert_id FROM public.fact_anomaly_alerts 
+                    WHERE employee_key = $1 AND status IN ('Flagged', 'Investigating')
+                `;
+                const existing = await client.query(checkQuery, [anomaly.employee_key]);
+
+                if (existing.rows.length === 0) {
+                    const insertQuery = `
+                        INSERT INTO public.fact_anomaly_alerts 
+                        (employee_key, anomaly_pattern, risk_score, status) 
+                        VALUES ($1, $2, $3, 'Flagged')
+                    `;
+                    await client.query(insertQuery, [
+                        anomaly.employee_key, 
+                        anomaly.anomaly_pattern, 
+                        anomaly.risk_score
+                    ]);
+                }
+            }
+
+            await client.query('COMMIT');
+            res.status(200).json({ 
+                success: true, 
+                message: `Scan complete. Found ${anomalies.length} potential anomalies.` 
+            });
+
+        } catch (dbError) {
+            await client.query('ROLLBACK');
+            throw dbError;
+        } finally {
+            client.release();
+        }
+
+    } catch (error) {
+        console.error("ML Scan Error:", error.message);
+        res.status(500).json({ error: "Failed to run AI Anomaly Scan." });
     }
 });
 
