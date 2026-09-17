@@ -414,12 +414,12 @@ app.get('/api/leave-applications/:employee_key', async (req, res) => {
     const { employee_key } = req.params;
 
     try {
-        // 1. Fetch ALL leave applications for the employee (Removed LIMIT 5)
-        // Added hod_remarks, pdf_document, and attachment_data for the history table
+        // FIXED: Changed date_key to start_date_key, and added date_filed for the React table
         const historyQuery = `
             SELECT 
                 id AS application_id, 
-                date_key, 
+                start_date_key AS date_key, 
+                created_at AS date_filed,
                 leave_type, 
                 start_date, 
                 end_date, 
@@ -436,7 +436,6 @@ app.get('/api/leave-applications/:employee_key', async (req, res) => {
         `;
         const historyResult = await pool.query(historyQuery, [employee_key]);
 
-        // 2. Fetch the summary of used leave credits via the ledger
         const summaryQuery = `
             SELECT leave_type, SUM(ABS(amount)) AS used_days
             FROM public.fact_leave_ledger
@@ -445,7 +444,6 @@ app.get('/api/leave-applications/:employee_key', async (req, res) => {
         `;
         const summaryResult = await pool.query(summaryQuery, [employee_key]);
         
-        // Map the summary into the format the frontend charts expect
         const summaryObj = {};
         summaryResult.rows.forEach(row => {
             summaryObj[row.leave_type] = { used: parseFloat(row.used_days) || 0 };
@@ -1125,7 +1123,7 @@ app.post('/api/leave/apply', async (req, res) => {
         const queryText = `
             INSERT INTO public.fact_leave_application 
             (
-                employee_key, date_key, leave_type, start_date, end_date, 
+                employee_key, start_date_key, leave_type, start_date, end_date, 
                 remarks, working_days, department, position, salary, status,
                 others_specify, vacation_spl_location, abroad_specify,
                 sick_leave_type, illness_specify, study_leave_purpose,
