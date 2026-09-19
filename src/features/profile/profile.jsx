@@ -127,9 +127,6 @@ export default function MyProfile({ onLogout, user, onUserUpdate }) {
 
             <main className="profile-main-content">
                 <header className="profile-top-bar">
-                    <div className="profile-top-title">
-                        <h2>My Profile</h2>
-                    </div>
                     <Header user={user} onLogout={onLogout} />
                 </header>
 
