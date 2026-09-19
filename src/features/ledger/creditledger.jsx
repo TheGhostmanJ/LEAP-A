@@ -125,7 +125,7 @@ export default function CreditLedger({ onLogout, user }) {
         <div className="cl-dashboard-container">
             <RoleSidebar user={user}/>
 
-            <main className="cl-main-content app-main-content fade-in-up">
+            <main className="cl-main-content fade-in-up">
                 {/* HEADER SECTION */}
                 <header className="cl-header">
                     <Header user={user} onLogout={onLogout} />
@@ -250,14 +250,16 @@ export default function CreditLedger({ onLogout, user }) {
                     </div>
 
                     <div className="cl-filter-actions">
-                        <div className="cl-date-picker-btn">
+                        <label className="cl-date-picker-btn">
+                            <span className="cl-date-label">Filter by month</span>
                             <input 
                                 type="month" 
                                 value={selectedMonth}
                                 onChange={(e) => setSelectedMonth(e.target.value)}
                                 className="cl-month-input"
+                                aria-label="Filter by month"
                             />
-                        </div>
+                        </label>
                     </div>
                 </section>
 
