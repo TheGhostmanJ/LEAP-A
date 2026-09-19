@@ -289,16 +289,6 @@ export default function TrainingRecords({ onLogout, user }) {
 
       <main className="tr-main-content fade-in-up">
         <header className="tr-header">
-          <div className="tr-header-title">
-            <span className="tr-header-badge">
-              <span className="tr-badge-dot"></span> TRAINING PROGRAM RECORDS
-            </span>
-            <h2>
-              <span className="tr-title-dark">My </span>
-              <span className="tr-title-maroon">Training Records</span>
-            </h2>
-          </div>
-
           <Header user={user} onLogout={onLogout} />
         </header>
 
