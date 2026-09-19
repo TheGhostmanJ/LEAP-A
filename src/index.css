@@ -239,6 +239,10 @@ button:active,
    APP SHELL (all pages using .app-layout-wrapper)
    Window is locked. Sidebar stays put. <main> scrolls.
    ========================================================= */
+/* =========================================================
+   APP SHELL (all pages using .app-layout-wrapper)
+   Window is locked. Sidebar stays put. <main> scrolls.
+   ========================================================= */
 .app-layout-wrapper {
   display: flex !important;
   width: 100% !important;
@@ -254,4 +258,16 @@ button:active,
   height: 100dvh !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
+}
+
+/* Keep page sections at their natural height inside the scrolling <main> */
+.app-layout-wrapper > main > * {
+  flex-shrink: 0 !important;
+}
+
+.app-layout-wrapper > main > .app-card {
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: clip !important;   /* keeps rounded corners without clipping the height */
 }
