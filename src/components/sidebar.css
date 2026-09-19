@@ -398,6 +398,9 @@ body,
     display: none !important;
   }
 }
+.fade-in-up {
+  animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);   /* removed "forwards" */
+}
 
 @keyframes fadeInOverlay {
   from { opacity: 0; }
