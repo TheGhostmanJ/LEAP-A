@@ -261,19 +261,7 @@ export default function Dashboard({ onLogout, user }) {
       <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
         
         {/* UNIFIED GLOBAL HEADER */}
-        <header className="app-global-header">
-          <div className="app-title-layout">
-            <div className="app-title-icon-badge">
-              <LayoutDashboard size={20} />
-            </div>
-            <div>
-              <h1 className="app-title">Personal Dashboard</h1>
-              <p className="app-subtitle">
-                Welcome back, <span className="app-subtitle-accent">{user?.first_name || 'Employee'}</span>
-              </p>
-            </div>
-          </div>
-          
+        <header className="app-global-header">     
           <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
         </header>
 
