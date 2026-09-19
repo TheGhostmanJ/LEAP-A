@@ -491,8 +491,7 @@ app.get('/api/attendance/:employee_key', async (req, res) => {
                 d.full_date
             FROM public.fact_attendance a
             JOIN public.dim_date d ON a.date_key = d.date_key
-            WHERE a.employee_key = $1
-            ${monthFilter}
+            WHERE a.employee_key = $1${monthFilter}
             ORDER BY d.full_date DESC;
         `;
         
@@ -870,7 +869,7 @@ app.get('/api/workforce-forecast', async (req, res) => {
             const lastCrit = criticalDays[criticalDays.length - 1].dateStr;
             
             breakdowns.push({
-                dateRange: firstCrit === lastCrit ? firstCrit : `${firstCrit} - ${lastCrit}`,
+                dateRange: firstCrit === lastCrit ? firstCrit : `${firstCrit} -${lastCrit}`,
                 available: criticalDays[0].available,
                 required: requiredStaff,
                 riskLevel: criticalDays[0].availablePercentage < 80 ? 'High' : 'Moderate'
@@ -879,10 +878,10 @@ app.get('/api/workforce-forecast', async (req, res) => {
             alerts.push({
                 type: criticalDays[0].availablePercentage < 80 ? 'critical' : 'warning',
                 tag: 'Critical Dip',
-                message: `Availability drops to ${Math.round(criticalDays[0].availablePercentage)}% around ${firstCrit}.`
+                message: `Availability drops to ${Math.round(criticalDays[0].availablePercentage)}\% around${firstCrit}.`
             });
 
-            suggestion = `For the ${firstCrit} risk period, deferring ${requiredStaff - criticalDays[0].available} pending leave requests restores the minimum 90% operational requirement.`;
+            suggestion = `For the ${firstCrit} risk period, deferring${requiredStaff - criticalDays[0].available} pending leave requests restores the minimum 90% operational requirement.`;
         }
 
         if (pendingLeaves > 3) {
@@ -1672,6 +1671,32 @@ app.get('/api/payroll/stats', async (req, res) => {
         console.error("Error fetching payroll stats:", error);
         res.status(500).json({ error: "Failed to fetch payroll statistics." });
     }
+});
+
+// GET /api/payroll/records
+app.get('/api/payroll/records', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        p.payroll_ref_code,
+        e.first_name || ' ' || e.last_name AS employee_name,
+        e.department,
+        e.position_title,
+        p.base_salary,
+        p.deductions,
+        p.net_pay,
+        p.status,
+        TO_CHAR(p.pay_period_start, 'Mon DD') || '–' || TO_CHAR(p.pay_period_end, 'DD') AS pay_period
+      FROM public.fact_payroll p
+      JOIN public.dim_employee e ON p.employee_key = e.employee_key
+      ORDER BY p.payroll_id DESC
+    `;
+    const result = await pool.query(query);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching payroll records:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // GET: Full Monetization Ledger
