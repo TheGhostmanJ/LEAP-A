@@ -33,6 +33,7 @@
   justify-content: space-between; /* Pushes the title left and the profile right */
   align-items: center; /* Centers them vertically */
   width: 100%;
+  position: 'relative';
   margin-bottom: 24px;
   background-color: var(--color-bg-card); /* Optional: Gives it a solid background */
   padding: 16px 24px; /* Optional: Adds padding so the text isn't against the edge */
