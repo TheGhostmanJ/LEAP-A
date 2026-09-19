@@ -47,43 +47,12 @@ export default function HrDashboard({ onLogout, user }) {
 
   return (
     <div className="app-layout-wrapper">
-      
       <HrSidebar user={user} />
-
       <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
         
         {/* FIX: Bulletproof inline flexbox guarantees the header won't break */}
         <header 
-          style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            width: '100%', 
-            marginBottom: '32px',
-            backgroundColor: '#ffffff',
-            padding: '16px 24px',
-            borderRadius: '12px',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-            boxSizing: 'border-box'
-          }}
-        >
-          {/* Left Side: Title */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px', backgroundColor: '#fff5f5', color: '#7a0000', borderRadius: '8px' }}>
-              <Building2 size={20} />
-            </div>
-            <div>
-              <p style={{ margin: '2px 0 0 0', fontSize: '14px', color: '#64748b' }}>
-                Executive <span style={{ color: '#7a0000', fontWeight: 700 }}>Control Panel</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Right Side: Profile & Notifications Trapped in a Flex-End container */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
             <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
-          </div>
         </header>
 
         {/* METRICS ROW - Overview Cards */}
