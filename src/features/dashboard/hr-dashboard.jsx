@@ -74,9 +74,6 @@ export default function HrDashboard({ onLogout, user }) {
               <Building2 size={20} />
             </div>
             <div>
-              <h1 style={{ margin: 0, fontFamily: 'var(--font-family-heading)', fontSize: '24px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.5px' }}>
-                City HR Management System
-              </h1>
               <p style={{ margin: '2px 0 0 0', fontSize: '14px', color: '#64748b' }}>
                 Executive <span style={{ color: '#7a0000', fontWeight: 700 }}>Control Panel</span>
               </p>
