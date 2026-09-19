@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Calendar,
     Search,
     ChevronRight,
     BookOpen,
-    Loader2
+    Loader2,
+    Wallet,
+    ArrowDownRight,
+    ArrowUpRight
 } from 'lucide-react';
 import RoleSidebar from '../../components/RoleSidebar.jsx';
 import Header from '../../components/Header.jsx';
 import './creditledger.css';
 
 export default function CreditLedger({ onLogout, user }) {
+    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedMonth, setSelectedMonth] = useState('');
     
@@ -122,28 +127,36 @@ export default function CreditLedger({ onLogout, user }) {
     });
 
     return (
-        <div className="cl-dashboard-container">
+        <div className="app-layout-wrapper">
             <RoleSidebar user={user}/>
 
-            <main className="cl-main-content fade-in-up">
-                {/* HEADER SECTION */}
-                <header className="cl-header">
-                    <Header user={user} onLogout={onLogout} />
+            <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
+                <header className="app-global-header">
+                    <div className="app-title-layout">
+                        <div className="app-title-icon-badge" style={{ backgroundColor: 'var(--color-success-bg)', color: 'var(--color-success)' }}>
+                            <Wallet size={20} />
+                        </div>
+                        <div>
+                            <h1 className="app-title">Credit Ledger</h1>
+                            <p className="app-subtitle">
+                                Manage your <span className="app-subtitle-accent" style={{ color: 'var(--color-success)' }}>Leave Balances</span>
+                            </p>
+                        </div>
+                    </div>
+                    <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
                 </header>
 
-                {/* 2-COLUMN METRIC SECTION */}
                 <section className="cl-metrics-two-col">
-                    {/* LEFT CARD: Remaining Balance */}
-                    <div className="cl-summary-card card-amber-accent hover-lift">
+                    <div className="app-card cl-summary-card">
                         <div className="cl-card-label-row">
-                            <Calendar size={16} className="cl-icon-amber" />
+                            <Calendar size={16} style={{ color: 'var(--color-maroon)' }} />
                             <span>REMAINING CREDIT BALANCE</span>
                         </div>
 
                         <div className="cl-donut-content">
                             <div className="cl-donut-ring">
                                 <svg viewBox="0 0 36 36" className="cl-donut-svg">
-                                    <circle cx="18" cy="18" r="15.915" fill="none" stroke="#e2e8f0" strokeWidth="4" />
+                                    <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--color-border-light)" strokeWidth="4" />
                                     {donutSegments.map((seg) => (
                                         <circle
                                             key={seg.type}
@@ -159,7 +172,7 @@ export default function CreditLedger({ onLogout, user }) {
                                     ))}
                                 </svg>
                                 <div className="cl-donut-center">
-                                    <BookOpen size={20} color="#475569" />
+                                    <BookOpen size={20} color="var(--color-text-secondary)" />
                                 </div>
                             </div>
 
@@ -189,10 +202,9 @@ export default function CreditLedger({ onLogout, user }) {
                         </div>
                     </div>
 
-                    {/* RIGHT CARD: Credits Used / Monetized */}
-                    <div className="cl-summary-card card-maroon-accent hover-lift">
+                    <div className="app-card cl-summary-card">
                         <div className="cl-card-label-row">
-                            <BookOpen size={16} className="cl-icon-maroon" />
+                            <BookOpen size={16} style={{ color: 'var(--color-maroon)' }} />
                             <span>CREDITS USED & MONETIZED</span>
                         </div>
 
@@ -208,7 +220,7 @@ export default function CreditLedger({ onLogout, user }) {
                                             key={seg.type} 
                                             style={{ 
                                                 width: `${seg.widthPct}%`, 
-                                                backgroundColor: seg.type === 'Sick Leave' ? '#d97706' : seg.type === 'Vacation Leave' ? '#7a0000' : '#475569'
+                                                backgroundColor: seg.type === 'Sick Leave' ? 'var(--color-warning)' : seg.type === 'Vacation Leave' ? 'var(--color-maroon)' : 'var(--color-text-secondary)'
                                             }}
                                             className="cl-bar-segment"
                                         ></div>
@@ -236,82 +248,72 @@ export default function CreditLedger({ onLogout, user }) {
                     </div>
                 </section>
 
-                {/* CONTROLS & FILTER ROW */}
-                <section className="cl-controls-row" id="ledger">
-                    <div className="cl-search-wrapper">
-                        <Search size={14} className="cl-search-icon" />
+                <section className="cl-controls-row" id="ledger" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '32px', marginBottom: '24px' }}>
+                    <div style={{ position: 'relative', width: '350px' }}>
+                        <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
                         <input
                             type="text"
-                            placeholder="Search leave type, status, transaction type..."
-                            className="cl-search-input"
+                            placeholder="Search transactions..."
+                            className="app-search-input"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
 
-                    <div className="cl-filter-actions">
-                        <label className="cl-date-picker-btn">
-                            <span className="cl-date-label">Filter by month</span>
-                            <input 
-                                type="month" 
-                                value={selectedMonth}
-                                onChange={(e) => setSelectedMonth(e.target.value)}
-                                className="cl-month-input"
-                                aria-label="Filter by month"
-                            />
-                        </label>
+                    <div style={{ position: 'relative' }}>
+                        <Calendar size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                        <input 
+                            type="month" 
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(e.target.value)}
+                            className="app-search-input"
+                            style={{ paddingLeft: '38px', width: '200px', cursor: 'pointer' }}
+                        />
                     </div>
                 </section>
 
-                {/* LEDGER TABLE CARD */}
-                <section className="cl-table-card">
-                    <div className="cl-table-header">
-                        <h3>Credit Ledger Table</h3>
-                        <span className="cl-table-counter">Logs updated in real-time</span>
-                    </div>
-
-                    <div className="cl-table-wrapper">
-                        <table className="cl-data-table">
+                <section className="app-card">
+                    <div className="app-card-header">Transaction History Ledger</div>
+                    <div className="responsive-table-overflow-scroller">
+                        <table className="record-grid-system">
                             <thead>
                                 <tr>
-                                    <th>Date Filed</th>
-                                    <th>Transaction Type</th>
+                                    <th>Date</th>
+                                    <th>Transaction Details</th>
                                     <th>Status</th>
-                                    <th>Days</th>
-                                    <th>Approver</th>
-                                    <th className="cl-th-right">Action</th>
+                                    <th>Authorized By</th>
+                                    <th style={{ textAlign: 'right' }}>Credit Impact</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {isLoading ? (
                                     <tr>
-                                        <td colSpan="6" className="cl-state-cell">
-                                            <Loader2 size={24} className="cl-spin-loader" />
-                                            <p>Fetching ledger data...</p>
+                                        <td colSpan="5" style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>
+                                            <Loader2 size={24} className="spin" style={{ margin: '0 auto' }} />
                                         </td>
                                     </tr>
                                 ) : filteredHistory.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" className="cl-state-cell">
+                                        <td colSpan="5" style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>
                                             No ledger transactions found matching your criteria.
                                         </td>
                                     </tr>
                                 ) : (
                                     filteredHistory.map((item, idx) => (
                                         <tr key={idx}>
-                                            <td className="cl-td-bold">{item.formattedDate}</td>
-                                            <td>{item.transaction} ({item.type})</td>
+                                            <td style={{ fontWeight: '600', color: 'var(--color-text-primary)' }}>{item.formattedDate}</td>
                                             <td>
-                                                <span className={`cl-pill-status ${item.status.replace(/\s+/g, '-').toLowerCase()}`}>
+                                                <div style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{item.transaction}</div>
+                                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>{item.type}</div>
+                                            </td>
+                                            <td>
+                                                <span className={`app-status-badge ${item.status === 'Approved' || item.status === 'Credited' ? 'status-success' : 'status-warning'}`}>
                                                     {item.status}
                                                 </span>
                                             </td>
-                                            <td className="cl-td-bold">{item.days} Days</td>
-                                            <td>{item.approver}</td>
-                                            <td className="cl-td-right">
-                                                <button className="cl-action-btn">
-                                                    View Details <ChevronRight size={12} />
-                                                </button>
+                                            <td style={{ color: 'var(--color-text-secondary)' }}>{item.approver}</td>
+                                            <td style={{ textAlign: 'right', fontWeight: '700', color: 'var(--color-danger)' }}>
+                                                - {item.days} Days
                                             </td>
                                         </tr>
                                     ))
