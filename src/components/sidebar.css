@@ -19,6 +19,9 @@ body,
 }
 
 .dashboard-sidebar {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
   width: 270px;
   height: 100vh;
   background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
