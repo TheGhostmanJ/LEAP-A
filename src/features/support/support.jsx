@@ -143,14 +143,6 @@ export default function Support({ onLogout, user }) {
 
         {/* TOP VIEW HEADER */}
         <header className="support-header">
-          <div className="header-title-group">
-            <div className="icon-badge">
-              <HelpCircle size={20} className="icon-maroon" />
-            </div>
-            <h2 className="header-title">Support Center</h2>
-          </div>
-
-          {/* Shared Header Component */}
           <Header user={user} onLogout={onLogout} />
         </header>
 
