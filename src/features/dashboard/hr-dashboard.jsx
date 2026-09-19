@@ -53,9 +53,10 @@ export default function HrDashboard({ onLogout, user }) {
       <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
         
         {/* UNIFIED GLOBAL HEADER ROW */}
-        <header className="hr-dash-top-header">
+        <header className="app-global-header">
 
-          <Header user={user} onLogout={onLogout} />
+          {/* This renders your profile pill perfectly at the top right */}
+          <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
         </header>
 
         {/* METRICS ROW - Overview Cards */}
