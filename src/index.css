@@ -2,12 +2,28 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
+/* NEW: consistent sizing everywhere */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* NEW: the browser window is the only scroller */
+html, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   font-family: 'Inter', sans-serif;
   background-color: #f3f4f6;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden; /* Prevents unwanted horizontal scrolling on mobile */
+  min-height: 100vh;
+  /* CHANGED: "hidden" turns body into its own scroll container (second scrollbar).
+     "clip" hides horizontal overflow without creating one. */
+  overflow-x: hidden;  /* fallback for very old browsers */
+  overflow-x: clip;
 }
 
 /* 1. Global Tactile Button Press */
@@ -70,10 +86,13 @@ button:active,
    5. GLOBAL RESPONSIVE & LAYOUT RULES (Applies Everywhere)
    ========================================================= */
 
-/* Core Dashboard Grid Setup */
-.dashboard-container {
+/* Core Dashboard Grid Setup
+   CHANGED: .app-layout-wrapper (used by the HR page) now shares this rule,
+   so you can delete its duplicate from hr-dashboard.css */
+.dashboard-container,
+.app-layout-wrapper {
   display: flex;
-  min-height: 100vh;
+  min-height: 100vh;   /* min-height, NOT height: the window scrolls, not the wrapper */
   width: 100%;
 }
 
@@ -82,6 +101,8 @@ button:active,
   padding: 24px;
   box-sizing: border-box;
   min-width: 0; /* Prevents flex items from overflowing container */
+  min-height: 100vh;   /* NEW */
+  overflow: visible;   /* NEW: the main area must not scroll on its own */
 }
 
 /* Universal Table Scroll Handler */
@@ -101,11 +122,12 @@ button:active,
    MOBILE RESPONSIVENESS FIX (Phones <= 768px)
    ========================================================= */
 @media (max-width: 768px) {
-  .dashboard-container {
+  .dashboard-container,
+  .app-layout-wrapper {   /* CHANGED: added .app-layout-wrapper */
     display: flex;
     flex-direction: row; /* Reverts back to row so they overlap instead of stack */
-    width: 100vw;
-    overflow-x: hidden;
+    width: 100%;         /* CHANGED: was 100vw, which includes the scrollbar width and causes sideways scroll */
+    overflow-x: clip;    /* CHANGED: was hidden */
   }
 
   /* 1. Slide sidebar completely off-screen by default */
