@@ -87,16 +87,6 @@ export default function ApiGateway({ onLogout, user }) {
         
         {/* STANDARDIZED HEADER BLOCK */}
         <header className="tr-header">
-          <div className="tr-header-title">
-            <span className="tr-header-badge">
-              <span className="tr-badge-dot"></span> IT OPERATIONS PORTAL
-            </span>
-            <h2>
-              <span className="tr-title-dark">API Gateway </span>
-              <span className="tr-title-maroon">Traffic Log</span>
-            </h2>
-          </div>
-
           <Header user={user} onLogout={onLogout} />
         </header>
 
