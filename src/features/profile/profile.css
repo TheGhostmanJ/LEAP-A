@@ -6,7 +6,7 @@
   height: 100vh; /* Lock height to viewport height */
   max-height: 100vh;
   overflow: hidden; /* Stop page-level scrolling */
-  background-color: #f4f5f7;
+  background-color: var(--app-bg); /* was #f4f5f7 */
   font-family: 'Roboto', sans-serif;
   color: #1f2937;
 }
@@ -21,6 +21,7 @@
 
 .profile-main-content {
   flex: 1;
+  min-width: 0;
   height: 100vh;
   padding: 32px;
   box-sizing: border-box;
@@ -28,6 +29,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  background-color: var(--app-bg);
 }
 
 /* ==========================================================================
