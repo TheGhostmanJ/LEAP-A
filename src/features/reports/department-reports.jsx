@@ -120,17 +120,6 @@ export default function DepartmentReports({ onLogout, user }) {
         
         {/* STANDARDIZED GLOBAL HEADER */}
         <header className="dr-header-row">
-          <div className="dr-title-wrapper">
-            <FileText size={28} className="dr-icon-maroon" /> 
-            <div className="dr-title-text">
-              <h2>
-                <span className="dr-title-dark">{isGlobal ? 'Global' : 'Department'}</span> <span className="dr-title-maroon">Reports</span>
-              </h2>
-              <p className="dr-subtitle">
-                Scope: <span className="dr-highlight-maroon">{displayDepartment}</span>
-              </p>
-            </div>
-          </div>
           <Header user={user} onLogout={onLogout} />
         </header>
 
