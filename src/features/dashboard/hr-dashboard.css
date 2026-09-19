@@ -9,16 +9,20 @@
 
 .hr-dash-main-content {
   flex: 1;
-  min-width: 0;          /* lets the flex child shrink/grow properly */
+  min-width: 0;
   width: auto;
   max-width: none;
-  padding: 0 32px 32px 32px;
+  padding: 42px 46px 40px 46px;   /* matches the Forecast page */
   box-sizing: border-box;
   overflow-y: auto;
 }
 
 .hr-dash-top-header {
-  margin-bottom: 24px;
+  margin-bottom: 30px;            /* gap between header and cards */
+}
+
+.hr-dash-top-header .global-page-header {
+  margin: 0;
 }
 
 .hr-metrics-grid {
