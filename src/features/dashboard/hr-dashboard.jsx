@@ -48,13 +48,12 @@ export default function HrDashboard({ onLogout, user }) {
   return (
     <div className="app-layout-wrapper">
       <HrSidebar user={user} />
-      <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
+     <main className="hr-dash-main-content fade-in-up">
         
-        {/* FIX: Bulletproof inline flexbox guarantees the header won't break */}
-        <header 
-            <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
+        {/* TOP GLOBAL HEADER ROW */}
+        <header className="hr-dash-top-header">
+          <Header user={user} onLogout={onLogout} />
         </header>
-
         {/* METRICS ROW - Overview Cards */}
         <section className="hr-metrics-grid">
           
