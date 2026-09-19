@@ -21,6 +21,7 @@ body,
 .dashboard-sidebar {
   position: sticky;
   top: 0;
+  z-index: 1000;      /* above main content and its animation layer */
   align-self: flex-start;
   width: 270px;
   height: 100vh;
@@ -38,6 +39,14 @@ body,
 .dashboard-sidebar.collapsed {
   width: 76px;
   overflow-x: visible;
+}
+
+.sidebar-floating-tooltip {
+  position: fixed;
+  z-index: 10000;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 /* SIDEBAR HEADER BLOCK / BRAND LOGO AREA */
