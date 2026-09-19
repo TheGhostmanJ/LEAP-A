@@ -60,7 +60,7 @@ button:active,
   100% { background-position: -200% 0; }
 }
 
-/* 4. Smooth Page / Component Entrance Fade */
+/* 4. Smooth Page / Component Entrance Fade (no "forwards": no leftover transform) */
 .fade-in-up {
   animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -77,24 +77,57 @@ button:active,
 }
 
 /* =========================================================
-   5. GLOBAL RESPONSIVE & LAYOUT RULES (Applies Everywhere)
+   5. GLOBAL APP SHELL (Applies to every page)
+   Window is locked. Sidebar stays put. Main column scrolls.
    ========================================================= */
 
+/* Page wrapper: fixed to the window height */
 .dashboard-container,
-.app-layout-wrapper {
+.app-layout-wrapper,
+.cl-dashboard-container {
   display: flex;
-  height: 100vh;
   width: 100%;
-  overflow: hidden; /* Keeps parent wrapper static so inner content scrolls */
+  height: 100vh;
+  height: 100dvh;      /* accounts for mobile browser bars */
+  overflow: hidden;    /* wrapper never scrolls, only the main column does */
 }
 
-.dashboard-main-content {
+/* Main column: the ONLY scrollbar on each page */
+.dashboard-main-content,
+.hr-dash-main-content,
+.cl-main-content,
+.app-main-content {
   flex: 1;
-  padding: 24px;
-  box-sizing: border-box;
   min-width: 0;
-  height: 100%;        /* ADD THIS: Forces full height of parent */
-  overflow-y: auto;    /* ADD THIS: Enables scrolling inside main content */
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+
+  /* slim, quiet scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.dashboard-main-content::-webkit-scrollbar,
+.hr-dash-main-content::-webkit-scrollbar,
+.cl-main-content::-webkit-scrollbar,
+.app-main-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-main-content::-webkit-scrollbar-thumb,
+.hr-dash-main-content::-webkit-scrollbar-thumb,
+.cl-main-content::-webkit-scrollbar-thumb,
+.app-main-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+}
+
+/* Default padding for the generic main column (page CSS can override) */
+.dashboard-main-content {
+  padding: 24px;
 }
 
 /* Universal Table Scroll Handler */
@@ -115,11 +148,13 @@ button:active,
    ========================================================= */
 @media (max-width: 768px) {
   .dashboard-container,
-  .app-layout-wrapper {
+  .app-layout-wrapper,
+  .cl-dashboard-container {
     display: flex;
     flex-direction: row;
     width: 100%;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
   }
 
@@ -145,9 +180,12 @@ button:active,
 
   /* 2. Main content takes full screen safely */
   .dashboard-main-content,
+  .hr-dash-main-content,
+  .cl-main-content,
   .leave-app-main {
     width: 100%;
-    height: 100%;
+    height: 100vh;
+    height: 100dvh;
     padding: 16px !important; 
     background-color: #f3f4f6 !important; 
     overflow-y: auto;
