@@ -9,9 +9,6 @@ import './login.css';
 export default function Login({ onLoginSuccess }) {
   const navigate = useNavigate();
   
-  // Carousel State
-  const [currentSlide, setCurrentSlide] = useState(0);
-  
   // Auth & UI State
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -21,44 +18,6 @@ export default function Login({ onLoginSuccess }) {
   const [captchaToken, setCaptchaToken] = useState(null);
   
   const recaptchaRef = useRef(null);
-
-  const carouselData = [
-    {
-      title: "SMART PLANNING",
-      description: "Planning ahead made simple. LEAP-A analyzes historical trends to help department heads look at future staff availability, ensuring teams are always supported and prepared for upcoming busy periods.",
-      imgSrc: "/planning.png"
-    },
-    {
-      title: "SCHEDULING ASSISTANCE",
-      description: "Never worry about calendar conflicts. If you request leave during an under-capacity period, our smart assistant automatically suggests better alternative dates to make sure your time-off gets approved smoothly.",
-      imgSrc: "/scheduling.png"
-    },
-    {
-      title: "SMART AUDITING",
-      description: "Keeping our workplace fair and consistent. LEAP-A automatically monitors and reviews uncharacteristic timeline shifts or unusual attendance patterns to maintain accurate and reliable records for everyone.",
-      imgSrc: "/auditing.png"
-    },
-    {
-      title: "UNIFIED PORTAL",
-      description: "Your workspace, completely connected. Seamlessly track your biometric clock-ins, view your live leave credit balances, apply for monetization, and check your payroll records in one single, secure portal.",
-      imgSrc: "/portal.png"
-    }
-  ];
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      handleNext();
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [currentSlide]);
-
-  const handlePrev = () => {
-    setCurrentSlide((prev) => (prev === 0 ? carouselData.length - 1 : prev - 1));
-  };
-
-  const handleNext = () => {
-    setCurrentSlide((prev) => (prev === carouselData.length - 1 ? 0 : prev + 1));
-  };
 
   const handleCaptchaChange = (token) => {
     setCaptchaToken(token);
