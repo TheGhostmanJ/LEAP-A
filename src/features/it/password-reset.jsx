@@ -105,16 +105,6 @@ export default function PasswordResetDashboard({ user, onLogout }) {
         
         {/* STANDARDIZED HEADER BLOCK */}
         <header className="tr-header">
-          <div className="tr-header-title">
-            <span className="tr-header-badge">
-              <span className="tr-badge-dot"></span> IT OPERATIONS PORTAL
-            </span>
-            <h2>
-              <span className="tr-title-dark">Password Reset </span>
-              <span className="tr-title-maroon">Requests</span>
-            </h2>
-          </div>
-
           <Header user={user} onLogout={onLogout} />
         </header>
 
