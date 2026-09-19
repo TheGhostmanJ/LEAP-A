@@ -104,15 +104,6 @@ export default function SystemSettings({ onLogout, user }) {
       <main className="sys-main-content fade-in-up">
         {/* STANDARDIZED HEADER BLOCK */}
         <header className="tr-header">
-          <div className="tr-header-title">
-            <span className="tr-header-badge">
-              <span className="tr-badge-dot"></span> IT OPERATIONS PORTAL
-            </span>
-            <h2>
-              <span className="tr-title-dark">System </span>
-              <span className="tr-title-maroon">Configuration & Settings</span>
-            </h2>
-          </div>
           <Header user={user} onLogout={onLogout} />
         </header>
 
