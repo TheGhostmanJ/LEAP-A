@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  UserCheck, History, Search, FilePlus, Eye, X, Paperclip, ChevronRight, Clock, Calendar, LayoutDashboard
+  UserCheck, History, Search, FilePlus, Eye, X, Paperclip, ChevronRight, Clock, Calendar
 } from 'lucide-react';
 import RoleSidebar from '../../components/RoleSidebar.jsx';
 import MyCalendar from './MyCalendar.jsx';
@@ -180,7 +180,7 @@ export default function Dashboard({ onLogout, user }) {
         }
       } else {
         const formData = {
-          filingDate: formatPdfDate(leaveRecord.date_key || leaveRecord.date_filed || leaveRecord.created_at),
+          filingDate: formatPdfDate(leaveRecord.date_key || leaveRecord.date_filed || leaveRecord.filing_date),
           leaveType: leaveRecord.leave_type,
           othersSpecify: leaveRecord.others_specify,
           vacationSplLocation: leaveRecord.vacation_spl_location,
@@ -255,15 +255,11 @@ export default function Dashboard({ onLogout, user }) {
   };
 
   return (
-    <div className="app-layout-wrapper">
+    <div className="dashboard-container">
       <RoleSidebar user={user} />
 
-      <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
-        
-        {/* UNIFIED GLOBAL HEADER */}
-        <header className="app-global-header">     
-          <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
-        </header>
+      <main className="dashboard-main-content fade-in-up">
+        <Header user={user} onLogout={onLogout} />
 
         {!isRestricted && (
           <section className="leave-summary-metrics-bar">
@@ -346,13 +342,56 @@ export default function Dashboard({ onLogout, user }) {
             </div>
           )}
 
-          {/* INTEGRATED CALENDAR WIDGET */}
+          <div className="analytics-visual-card hover-lift" onClick={() => navigate('/attendance')} style={{ cursor: 'pointer' }}>
+            <div className="card-header-flex">
+              <h3 className="card-section-title">
+                <UserCheck size={18} className="title-icon" /> My Attendance
+              </h3>
+            </div>
+            <div className="mock-graphic-frame">
+              <div className="attendance-chart-mock">
+                <div className="time-stamp-marker stamp-top">
+                  <Clock size={11} /> 07:48 AM
+                </div>
+                <div className="time-stamp-marker stamp-bottom">
+                  <Clock size={11} /> 07:48 AM
+                </div>
+
+                <svg viewBox="0 0 400 100" className="sparkline-svg-vector">
+                  <path
+                    d="M 0 60 Q 40 40 80 70 T 160 50 T 240 75 T 320 35 T 400 55"
+                    fill="none"
+                    stroke="#7a0000"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                  <circle cx="80" cy="70" r="4" fill="#7a0000" stroke="#fff" strokeWidth="2" />
+                  <circle cx="240" cy="75" r="4" fill="#7a0000" stroke="#fff" strokeWidth="2" />
+                  <circle cx="320" cy="35" r="4" fill="#7a0000" stroke="#fff" strokeWidth="2" />
+                </svg>
+
+                <div className="axis-labels-timeline">
+                  <span>Day 1</span>
+                  <span>Day 10</span>
+                  <span>Day 20</span>
+                  <span>Day 30</span>
+                </div>
+              </div>
+
+              <div className="attendance-summary-data-strip">
+                <div className="streak-badge">Current Streak: <strong>12 days</strong></div>
+                <div className="avg-checkin-badge">Avg. Check-In: <strong>07:51 AM</strong></div>
+              </div>
+              <p className="graphic-footer-caption">My 30 Day Attendance Consistency</p>
+            </div>
+          </div>
+
           {!isRestricted && <MyCalendar />}
         </section>
 
         {!isRestricted && (
           <section className="table-wrapper-section">
-            <section className="app-card data-table-container-card">
+            <section className="data-table-container-card">
               <div className="table-header-toolbar">
                 <div className="table-header-left">
                   <h3 className="table-title">Recent Leave Applications</h3>
@@ -371,14 +410,13 @@ export default function Dashboard({ onLogout, user }) {
                     <input
                       type="text"
                       placeholder="Search recent filings..."
-                      className="app-search-input"
-                      style={{ height: '38px', paddingLeft: '34px' }}
+                      className="utility-search-field"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
                   <button
-                    className="btn-primary"
+                    className="primary-action-trigger-btn"
                     onClick={() => navigate('/leaveapplication')}
                   >
                     <FilePlus size={16} />
@@ -409,7 +447,7 @@ export default function Dashboard({ onLogout, user }) {
                           <tr key={leave.application_id || leave.id}>
                             <td className="cell-date">
                               <Calendar size={13} className="cell-icon" />
-                              {formatDate(leave.created_at || leave.date_key)}
+                              {formatDate(leave.date_filed || leave.date_key)}
                             </td>
                             <td className="cell-type">{leave.leave_type}</td>
                             <td>
@@ -463,7 +501,7 @@ export default function Dashboard({ onLogout, user }) {
                       })
                     ) : (
                       <tr>
-                        <td colSpan="5" className="empty-table-notice">
+                        <td colSpan="5" className="empty-table-cell">
                           No recent filings found matching your search.
                         </td>
                       </tr>
@@ -478,8 +516,8 @@ export default function Dashboard({ onLogout, user }) {
 
       {/* --- HOD FEEDBACK MODAL --- */}
       {activeFeedback && (
-        <div className="app-modal-overlay" onClick={() => setActiveFeedback(null)}>
-          <div className="app-modal-card feedback-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay-backdrop" onClick={() => setActiveFeedback(null)}>
+          <div className="modal-container-card feedback-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-bar feedback-header">
               <span>Feedback on your {activeFeedback.leave_type} request</span>
               <button
@@ -489,8 +527,8 @@ export default function Dashboard({ onLogout, user }) {
                 <X size={18} />
               </button>
             </div>
-            <div className="modal-body-content" style={{ marginTop: '16px' }}>
-              <p className="feedback-text" style={{ fontSize: '14px', lineHeight: '1.6', color: 'var(--color-text-primary)' }}>{activeFeedback.remarks}</p>
+            <div className="modal-body-content">
+              <p className="feedback-text">{activeFeedback.remarks}</p>
             </div>
           </div>
         </div>
@@ -498,10 +536,10 @@ export default function Dashboard({ onLogout, user }) {
 
       {/* --- IN-PAGE DOCUMENT PREVIEW MODAL --- */}
       {selectedPdfUrl && (
-        <div className="app-modal-overlay" onClick={handleClosePdf}>
-          <div className="app-modal-card pdf-preview-modal" style={{ maxWidth: '800px', height: '80vh', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header-bar pdf-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 className="modal-title" style={{ margin: 0 }}>{previewTitle}</h3>
+        <div className="modal-overlay-backdrop" onClick={handleClosePdf}>
+          <div className="modal-container-card pdf-preview-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-bar pdf-header">
+              <h3 className="modal-title">{previewTitle}</h3>
               <button
                 type="button"
                 onClick={handleClosePdf}
@@ -510,15 +548,14 @@ export default function Dashboard({ onLogout, user }) {
                 <X size={20} />
               </button>
             </div>
-            <div className="pdf-preview-viewport" style={{ flex: 1, position: 'relative' }}>
+            <div className="pdf-preview-viewport">
               {previewFileType === 'image' ? (
-                <img src={selectedPdfUrl} alt="Attachment Preview" className="image-preview-render" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <img src={selectedPdfUrl} alt="Attachment Preview" className="image-preview-render" />
               ) : (
                 <iframe
                   src={selectedPdfUrl}
                   title={previewTitle}
                   className="iframe-preview-render"
-                  style={{ width: '100%', height: '100%', border: 'none', borderRadius: '8px' }}
                 />
               )}
             </div>
