@@ -258,6 +258,20 @@ button:active,
 .app-layout-wrapper,
 .app-layout-wrapper > main,
 .dashboard-container,
-.cl-dashboard-container {
+.cl-dashboard-container,
+.profile-page-container,
+.profile-main-content,
+.sysconfig-container,
+.sysconfig-main-content,
+.rbac-container,
+.rbac-main-content,
+.dbm-container,
+.dbm-main-content,
+.apig-container,
+.apig-main-content,
+.prd-container,
+.prd-main-content,
+.sys-container,
+.sys-main-content {
   background-color: var(--app-bg) !important;
 }
