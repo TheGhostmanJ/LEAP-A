@@ -217,18 +217,6 @@ export default function HodDashboard({ onLogout, user }) {
 
         {/* UI FIX: Apply the standardized header block */}
         <header className="app-global-header">
-          <div className="app-title-layout">
-            <div className="app-title-icon-badge">
-              <Users size={20} />
-            </div>
-            <div>
-              <h1 className="app-title">Department Dashboard</h1>
-              <p className="app-subtitle">
-                Overview for <span className="app-subtitle-accent">{user?.department || 'Department'}</span>
-              </p>
-            </div>
-          </div>
-          
           <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
         </header>
 
