@@ -454,13 +454,6 @@ export default function LeaveApprovals({ onLogout, user }) {
       <main className="dashboard-main-content fade-in-up">
 
         <header className="dashboard-global-header">
-          <div className="welcome-greeting page-title-layout">
-            <CheckSquare size={24} className="tr-icon-maroon" />
-            <h2>
-              <span className="cl-title-dark">Leave</span> <span className="cl-title-maroon">Approvals</span>
-            </h2>
-          </div>
-
           <Header user={user} onLogout={onLogout} />
         </header>
 
