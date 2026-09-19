@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { 
   LayoutDashboard, Clock, User, HelpCircle, FileText, 
   Wallet, Award, FilePlus, Users, CalendarCheck, 
@@ -38,12 +38,12 @@ const ROUTE_CONFIG = {
   '/system-settings': { title: 'System Settings', icon: Sliders, tag: 'Preferences', color: '#374151', bg: '#f3f4f6' },
 };
 
-export default function Header({ user, onLogout, onNavigate, title, subtitle, controlsOnly = false }) {
+export default function Header({ user, onLogout, onNavigate }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const location = useLocation();
 
-  // 1. Get active route configuration or fallback
+  // Get active route configuration or fallback
   const activeRoute = ROUTE_CONFIG[location.pathname] || {
     title: 'Dashboard',
     icon: LayoutDashboard,
@@ -69,69 +69,6 @@ export default function Header({ user, onLogout, onNavigate, title, subtitle, co
     return `${first || ''} ${last || ''}`.trim();
   };
 
-  // 2. Extracted Right-Side Controls (Used in both layouts)
-  const renderControls = () => (
-    <div className="header-user-controls">
-      <button 
-        type="button" 
-        className="header-utility-btn" 
-        title="Support Center"
-        onClick={() => onNavigate && onNavigate('/support')}
-      >
-        <HelpCircle size={18} />
-      </button>
-
-      {NotificationBell ? (
-        <NotificationBell
-          employeeKey={user?.employee_key || ''}
-          onNavigate={onNavigate}
-        />
-      ) : null}
-
-      <div className="header-divider-vertical"></div>
-
-      {/* User Pill */}
-      <div className="header-profile-dropdown" ref={dropdownRef}>
-        <button
-          type="button"
-          className={`profile-pill-trigger ${isDropdownOpen ? 'active' : ''}`}
-          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-        >
-          <div className="profile-avatar-sm">
-            <User size={15} />
-          </div>
-          <div className="profile-info-stack">
-            <span className="profile-name-text">
-              {formatFullName(user?.first_name, user?.last_name)}
-            </span>
-            <span className="profile-role-subtext">{user?.role || 'Employee'}</span>
-          </div>
-          <ChevronDown size={14} className={`dropdown-chevron ${isDropdownOpen ? 'rotated' : ''}`} />
-        </button>
-
-        {isDropdownOpen && (
-          <div className="profile-menu-overlay">
-            <div className="menu-user-details">
-              <span className="menu-user-name">{formatFullName(user?.first_name, user?.last_name)}</span>
-              <span className="menu-user-email">{user?.email || user?.employee_key || 'Active Account'}</span>
-            </div>
-            <hr className="menu-divider" />
-            <button type="button" onClick={onLogout} className="menu-item logout-item">
-              <LogOut size={14} />
-              <span>Log Out</span>
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  // 3. IF controlsOnly IS TRUE: Return ONLY the right side (fixes UI breaks on complex pages)
-  if (controlsOnly) {
-    return renderControls();
-  }
-
-  // 4. OTHERWISE: Render the beautiful full header utilizing your ROUTE_CONFIG
   return (
     <header className="global-page-header">
       <div className="header-left-title">
@@ -143,8 +80,7 @@ export default function Header({ user, onLogout, onNavigate, title, subtitle, co
         </div>
         <div className="header-title-text-group">
           <div className="header-title-row">
-            {/* If a custom title is passed as a prop, use it, otherwise use the auto-routing title */}
-            <h1 className="header-page-title">{title || activeRoute.title}</h1>
+            <h1 className="header-page-title">{activeRoute.title}</h1>
             <span 
               className="header-route-tag" 
               style={{ color: activeRoute.color, backgroundColor: activeRoute.bg }}
@@ -152,12 +88,63 @@ export default function Header({ user, onLogout, onNavigate, title, subtitle, co
               {activeRoute.tag}
             </span>
           </div>
-          {/* Support for custom subtitles if passed */}
-          {subtitle && <p className="header-subtitle-text" style={{margin: 0, fontSize: '13px', color: '#64748b'}}>{subtitle}</p>}
         </div>
       </div>
 
-      {renderControls()}
+      {/* Control Actions */}
+      <div className="header-user-controls">
+        {/* Directly navigates to /support on click */}
+        <Link 
+          to="/support" 
+          className="header-utility-btn" 
+          title="Support Center"
+        >
+          <HelpCircle size={18} />
+        </Link>
+
+        {NotificationBell ? (
+          <NotificationBell
+            employeeKey={user?.employee_key || ''}
+            onNavigate={onNavigate}
+          />
+        ) : null}
+
+        <div className="header-divider-vertical"></div>
+
+        {/* User Pill */}
+        <div className="header-profile-dropdown" ref={dropdownRef}>
+          <button
+            type="button"
+            className={`profile-pill-trigger ${isDropdownOpen ? 'active' : ''}`}
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          >
+            <div className="profile-avatar-sm">
+              <User size={15} />
+            </div>
+            <div className="profile-info-stack">
+              <span className="profile-name-text">
+                {formatFullName(user?.first_name, user?.last_name)}
+              </span>
+              <span className="profile-role-subtext">{user?.role || 'Employee'}</span>
+            </div>
+            <ChevronDown size={14} className={`dropdown-chevron ${isDropdownOpen ? 'rotated' : ''}`} />
+          </button>
+
+          {isDropdownOpen && (
+            <div className="profile-menu-overlay">
+              <div className="menu-user-details">
+                <span className="menu-user-name">{formatFullName(user?.first_name, user?.last_name)}</span>
+                <span className="menu-user-email">{user?.email || user?.employee_key || 'Active Account'}</span>
+              </div>
+              <hr className="menu-divider" />
+              <button type="button" onClick={onLogout} className="menu-item logout-item">
+                <LogOut size={14} />
+                <span>Log Out</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </header>
   );
 }
