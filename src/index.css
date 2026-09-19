@@ -6,12 +6,18 @@
   box-sizing: border-box;
 }
 
-body {
+/* Fix root viewport to prevent double window scrollbars */
+html, body, #root {
+  height: 100%;
   margin: 0;
+  padding: 0;
+  overflow: hidden; 
+}
+
+body {
   font-family: 'Inter', sans-serif;
   background-color: #f3f4f6;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden; /* Prevents unwanted horizontal scrolling on mobile */
 }
 
 /* 1. Global Tactile Button Press */
@@ -54,7 +60,7 @@ button:active,
   100% { background-position: -200% 0; }
 }
 
-/* 4. Smooth Page / Component Entrance Fade (no "forwards", so no leftover transform) */
+/* 4. Smooth Page / Component Entrance Fade */
 .fade-in-up {
   animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -77,8 +83,9 @@ button:active,
 .dashboard-container,
 .app-layout-wrapper {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
   width: 100%;
+  overflow: hidden; /* Keeps parent wrapper static so inner content scrolls */
 }
 
 .dashboard-main-content {
@@ -86,6 +93,7 @@ button:active,
   padding: 24px;
   box-sizing: border-box;
   min-width: 0; /* Prevents flex items from overflowing container */
+  overflow-y: auto; /* Handles vertical scrolling internally */
 }
 
 /* Universal Table Scroll Handler */
@@ -110,7 +118,8 @@ button:active,
     display: flex;
     flex-direction: row;
     width: 100%;
-    overflow-x: hidden;
+    height: 100vh;
+    overflow: hidden;
   }
 
   /* 1. Slide sidebar completely off-screen by default */
@@ -137,9 +146,10 @@ button:active,
   .dashboard-main-content,
   .leave-app-main {
     width: 100%;
-    min-height: 100vh;
+    height: 100%;
     padding: 16px !important; 
     background-color: #f3f4f6 !important; 
+    overflow-y: auto;
   }
 
   /* 3. Auto-stack header items */
