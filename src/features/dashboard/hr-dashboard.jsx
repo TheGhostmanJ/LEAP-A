@@ -7,8 +7,7 @@ import {
   ChevronRight,
   ShieldAlert,
   TrendingUp,
-  UserCheck,
-  Building2 
+  UserCheck
 } from 'lucide-react';
 
 /* COMPONENTS & STYLES */
@@ -48,12 +47,13 @@ export default function HrDashboard({ onLogout, user }) {
   return (
     <div className="app-layout-wrapper">
       <HrSidebar user={user} />
-     <main className="hr-dash-main-content fade-in-up">
+      <main className="hr-dash-main-content fade-in-up">
         
         {/* TOP GLOBAL HEADER ROW */}
         <header className="hr-dash-top-header">
           <Header user={user} onLogout={onLogout} />
         </header>
+
         {/* METRICS ROW - Overview Cards */}
         <section className="hr-metrics-grid">
           
