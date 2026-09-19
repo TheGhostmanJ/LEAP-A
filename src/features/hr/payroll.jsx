@@ -41,7 +41,7 @@ export default function Payroll({ onLogout, user }) {
         }
       } catch (error) {
         console.error("Failed to load payroll data:", error);
-      } fontally {
+      } finally {
         setIsLoading(false);
       }
     };
