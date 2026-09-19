@@ -123,19 +123,6 @@ export default function AnomalyAlert({ onLogout, user }) {
         
         {/* STANDARDIZED GLOBAL HEADER */}
         <header className="aa-header-row">
-          <div className="aa-title-wrapper">
-            <AlertOctagon size={28} className="aa-icon-maroon" /> 
-            <div className="aa-title-text">
-              <h2>
-                <span className="aa-title-dark">Anomaly</span> <span className="aa-title-maroon">Alerts</span>
-              </h2>
-              <p className="aa-subtitle">
-                Department: <span className="aa-highlight-maroon">{user?.role === 'HR Admin' ? 'All Departments' : user?.department || 'Unassigned'}</span>
-              </p>
-            </div>
-          </div>
-          
-          {/* UI FIX: Added controlsOnly and onNavigate */}
           <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
         </header>
 
