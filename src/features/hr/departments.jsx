@@ -115,12 +115,14 @@ export default function Departments({ onLogout, user }) {
   });
 
   return (
-    // UI FIX: Applied standard layout wrapper
     <div className="app-layout-wrapper">
       <HrSidebar user={user} />
 
-      {/* UI FIX: Applied standard main container */}
-      <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
+      {/* FIXED: Included app-main-content class and overflowY scrolling to solve layout stuck issue */}
+      <main 
+        className="app-main-container app-main-content fade-in-up" 
+        style={{ padding: '32px', overflowY: 'auto', flex: 1 }}
+      >
         
         {/* UNIFIED GLOBAL HEADER ROW */}
         <header className="app-global-header">
@@ -157,8 +159,7 @@ export default function Departments({ onLogout, user }) {
             Organizational Structure
           </div>
 
-          <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
-            {/* UI FIX: Replaced custom table with global record-grid-system */}
+          <div>
             <table className="record-grid-system" style={{ width: '100%' }}>
               <thead>
                 <tr>
