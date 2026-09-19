@@ -332,9 +332,8 @@ export default function LeaveHistory({ onNavigate, onLogout, user }) {
     <div className="dashboard-container">
       <RoleSidebar user={user} />
 
-      <main className="dashboard-main-content fade-in-up">
-          <Header user={user} onLogout={onLogout} />
-        </header>
+        <main className="dashboard-main-content fade-in-up">
+        <Header user={user} onLogout={onLogout} title="Leave History" badgeText="RECORDS" />
 
         {/* METRIC PANEL */}
         <section className="analytics-display-grid">
