@@ -1,409 +1,162 @@
-/* sidebar.css */
+/* src/index.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
-/* ==========================================================================
-   GLOBAL APP SHELL SETTINGS
-   ========================================================================== */
-html,
-body,
-#root {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  min-height: 100%;   /* was height: 100% (locked the page and blocked scrolling) */
-}
-
-.dashboard-sidebar,
-.dashboard-sidebar * {
-  font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
-}
-
-.dashboard-sidebar {
-  position: sticky;
-  top: 0;
-  z-index: 1000;              /* above main content and its animation layer */
-  align-self: flex-start;
-  width: 270px;
-  height: 100vh;
-  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid #eaecf0;
-  flex-shrink: 0;
+*, *::before, *::after {
   box-sizing: border-box;
-  overflow-y: auto;
-  overflow-x: hidden;
-  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* slim, quiet scrollbar */
-  scrollbar-width: thin;
-  scrollbar-color: #d0d5dd transparent;
 }
 
-.dashboard-sidebar::-webkit-scrollbar {
-  width: 6px;
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background-color: #f3f4f6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden; /* Prevents unwanted horizontal scrolling on mobile */
 }
 
-.dashboard-sidebar::-webkit-scrollbar-thumb {
-  background: #d0d5dd;
+/* 1. Global Tactile Button Press */
+button, 
+.btn, 
+[role="button"] {
+  transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), 
+              background-color 0.15s ease, 
+              border-color 0.15s ease,
+              box-shadow 0.15s ease;
+}
+
+button:active, 
+.btn:active, 
+[role="button"]:active {
+  transform: scale(0.97) !important;
+}
+
+/* 2. Global Interactive Card Lift Class */
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.hover-lift:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* 3. Global Skeleton Loading Utility */
+.skeleton-loader {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
   border-radius: 6px;
 }
 
-.dashboard-sidebar.collapsed {
-  width: 76px;
-  overflow-x: visible;
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
-/* SIDEBAR HEADER BLOCK / BRAND LOGO AREA */
-.sidebar-brand {
-  height: 80px; 
+/* 4. Smooth Page / Component Entrance Fade (no "forwards", so no leftover transform) */
+.fade-in-up {
+  animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================================================
+   5. GLOBAL RESPONSIVE & LAYOUT RULES (Applies Everywhere)
+   ========================================================= */
+
+.dashboard-container,
+.app-layout-wrapper {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 16px;
-  box-sizing: border-box;
-  margin-bottom: 12px;
-  flex-shrink: 0;
-  position: relative;
-  overflow: hidden;
-
-  /* Rich linear gradient from deep crimson to dark maroon */
-  background: linear-gradient(135deg, #8b0000 0%, #4a0000 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.sidebar-brand::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
-  background-size: 12px 12px;
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-.sidebar-brand::after {
-  content: "";
-  position: absolute;
-  width: 120px;
-  height: 120px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-
-.dashboard-sidebar.collapsed .sidebar-brand {
-  padding: 0 12px;
-}
-
-.sidebar-logo-img {
-  height: 52px;
-  width: auto;
-  object-fit: contain;
-  position: relative;
-  z-index: 2;
-  filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-.sidebar-logo-icon {
-  height: 36px;
-  width: auto;
-  object-fit: contain;
-  position: relative;
-  z-index: 2;
-  filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-/* SIDEBAR NAV LINKS LIST */
-.sidebar-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 0 12px;
-  margin: 0;
-  list-style: none;
-}
-
-.dashboard-sidebar.collapsed .sidebar-menu {
-  padding: 0 12px;
-}
-
-.sidebar-section-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  padding: 12px 16px 6px 16px;
-  transition: all 0.2s ease;
-}
-
-/* Converts section label into a centered divider line when collapsed */
-.dashboard-sidebar.collapsed .sidebar-section-label {
-  font-size: 0;
-  line-height: 0;
-  padding: 0;
-  margin: 12px 10px;
-  height: 1px;
-  background-color: #e5e7eb;
-}
-
-/* Hide top section label completely when collapsed so there's no divider above the 1st icon */
-.dashboard-sidebar.collapsed .sidebar-menu > .sidebar-section-label:first-child {
-  display: none;
-}
-
-/* INDIVIDUAL ITEM ROW LAYOUT */
-.sidebar-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  height: 46px;
-  padding: 0 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 15px;
-  color: #374151;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  box-sizing: border-box;
-}
-
-.dashboard-sidebar.collapsed .sidebar-item {
-  justify-content: center;
-  padding: 0;
+  min-height: 100vh;
   width: 100%;
 }
 
-.sidebar-item-icon {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sidebar-item-icon svg {
-  width: 20px;
-  height: 20px;
-}
-
-.sidebar-item-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* HOVER & ACTIVE STATES */
-.sidebar-item:hover:not(.active) {
-  background-color: #f3f4f6;
-  color: #7a0000;
-  transform: translateX(3px);
-}
-
-.dashboard-sidebar.collapsed .sidebar-item:hover:not(.active) {
-  transform: none;
-}
-
-.sidebar-item.active {
-  background-color: #fef2f2 !important;
-  color: #7a0000 !important;
-  font-weight: 700 !important;
-  border-left: 4px solid #7a0000 !important;
-  border-radius: 0 8px 8px 0 !important;
-}
-
-/* Symmetric rounded pill for collapsed active item */
-.dashboard-sidebar.collapsed .sidebar-item.active {
-  border-left: none !important;
-  border-radius: 8px !important;
-  background-color: #fef2f2 !important;
-}
-
-.sidebar-item.active .sidebar-item-icon {
-  color: #7a0000 !important;
-}
-
-/* TOOLTIP: only shows when collapsed, on hover (single merged rule) */
-.sidebar-floating-tooltip {
-  position: fixed;            /* positioned from getBoundingClientRect() in the JSX */
-  transform: translateY(-50%);
-  background-color: #1f2937;
-  color: #ffffff;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 10000;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.25);
-}
-
-/* ==========================================================================
-   BOTTOM DATE TIME DISPLAY BOX & TOGGLE
-   ========================================================================== */
-.sidebar-footer {
-  margin-top: auto;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.dashboard-sidebar.collapsed .sidebar-footer {
-  padding: 12px;
-}
-
-.datetime-box {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  height: 52px;
-  padding: 0 12px;
-  background-color: #ffffff;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: #374151;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+.dashboard-main-content {
+  flex: 1;
+  padding: 24px;
   box-sizing: border-box;
+  min-width: 0; /* Prevents flex items from overflowing container */
 }
 
-.dashboard-sidebar.collapsed .datetime-box {
-  justify-content: center;
-  padding: 0;
-}
-
-.datetime-icon {
-  flex-shrink: 0;
-  color: #7a0000;
-  display: flex;
-  align-items: center;
-}
-
-.datetime-icon svg {
-  width: 20px;
-  height: 20px;
-}
-
-.datetime-text {
-  display: flex;
-  flex-direction: column;
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-  line-height: 1.25;
-}
-
-.dashboard-sidebar.collapsed .datetime-text {
-  display: none;
-}
-
-.datetime-text .time-label {
-  font-weight: 500;
-  color: #6b7280;
-}
-
-.time-value {
-  color: #7a0000;
-  font-weight: 700;
-}
-
-/* BOTTOM TOGGLE BUTTON STYLING */
-.sidebar-bottom-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
+/* Universal Table Scroll Handler */
+.table-responsive-scroll {
   width: 100%;
-  height: 44px;
-  padding: 0 12px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  background-color: #ffffff;
-  color: #4b5563;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-sizing: border-box;
+  overflow-x: auto;
 }
 
-.dashboard-sidebar.collapsed .sidebar-bottom-toggle-btn {
-  justify-content: center;
-  padding: 0;
+/* Media Query: Tablets & Small Desktops (<= 1024px) */
+@media (max-width: 1024px) {
+  .dashboard-main-content {
+    padding: 16px;
+  }
 }
 
-.sidebar-bottom-toggle-btn:hover {
-  background-color: #f3f4f6;
-  color: #7a0000;
-  border-color: #d1d5db;
-}
-
-/* ==========================================================================
-   MOBILE FLOATING BUTTON & OVERLAY
-   ========================================================================== */
-
-/* Hidden on Desktop by default */
-.mobile-floating-toggle {
-  display: none;
-}
-
-.sidebar-mobile-overlay {
-  display: none;
-}
-
-/* Show only on Mobile Screens */
+/* =========================================================
+   MOBILE RESPONSIVENESS FIX (Phones <= 768px)
+   ========================================================= */
 @media (max-width: 768px) {
-
-  /* The floating maroon circle button */
-  .mobile-floating-toggle {
+  .dashboard-container,
+  .app-layout-wrapper {
     display: flex;
-    position: fixed;
-    bottom: 24px;
-    left: 20px;
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background-color: #800020;
-    color: #ffffff;
-    border: none;
-    box-shadow: 0 4px 12px rgba(128, 0, 32, 0.35);
-    z-index: 10000;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: transform 0.2s ease, background-color 0.2s ease;
+    flex-direction: row;
+    width: 100%;
+    overflow-x: hidden;
   }
 
-  .mobile-floating-toggle:active {
-    transform: scale(0.92);
-    background-color: #5c0000;
+  /* 1. Slide sidebar completely off-screen by default */
+  aside, 
+  .sidebar, 
+  .sidebar-container { 
+    position: fixed !important;
+    top: 0;
+    left: -100%;
+    height: 100vh !important;
+    width: 260px !important;
+    z-index: 9999 !important;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    background: #ffffff !important;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.1);
   }
 
-  /* The dark backdrop behind the menu */
-  .sidebar-mobile-overlay {
-    display: block;
-    position: fixed;
-    top: 0; 
-    left: 0; 
-    right: 0; 
-    bottom: 0;
-    background-color: rgba(15, 23, 42, 0.5);
-    -webkit-backdrop-filter: blur(2px);
-    backdrop-filter: blur(2px);
-    z-index: 9998;
-    animation: fadeInOverlay 0.3s ease;
+  /* React adds this class when the menu button is tapped */
+  .sidebar-mobile-open {
+    left: 0 !important; 
   }
 
-  /* Hide the desktop collapse button so it isn't confusing */
-  .desktop-toggle-only {
-    display: none !important;
+  /* 2. Main content takes full screen safely */
+  .dashboard-main-content,
+  .leave-app-main {
+    width: 100%;
+    min-height: 100vh;
+    padding: 16px !important; 
+    background-color: #f3f4f6 !important; 
   }
-}
 
-@keyframes fadeInOverlay {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  /* 3. Auto-stack header items */
+  .dashboard-global-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .forecast-summary-metrics-row,
+  .table-filter-utilities-row {
+    flex-direction: column;
+    gap: 12px;
+  }
 }
