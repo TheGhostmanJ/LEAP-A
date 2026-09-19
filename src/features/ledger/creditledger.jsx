@@ -128,7 +128,11 @@ export default function CreditLedger({ onLogout, user }) {
         <div className="cl-dashboard-container">
             <RoleSidebar user={user}/>
 
-            <main className="cl-main-content fade-in-up">
+            {/* UPDATED: Added app-main-content class and overflow/flex inline styles for scrolling support */}
+            <main 
+                className="cl-main-content app-main-content fade-in-up" 
+                style={{ flex: 1, overflowY: 'auto' }}
+            >
                 {/* HEADER SECTION */}
                 <header className="cl-header">
                     <Header user={user} onLogout={onLogout} />
