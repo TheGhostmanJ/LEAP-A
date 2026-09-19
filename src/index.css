@@ -92,8 +92,9 @@ button:active,
   flex: 1;
   padding: 24px;
   box-sizing: border-box;
-  min-width: 0; /* Prevents flex items from overflowing container */
-  overflow-y: auto; /* Handles vertical scrolling internally */
+  min-width: 0;
+  height: 100%;        /* ADD THIS: Forces full height of parent */
+  overflow-y: auto;    /* ADD THIS: Enables scrolling inside main content */
 }
 
 /* Universal Table Scroll Handler */
