@@ -30,10 +30,16 @@
 /* Header row — title on the left, notif/profile (Header component) on the right, ONE line */
 .app-global-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: space-between; /* Pushes the title left and the profile right */
+  align-items: center; /* Centers them vertically */
   width: 100%;
   margin-bottom: 24px;
+  background-color: var(--color-bg-card); /* Optional: Gives it a solid background */
+  padding: 16px 24px; /* Optional: Adds padding so the text isn't against the edge */
+  border-radius: var(--radius-lg); /* Optional: Matches your card styling */
+  border: 1px solid var(--color-border-light); /* Optional: Gives it a clean border */
+  box-shadow: var(--shadow-card);
+  box-sizing: border-box;
 }
 
 .app-title-layout {
