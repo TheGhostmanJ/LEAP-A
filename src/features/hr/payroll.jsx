@@ -1,14 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import HrSidebar from '../../components/hr-sidebar.jsx';
 import Header from '../../components/Header.jsx';
-import { Banknote, Search, FileDown, TrendingUp, DollarSign, Clock, CheckCircle2, ArrowUpRight } from 'lucide-react';
+import { Banknote, Search, FileDown, TrendingUp, DollarSign, Clock, CheckCircle2, ArrowUpRight, Wallet } from 'lucide-react';
 import './payroll.css';
 
 export default function Payroll({ onLogout, user }) {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('payroll'); // 'payroll' | 'ledger'
+
   const [monetizations, setMonetizations] = useState([]);
   const [stats, setStats] = useState({ disbursed: 0, pending: 0 });
   const [isLoading, setIsLoading] = useState(true);
+
+  // Static fallback data for the Payroll tab (until a dedicated payroll API is built)
+  const payrollRecords = [
+    { id: 'P-3001', employee: 'Juan Dela Cruz', department: 'IT Operations', position: 'Systems Analyst', baseSalary: '₱ 32,000.00', deductions: '₱ 3,150.00', netPay: '₱ 28,850.00', payPeriod: 'July 1–15', status: 'Released' },
+    { id: 'P-3002', employee: 'Anita Gatchalian', department: 'City Planning', position: 'Urban Planner II', baseSalary: '₱ 38,500.00', deductions: '₱ 4,020.00', netPay: '₱ 34,480.00', payPeriod: 'July 1–15', status: 'Processing' },
+    { id: 'P-3003', employee: 'Roberto Lim', department: 'City Budget Office', position: 'Budget Officer I', baseSalary: '₱ 29,800.00', deductions: '₱ 2,890.00', netPay: '₱ 26,910.00', payPeriod: 'July 1–15', status: 'Released' },
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,7 +63,13 @@ export default function Payroll({ onLogout, user }) {
     return formatCurrency(num);
   };
 
-  // Safe filter logic to prevent crashes
+  const filteredPayroll = payrollRecords.filter(
+    (rec) =>
+      rec.employee.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rec.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rec.department.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const filteredMonetizations = monetizations.filter((req) => {
     const fullName = `${req.first_name || ''} ${req.last_name || ''}`.toLowerCase();
     const query = searchQuery.toLowerCase();
@@ -64,103 +81,188 @@ export default function Payroll({ onLogout, user }) {
   });
 
   return (
-    <div style={{ display: 'flex', width: '100vw', height: '100vh', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
+    // UI FIX: Apply standard layout wrapper
+    <div className="app-layout-wrapper">
       <HrSidebar user={user} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-        <header style={{ padding: '16px 32px', backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <Header user={user} onLogout={onLogout} />
-        </header>
-
-        <main style={{ padding: '32px' }} className="fade-in-up">
-          <div className="page-title-layout">
-            <div className="title-icon-badge">
-              <Banknote size={26} className="title-icon-svg" />
+      {/* UI FIX: Standardized main container */}
+      <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
+        
+        {/* UNIFIED GLOBAL HEADER BLOCK */}
+        <header className="app-global-header">
+          <div className="app-title-layout">
+            <div className="app-title-icon-badge">
+              <Banknote size={20} />
             </div>
-            <div className="title-text-group">
-              <h2>Payroll & Ledger</h2>
-              <p className="subtitle-department">
-                Portal: <span className="highlight-maroon">HR Operations</span>
+            <div>
+              <h1 className="app-title">Payroll & Ledger</h1>
+              <p className="app-subtitle">
+                Portal: <span className="app-subtitle-accent">HR Operations</span>
               </p>
             </div>
           </div>
 
-          <section className="payroll-metrics-row" style={{ display: 'flex', gap: '24px', marginTop: '24px' }}>
-            <div className="payroll-stat-card hover-lift" style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ backgroundColor: '#d1fae5', padding: '12px', borderRadius: '50%' }}>
-                <DollarSign size={24} color="#059669" />
-              </div>
-              <div>
-                <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Monetization Disbursed</div>
-                <div className="text-green-value" style={{ fontSize: '24px', fontWeight: 800 }}>{formatCompactNumber(stats.disbursed)}</div>
+          <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
+        </header>
+
+        {/* Metrics Dashboard Row */}
+        <section className="payroll-metrics-grid">
+          <div className="app-card payroll-stat-card">
+            <div className="stat-icon-wrapper stat-green-bg">
+              <DollarSign size={22} className="stat-icon-green" />
+            </div>
+            <div className="stat-content">
+              <span className="stat-label">Monetization Disbursed (YTD)</span>
+              <div className="stat-value-group">
+                <span className="stat-number text-green">{formatCompactNumber(stats.disbursed)}</span>
+                <span className="stat-trend positive">
+                  <ArrowUpRight size={14} /> Active
+                </span>
               </div>
             </div>
-
-            <div className="payroll-stat-card hover-lift" style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ backgroundColor: '#fee2e2', padding: '12px', borderRadius: '50%' }}>
-                <TrendingUp size={24} color="#dc2626" />
-              </div>
-              <div>
-                <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Pending Requests</div>
-                <div className="text-dark-value" style={{ fontSize: '24px', fontWeight: 800 }}>{stats.pending}</div>
-              </div>
-            </div>
-          </section>
-
-          <div className="payroll-utility-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#fff', padding: '8px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', width: '350px' }}>
-              <Search size={18} color="#64748b" style={{ marginRight: '8px' }} />
-              <input
-                type="text"
-                placeholder="Search employee, department, or ref ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ border: 'none', outline: 'none', width: '100%', fontSize: '14px' }}
-              />
-            </div>
-
-            <button className="export-btn" style={{ color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', cursor: 'pointer' }}>
-              <FileDown size={18} /> Export Master Ledger
-            </button>
           </div>
 
-          <section className="payroll-table-card" style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', marginTop: '24px', overflow: 'hidden' }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', fontWeight: '700', fontSize: '16px' }}>
-              Leave Monetization Requests
+          <div className="app-card payroll-stat-card">
+            <div className="stat-icon-wrapper stat-maroon-bg">
+              <TrendingUp size={22} className="stat-icon-maroon" />
             </div>
+            <div className="stat-content">
+              <span className="stat-label">Pending Ledger Requests</span>
+              <div className="stat-value-group">
+                <span className="stat-number">{stats.pending}</span>
+                {stats.pending > 0 && <span className="stat-badge-inline">Requires Action</span>}
+              </div>
+            </div>
+          </div>
+        </section>
 
-            <div className="table-responsive-scroll">
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        {/* Tab Switcher */}
+        <div className="payroll-tab-switcher" style={{ marginTop: '24px' }}>
+          <button
+            type="button"
+            className={`payroll-tab-btn ${activeTab === 'payroll' ? 'active' : ''}`}
+            onClick={() => setActiveTab('payroll')}
+          >
+            <Wallet size={16} /> Standard Payroll
+          </button>
+          <button
+            type="button"
+            className={`payroll-tab-btn ${activeTab === 'ledger' ? 'active' : ''}`}
+            onClick={() => setActiveTab('ledger')}
+          >
+            <Banknote size={16} /> Leave Monetization Ledger
+          </button>
+        </div>
+
+        {/* Utilities Toolbar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', marginBottom: '24px' }}>
+          <div style={{ position: 'relative', width: '350px' }}>
+            <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+            <input
+              type="text"
+              placeholder="Search employee, department, or ref ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="app-search-input"
+            />
+          </div>
+
+          <button 
+            className="btn-primary" 
+            style={{ backgroundColor: 'var(--color-success)' }} // Use standard button but make it green!
+          >
+            <FileDown size={18} /> {activeTab === 'payroll' ? 'Export Payroll Report' : 'Export Master Ledger'}
+          </button>
+        </div>
+
+        {/* Data Tables */}
+        {activeTab === 'payroll' && (
+          <section className="app-card">
+            <div className="app-card-header">Payroll Summary — Pay Period July 1–15</div>
+            <div className="responsive-table-overflow-scroller" style={{ maxHeight: '520px' }}>
+              {/* UI FIX: Utilize the global record-grid-system */}
+              <table className="record-grid-system">
                 <thead>
-                  <tr style={{ backgroundColor: '#f8fafc', color: '#64748b', fontSize: '13px', textTransform: 'uppercase' }}>
-                    <th style={{ padding: '16px 24px', width: '12%' }}>Ref ID</th>
-                    <th style={{ padding: '16px 24px', width: '22%' }}>Employee Name</th>
-                    <th style={{ padding: '16px 24px', width: '20%' }}>Department</th>
-                    <th style={{ padding: '16px 24px', width: '16%' }}>Leave Type</th>
-                    <th style={{ padding: '16px 24px', width: '14%' }}>Credits Converted</th>
-                    <th style={{ padding: '16px 24px', width: '16%' }}>Calculated Amount</th>
-                    <th style={{ padding: '16px 24px', width: '15%' }} className="text-center">Status</th>
+                  <tr>
+                    <th>Ref ID</th>
+                    <th>Employee Name</th>
+                    <th>Department</th>
+                    <th>Position</th>
+                    <th>Base Salary</th>
+                    <th>Deductions</th>
+                    <th>Net Pay</th>
+                    <th style={{ textAlign: 'center' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPayroll.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>No matching payroll records found.</td>
+                    </tr>
+                  ) : (
+                    filteredPayroll.map((rec) => (
+                      <tr key={rec.id}>
+                        <td style={{ fontFamily: 'monospace', fontWeight: '700', color: 'var(--color-text-secondary)' }}>{rec.id}</td>
+                        <td style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{rec.employee}</td>
+                        <td style={{ color: 'var(--color-text-secondary)' }}>{rec.department}</td>
+                        <td>{rec.position}</td>
+                        <td>{rec.baseSalary}</td>
+                        <td style={{ color: 'var(--color-danger)', fontWeight: '700' }}>- {rec.deductions}</td>
+                        <td style={{ color: 'var(--color-success)', fontWeight: '700' }}>{rec.netPay}</td>
+                        <td style={{ textAlign: 'center' }}>
+                          <span className={`app-status-badge ${rec.status === 'Released' ? 'status-success' : 'status-warning'}`}>
+                            {rec.status === 'Released' && <CheckCircle2 size={13} />}
+                            {rec.status === 'Processing' && <Clock size={13} />}
+                            {rec.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'ledger' && (
+          <section className="app-card">
+            <div className="app-card-header">Leave Monetization Requests</div>
+            <div className="responsive-table-overflow-scroller" style={{ maxHeight: '520px' }}>
+              <table className="record-grid-system">
+                <thead>
+                  <tr>
+                    <th>Ref ID</th>
+                    <th>Employee Name</th>
+                    <th>Department</th>
+                    <th>Leave Type</th>
+                    <th>Credits Converted</th>
+                    <th>Calculated Amount</th>
+                    <th style={{ textAlign: 'center' }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
-                    <tr><td colSpan="7" style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>Loading ledger records...</td></tr>
+                    <tr><td colSpan="7" style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-muted)' }}>Loading ledger records...</td></tr>
                   ) : filteredMonetizations.length === 0 ? (
-                    <tr><td colSpan="7" style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>No matching monetization records found.</td></tr>
+                    <tr><td colSpan="7" style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-muted)' }}>No matching monetization records found.</td></tr>
                   ) : (
                     filteredMonetizations.map((req) => (
-                      <tr key={req.monetization_id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <td style={{ padding: '16px 24px' }} className="ref-id-cell">{req.monetization_id}</td>
-                        <td style={{ padding: '16px 24px' }} className="employee-name-cell">{req.first_name} {req.last_name}</td>
-                        <td style={{ padding: '16px 24px' }}>{req.department}</td>
-                        <td style={{ padding: '16px 24px' }}>{req.leave_type}</td>
-                        <td style={{ padding: '16px 24px' }}><strong>{Number(req.credits_converted)}</strong> Days</td>
-                        <td style={{ padding: '16px 24px' }} className="amount-cell">{formatCurrency(req.calculated_amount)}</td>
-                        <td style={{ padding: '16px 24px' }} className="text-center">
-                          <span className={`status-badge status-${(req.status || 'pending').replace(/\s+/g, '-').toLowerCase()}`}>
-                            {req.status === 'Pending Review' && <Clock size={13} style={{marginRight: '4px'}}/>}
-                            {req.status === 'Approved' && <CheckCircle2 size={13} style={{marginRight: '4px'}}/>}
-                            {req.status === 'Credited' && <DollarSign size={13} style={{marginRight: '4px'}}/>}
+                      <tr key={req.monetization_id}>
+                        <td style={{ fontFamily: 'monospace', fontWeight: '700', color: 'var(--color-text-secondary)' }}>{req.monetization_id}</td>
+                        <td style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{req.first_name} {req.last_name}</td>
+                        <td style={{ color: 'var(--color-text-secondary)' }}>{req.department}</td>
+                        <td>{req.leave_type}</td>
+                        <td><strong style={{ color: 'var(--color-text-primary)' }}>{Number(req.credits_converted)}</strong> Days</td>
+                        <td style={{ color: 'var(--color-success)', fontWeight: '700' }}>{formatCurrency(req.calculated_amount)}</td>
+                        <td style={{ textAlign: 'center' }}>
+                          <span className={`app-status-badge ${
+                            req.status === 'Approved' ? 'status-success' : 
+                            req.status === 'Credited' ? 'status-info' : 'status-warning'
+                          }`}>
+                            {req.status === 'Pending Review' && <Clock size={13} />}
+                            {req.status === 'Approved' && <CheckCircle2 size={13} />}
+                            {req.status === 'Credited' && <DollarSign size={13} />}
                             {req.status}
                           </span>
                         </td>
@@ -171,8 +273,8 @@ export default function Payroll({ onLogout, user }) {
               </table>
             </div>
           </section>
-        </main>
-      </div>
+        )}
+      </main>
     </div>
   );
 }

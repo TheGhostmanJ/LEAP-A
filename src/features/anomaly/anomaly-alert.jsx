@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Added for Header routing
 import { 
   AlertOctagon, 
   ShieldAlert, 
@@ -8,7 +9,7 @@ import {
   ArrowRight, 
   X,
   Loader2,
-  Cpu // Added a cool AI chip icon for the button
+  Cpu 
 } from 'lucide-react';
 
 /* SIDEBAR & HEADER COMPONENTS */
@@ -19,10 +20,11 @@ import Header from '../../components/Header';
 import './anomaly-alert.css';
 
 export default function AnomalyAlert({ onLogout, user }) {
+  const navigate = useNavigate(); // Initialize navigation
   const [alerts, setAlerts] = useState([]);
   const [stats, setStats] = useState({ totalFlagged: 0, highRisk: 0, resolvedThisMonth: 0 });
   const [isLoading, setIsLoading] = useState(true);
-  const [isScanning, setIsScanning] = useState(false); // NEW: Track ML Scan status
+  const [isScanning, setIsScanning] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchAnomalies = async () => {
@@ -50,7 +52,7 @@ export default function AnomalyAlert({ onLogout, user }) {
     if (user) fetchAnomalies();
   }, [user]);
 
-  // NEW: Function to trigger the Python Machine Learning Scan
+  // Function to trigger the Python Machine Learning Scan
   const handleRunAIScan = async () => {
     setIsScanning(true);
     try {
@@ -62,8 +64,8 @@ export default function AnomalyAlert({ onLogout, user }) {
       
       const data = await response.json();
       if (response.ok) {
-        alert(data.message); // Show HR the results ("Scan complete. Found X anomalies.")
-        fetchAnomalies();    // Refresh the table to show the newly caught employees!
+        alert(data.message); // Show HR the results
+        fetchAnomalies();    // Refresh the table to show the newly caught employees
       } else {
         alert(`Scan failed: ${data.error}`);
       }
@@ -133,7 +135,8 @@ export default function AnomalyAlert({ onLogout, user }) {
             </div>
           </div>
           
-          <Header user={user} onLogout={onLogout} />
+          {/* UI FIX: Added controlsOnly and onNavigate */}
+          <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
         </header>
 
         {/* SUMMARY CARDS METRICS GRID */}
@@ -202,7 +205,7 @@ export default function AnomalyAlert({ onLogout, user }) {
             </button>
           </div>
 
-          {/* NEW: RUN ML SCAN BUTTON */}
+          {/* RUN ML SCAN BUTTON */}
           <button 
             type="button" 
             onClick={handleRunAIScan}

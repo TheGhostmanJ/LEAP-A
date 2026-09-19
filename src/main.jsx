@@ -17,7 +17,7 @@ import LeaveHistory from './features/leave/leavehistory.jsx';
 import LeaveApplication from './features/leave/leaveapplication.jsx';
 import CreditLedger from './features/ledger/creditledger.jsx';
 import TrainingRecords from './features/training/trainingrecords.jsx';
-import EmployeeEvents from './features/training/employee-events.jsx'; // Added Employee Events
+import EmployeeEvents from './features/training/employee-events.jsx'; // RESTORED
 
 // Management Features (HOD)
 import HodDashboard from './features/dashboard/hod-dashboard.jsx';
@@ -41,7 +41,10 @@ import ApiGateway from './features/it/api-gateway.jsx';
 import SystemSettings from './features/it/system-settings.jsx';
 import PasswordResetDashboard from './features/it/password-reset.jsx';
 
+// Global Styles
 import './index.css';
+import './theme.css';
+import './layout.css';
 
 const GOOGLE_CLIENT_ID = '718581008344-0pr3hqb4867olblp5e3n27fvom9klrrh.apps.googleusercontent.com';
 
@@ -180,6 +183,7 @@ export default function Root() {
           <TrainingRecords onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
+      {/* RESTORED EMPLOYEE EVENTS ROUTE */}
       <Route path="/employee-events" element={
         <ProtectedRoute user={currentUser} allowedRoles={FULL_SELF_SERVICE_ROLES}>
           <EmployeeEvents onLogout={handleLogout} user={currentUser} />

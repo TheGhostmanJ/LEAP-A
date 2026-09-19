@@ -36,7 +36,6 @@ export default function HodDashboard({ onLogout, user }) {
 
   const fetchDeptLeaves = async (deptName) => {
     try {
-      // FIXED: Adjusted the fallback port to 3001 to match your Express setup
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
       const encodedDept = encodeURIComponent(deptName.trim());
       const response = await fetch(`${apiUrl}/api/leave-applications/department?name=${encodedDept}`);
@@ -210,20 +209,32 @@ export default function HodDashboard({ onLogout, user }) {
   };
 
   return (
-    <div className="dashboard-container hod-view-wrapper">
-      <HodSidebar />
+    // UI FIX: Apply the global layout wrapper class
+    <div className="app-layout-wrapper">
+      <HodSidebar user={user} />
 
-      <main className="dashboard-main-content fade-in-up">
+      <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
 
-        <Header
-          title="Department Dashboard"
-          user={user}
-          onLogout={onLogout}
-        />
+        {/* UI FIX: Apply the standardized header block */}
+        <header className="app-global-header">
+          <div className="app-title-layout">
+            <div className="app-title-icon-badge">
+              <Users size={20} />
+            </div>
+            <div>
+              <h1 className="app-title">Department Dashboard</h1>
+              <p className="app-subtitle">
+                Overview for <span className="app-subtitle-accent">{user?.department || 'Department'}</span>
+              </p>
+            </div>
+          </div>
+          
+          <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
+        </header>
 
         {/* METRICS TOP ROW GRID */}
         <section className="metrics-summary-row">
-          <div className="metric-card-block hover-lift">
+          <div className="app-card metric-card-block hover-lift">
             <div className="card-title-bar">
               <Users size={16} className="tr-icon-maroon" />
               <span>Total Employees</span>
@@ -237,7 +248,7 @@ export default function HodDashboard({ onLogout, user }) {
             </div>
           </div>
 
-          <div className="metric-card-block hover-lift">
+          <div className="app-card metric-card-block hover-lift" onClick={() => navigate('/leave-approvals')} style={{ cursor: 'pointer' }}>
             <div className="card-title-bar">
               <Calendar size={16} className="tr-icon-amber" />
               <span>Pending Approvals</span>
@@ -256,7 +267,7 @@ export default function HodDashboard({ onLogout, user }) {
             </div>
           </div>
 
-          <div className="metric-card-block hover-lift">
+          <div className="app-card metric-card-block hover-lift" onClick={() => navigate('/anomaly-alerts')} style={{ cursor: 'pointer' }}>
             <div className="card-title-bar">
               <AlertTriangle size={16} className="tr-icon-maroon" />
               <span>Anomaly Alerts</span>
@@ -273,31 +284,31 @@ export default function HodDashboard({ onLogout, user }) {
         {/* MIDDLE SECTION Split Row */}
         <section className="dashboard-split-content-panel">
           {/* Left Block: Requests Table */}
-          <div className="content-data-box table-box-width">
-            <div className="box-header-title">
+          <div className="app-card content-data-box table-box-width">
+            <div className="box-header-title" style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border-light)', fontWeight: '700' }}>
               {user?.department ? `${user.department} — Leave Requests` : 'Pending Leave Application Request'}
             </div>
             <div className="table-responsive-scroll">
-              <table className="data-display-table">
+              <table className="data-display-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
-                  <tr>
-                    <th>Employee Name</th>
-                    <th>Leave Type</th>
-                    <th>Date Filed</th>
-                    <th>Status</th>
-                    <th>Document</th>
+                  <tr style={{ backgroundColor: 'var(--color-border-light)', color: 'var(--color-text-secondary)', textAlign: 'left' }}>
+                    <th style={{ padding: '12px 20px' }}>Employee Name</th>
+                    <th style={{ padding: '12px 20px' }}>Leave Type</th>
+                    <th style={{ padding: '12px 20px' }}>Date Filed</th>
+                    <th style={{ padding: '12px 20px' }}>Status</th>
+                    <th style={{ padding: '12px 20px' }}>Document</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loadingLeaves ? (
                     <tr>
-                      <td colSpan="5" style={{ textAlign: 'center', padding: '12px' }}>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: 'var(--color-text-muted)' }}>
                         Loading requests...
                       </td>
                     </tr>
                   ) : leaveRequests.length === 0 ? (
                     <tr>
-                      <td colSpan="5" style={{ textAlign: 'center', padding: '12px' }}>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: 'var(--color-text-muted)' }}>
                         No leave applications found for this department.
                       </td>
                     </tr>
@@ -312,26 +323,26 @@ export default function HodDashboard({ onLogout, user }) {
                       const attachments = parseAttachments(req);
 
                       return (
-                        <tr key={appId}>
-                          <td>{employeeName}</td>
-                          <td>{leaveType}</td>
-                          <td>{formattedDate}</td>
-                          <td>
+                        <tr key={appId} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                          <td style={{ padding: '14px 20px', fontWeight: '600' }}>{employeeName}</td>
+                          <td style={{ padding: '14px 20px' }}>{leaveType}</td>
+                          <td style={{ padding: '14px 20px' }}>{formattedDate}</td>
+                          <td style={{ padding: '14px 20px' }}>
                             <span className={`status-badge status-${req.status?.toLowerCase()}`}>
                               {req.status}
                             </span>
                           </td>
-                          <td className="link-cell">
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                          <td className="link-cell" style={{ padding: '14px 20px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
                               <button
                                 type="button"
                                 onClick={() => handleOpenPreview(req)}
                                 style={{
-                                  backgroundColor: '#800000',
+                                  backgroundColor: 'var(--color-maroon)',
                                   color: '#ffffff',
                                   border: 'none',
-                                  borderRadius: '4px',
-                                  padding: '4px 8px',
+                                  borderRadius: '6px',
+                                  padding: '6px 10px',
                                   cursor: 'pointer',
                                   fontSize: '11px',
                                   fontWeight: '600',
@@ -344,7 +355,7 @@ export default function HodDashboard({ onLogout, user }) {
                               </button>
 
                               {attachments.length === 0 ? (
-                                <span style={{ fontSize: '11px', color: '#9ca3af' }}>No attachments</span>
+                                <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>No attachments</span>
                               ) : (
                                 attachments.map((att, idx) => (
                                   <button
@@ -352,8 +363,8 @@ export default function HodDashboard({ onLogout, user }) {
                                     type="button"
                                     onClick={() => handleOpenAttachment(att)}
                                     style={{
-                                      backgroundColor: '#EFF6FF',
-                                      color: '#1D4ED8',
+                                      backgroundColor: 'var(--color-info-bg)',
+                                      color: 'var(--color-info)',
                                       border: '1px solid #93C5FD',
                                       borderRadius: '4px',
                                       padding: '3px 6px',
@@ -385,10 +396,10 @@ export default function HodDashboard({ onLogout, user }) {
                 </tbody>
               </table>
             </div>
-            <div className="box-footer-action-link">
+            <div className="box-footer-action-link" style={{ padding: '12px 20px', borderTop: '1px solid var(--color-border-light)', textAlign: 'right' }}>
               <Link
                 to="/leave-approvals"
-                style={{ textDecoration: 'none', color: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                style={{ textDecoration: 'none', color: 'var(--color-info)', fontSize: '13px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
               >
                 <span>View All Requests</span>
                 <ArrowRight size={12} />
@@ -397,20 +408,20 @@ export default function HodDashboard({ onLogout, user }) {
           </div>
 
           {/* Right Block: Forecast Visual Placeholder */}
-          <div className="content-data-box forecast-box-width">
-            <div className="box-header-title">Workforce Availability</div>
-            <div className="forecast-chart-mock-body">
-              <div className="chart-header-stats">
-                <span>Peak: <b>95% Consistency</b> Onyx</span>
-                <span>Avg. Check-In: <b>07:51 AM</b> Warm Chalk</span>
+          <div className="app-card content-data-box forecast-box-width" onClick={() => navigate('/workforce-forecast')} style={{ cursor: 'pointer' }}>
+            <div className="box-header-title" style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border-light)', fontWeight: '700' }}>Workforce Availability</div>
+            <div className="forecast-chart-mock-body" style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div className="chart-header-stats" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '16px' }}>
+                <span>Peak: <b style={{ color: 'var(--color-success)' }}>95% Consistency</b></span>
+                <span>Avg. Check-In: <b style={{ color: 'var(--color-text-primary)' }}>07:51 AM</b></span>
               </div>
-              <div className="mock-graph-graphic-line">
-                <div className="wave-placeholder-line"></div>
+              <div className="mock-graph-graphic-line" style={{ flex: 1, backgroundColor: 'var(--color-border-light)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: '500' }}>Live Forecast View</span>
               </div>
-              <div className="chart-footer-caption">
+              <div className="chart-footer-caption" style={{ marginTop: '16px', textAlign: 'right' }}>
                 <Link
                   to="/workforce-forecast"
-                  style={{ textDecoration: 'none', color: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  style={{ textDecoration: 'none', color: 'var(--color-info)', fontSize: '13px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                 >
                   <span>View Full Forecast</span>
                   <ArrowRight size={12} />
@@ -421,17 +432,21 @@ export default function HodDashboard({ onLogout, user }) {
         </section>
 
         {/* BOTTOM SECTION Staffing Risk Banner */}
-        <section className="staffing-risk-alert-banner hover-lift">
-          <div className="alert-banner-inner">
-            <div className="alert-icon-title">
-              <Ban size={20} className="tr-icon-maroon" />
-              <h4>Staffing Risk Alert</h4>
+        <section className="app-card staffing-risk-alert-banner hover-lift" style={{ marginTop: '24px' }}>
+          <div className="alert-banner-inner" style={{ padding: '24px', display: 'flex', gap: '20px', alignItems: 'center' }}>
+            <div className="alert-icon-title" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '120px' }}>
+              <Ban size={28} className="tr-icon-maroon" style={{ color: 'var(--color-danger)', marginBottom: '8px' }} />
+              <h4 style={{ margin: 0, color: 'var(--color-danger)', fontWeight: '700' }}>Staffing Risk</h4>
             </div>
-            <p className="alert-description-text">
-              Estimated availability: <span className="danger-text-percentage">58%</span> <br />
-              System predicts severe staffing risk for the team during this period. Overlapping leave requests and seasonal trend analysis indicate a critical bottleneck. Immediate attention is required (Refer to Capitulo 6.2/8). Prescriptive rescheduling recommended.
-            </p>
-            <button className="view-report-banner-btn" onClick={() => navigate('/department-reports')}>
+            <div className="alert-description-text" style={{ flex: 1, fontSize: '14px', lineHeight: '1.5', color: 'var(--color-text-primary)' }}>
+              Estimated availability: <span className="danger-text-percentage" style={{ fontWeight: '800', color: 'var(--color-danger)', fontSize: '16px' }}>58%</span> <br />
+              System predicts severe staffing risk for the team during this period. Overlapping leave requests and seasonal trend analysis indicate a critical bottleneck. Immediate attention is required. Prescriptive rescheduling recommended.
+            </div>
+            <button 
+              className="btn-primary" 
+              onClick={() => navigate('/department-reports')}
+              style={{ flexShrink: 0 }}
+            >
               View Report
             </button>
           </div>
@@ -439,60 +454,26 @@ export default function HodDashboard({ onLogout, user }) {
 
       </main>
 
-      {/* DOCUMENT PREVIEW MODAL */}
+      {/* UI FIX: Refactored Document Preview Modal to use standard CSS classes */}
       {isPreviewOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.65)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px'
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: '#fff',
-              width: '90%',
-              maxWidth: '850px',
-              height: '85vh',
-              borderRadius: '8px',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)'
-            }}
+        <div className="app-modal-overlay" onClick={() => setIsPreviewOpen(false)}>
+          <div 
+            className="app-modal-card" 
+            style={{ maxWidth: '850px', height: '85vh', padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }} 
+            onClick={(e) => e.stopPropagation()}
           >
-            <div
-              style={{
-                backgroundColor: '#800000',
-                color: '#fff',
-                padding: '12px 20px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                fontWeight: 'bold'
-              }}
+            <div 
+              className="modal-header-bar" 
+              style={{ backgroundColor: 'var(--color-maroon)', color: '#fff', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
             >
-              <span>{previewTitle}</span>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700' }}>{previewTitle}</h3>
               <button
                 onClick={() => setIsPreviewOpen(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}
+                style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
               >
                 <X size={20} />
               </button>
             </div>
-
             <div style={{ flex: 1, backgroundColor: '#525659' }}>
               <iframe
                 src={previewPdfUrl}

@@ -7,7 +7,8 @@ import {
   ChevronRight,
   ShieldAlert,
   TrendingUp,
-  UserCheck
+  UserCheck,
+  Building2 // Added for the new header layout icon
 } from 'lucide-react';
 
 /* COMPONENTS & STYLES */
@@ -24,7 +25,7 @@ export default function HrDashboard({ onLogout, user }) {
     activeEmployees: 0,
     onLeave: 0,
     pendingEdits: 0,
-    anomalies: 18 // Static placeholder until the anomaly engine is built
+    anomalies: 18 // Static placeholder until the anomaly engine is integrated here
   });
 
   useEffect(() => {
@@ -45,30 +46,38 @@ export default function HrDashboard({ onLogout, user }) {
   }, []);
 
   return (
-    <div className="hr-dash-container">
+    // UI FIX: Using the global app-layout-wrapper
+    <div className="app-layout-wrapper">
+      
       {/* Navigation Column */}
-      <HrSidebar />
+      <HrSidebar user={user} />
 
       {/* Main Viewport Area */}
-      <main className="hr-dash-main-content fade-in-up">
+      <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
         
-        {/* TOP GLOBAL HEADER ROW */}
-        <header className="hr-dash-top-header">
-          <div className="hr-header-brand-title">
-            <span className="hr-badge-chip">
-              <span className="hr-chip-dot"></span> Executive Control Panel
-            </span>
-            <h2>City HR Management System</h2>
+        {/* UNIFIED GLOBAL HEADER ROW */}
+        <header className="app-global-header">
+          <div className="app-title-layout">
+            <div className="app-title-icon-badge">
+              <Building2 size={20} />
+            </div>
+            <div>
+              <h1 className="app-title">City HR Management System</h1>
+              <p className="app-subtitle">
+                Executive <span className="app-subtitle-accent">Control Panel</span>
+              </p>
+            </div>
           </div>
 
-          <Header user={user} onLogout={onLogout} />
+          {/* UI FIX: Added controlsOnly to prevent layout breaking */}
+          <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
         </header>
 
         {/* METRICS ROW - Overview Cards */}
         <section className="hr-metrics-grid">
           
           {/* Card 1: Total City Workforce */}
-          <div className="hr-metric-card" onClick={() => navigate('/department-reports')}>
+          <div className="app-card hr-metric-card hover-lift" onClick={() => navigate('/department-reports')}>
             <div className="hr-card-label-row">
               <Users size={18} className="hr-icon-maroon" />
               <span>Total City Workforce</span>
@@ -81,7 +90,7 @@ export default function HrDashboard({ onLogout, user }) {
           </div>
 
           {/* Card 2: Pending Profile Edits */}
-          <div className="hr-metric-card" onClick={() => navigate('/profile-requests')}>
+          <div className="app-card hr-metric-card hover-lift" onClick={() => navigate('/profile-requests')}>
             <div className="hr-card-label-row">
               <FileCheck size={18} className="hr-icon-amber" />
               <span>Pending Profile Edits</span>
@@ -93,7 +102,7 @@ export default function HrDashboard({ onLogout, user }) {
           </div>
 
           {/* Card 3: Master Anomaly Alerts */}
-          <div className="hr-metric-card" onClick={() => navigate('/anomaly-alerts')}>
+          <div className="app-card hr-metric-card hover-lift" onClick={() => navigate('/anomaly-alerts')}>
             <div className="hr-card-label-row">
               <AlertTriangle size={18} className="hr-icon-maroon" />
               <span>Master Anomaly Alerts</span>
@@ -109,40 +118,42 @@ export default function HrDashboard({ onLogout, user }) {
         </section>
 
         {/* QUICK NAVIGATION HUB */}
-        <section className="hr-quick-actions-section">
-          <h3 className="hr-section-title">HR Management Modules</h3>
+        <section className="hr-quick-actions-section" style={{ marginTop: '32px' }}>
+          <h3 className="hr-section-title" style={{ fontFamily: 'var(--font-family-heading)', fontSize: '18px', color: 'var(--color-text-primary)', marginBottom: '16px' }}>
+            HR Management Modules
+          </h3>
           
           <div className="hr-actions-grid">
             
-            <div className="hr-action-card" onClick={() => navigate('/department-reports')}>
+            <div className="app-card hr-action-card hover-lift" onClick={() => navigate('/department-reports')}>
               <div className="hr-action-icon-wrapper">
                 <UserCheck size={22} />
               </div>
               <div className="hr-action-details">
-                <h4>Global Department Reports</h4>
-                <p>Track city-wide attendance trends, department allocations, and leave histories.</p>
+                <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', color: 'var(--color-text-primary)' }}>Global Department Reports</h4>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>Track city-wide attendance trends, department allocations, and leave histories.</p>
               </div>
               <ChevronRight className="hr-action-arrow" size={20} />
             </div>
 
-            <div className="hr-action-card" onClick={() => navigate('/workforce-forecast')}>
+            <div className="app-card hr-action-card hover-lift" onClick={() => navigate('/workforce-forecast')}>
               <div className="hr-action-icon-wrapper">
                 <TrendingUp size={22} />
               </div>
               <div className="hr-action-details">
-                <h4>Workforce Analytics & Forecast</h4>
-                <p>Review predictive staffing metrics, peak check-in schedules, and coverage trends.</p>
+                <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', color: 'var(--color-text-primary)' }}>Workforce Analytics & Forecast</h4>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>Review predictive staffing metrics, peak check-in schedules, and coverage trends.</p>
               </div>
               <ChevronRight className="hr-action-arrow" size={20} />
             </div>
 
-            <div className="hr-action-card" onClick={() => navigate('/anomaly-alerts')}>
+            <div className="app-card hr-action-card hover-lift" onClick={() => navigate('/anomaly-alerts')}>
               <div className="hr-action-icon-wrapper alert-style">
                 <ShieldAlert size={22} />
               </div>
               <div className="hr-action-details">
-                <h4>Anomaly & Risk Monitor</h4>
-                <p>Address flagged operational risks, critical bottlenecks, and schedule overlaps.</p>
+                <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', color: 'var(--color-text-primary)' }}>Anomaly & Risk Monitor</h4>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>Address flagged operational risks, critical bottlenecks, and schedule overlaps.</p>
               </div>
               <ChevronRight className="hr-action-arrow" size={20} />
             </div>

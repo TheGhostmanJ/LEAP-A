@@ -1,10 +1,10 @@
-// src/features/dashboard/dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  UserCheck, History, Search, FilePlus, Eye, X, Paperclip, ChevronRight, Clock, Calendar
+  UserCheck, History, Search, FilePlus, Eye, X, Paperclip, ChevronRight, Clock, Calendar, LayoutDashboard
 } from 'lucide-react';
 import RoleSidebar from '../../components/RoleSidebar.jsx';
+import MyCalendar from './MyCalendar.jsx';
 import Header from '../../components/Header.jsx';
 import { buildLeavePdfBytes } from '../leave/generateLeavePdf.js';
 import './dashboard.css';
@@ -255,15 +255,27 @@ export default function Dashboard({ onLogout, user }) {
   };
 
   return (
-    <div className="dashboard-container">
+    <div className="app-layout-wrapper">
       <RoleSidebar user={user} />
 
-      <main className="dashboard-main-content fade-in-up">
-        <Header
-          title="Personal Dashboard"
-          user={user}
-          onLogout={onLogout}
-        />
+      <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
+        
+        {/* UNIFIED GLOBAL HEADER */}
+        <header className="app-global-header">
+          <div className="app-title-layout">
+            <div className="app-title-icon-badge">
+              <LayoutDashboard size={20} />
+            </div>
+            <div>
+              <h1 className="app-title">Personal Dashboard</h1>
+              <p className="app-subtitle">
+                Welcome back, <span className="app-subtitle-accent">{user?.first_name || 'Employee'}</span>
+              </p>
+            </div>
+          </div>
+          
+          <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
+        </header>
 
         {!isRestricted && (
           <section className="leave-summary-metrics-bar">
@@ -346,64 +358,13 @@ export default function Dashboard({ onLogout, user }) {
             </div>
           )}
 
-          <div className="analytics-visual-card hover-lift" onClick={() => navigate('/attendance')} style={{ cursor: 'pointer' }}>
-            <div className="card-header-flex">
-              <h3 className="card-section-title">
-                <UserCheck size={18} className="title-icon" /> My Attendance
-              </h3>
-            </div>
-            <div className="mock-graphic-frame">
-              <div className="attendance-chart-mock">
-                <div className="time-stamp-marker stamp-top">
-                  <Clock size={11} /> 07:48 AM
-                </div>
-                <div className="time-stamp-marker stamp-bottom">
-                  <Clock size={11} /> 07:48 AM
-                </div>
-
-                <svg viewBox="0 0 400 100" className="sparkline-svg-vector">
-                  <defs>
-                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#7a0000" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#7a0000" stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
-                  <path
-                    d="M 0 60 Q 40 40 80 70 T 160 50 T 240 75 T 320 35 T 400 55 L 400 100 L 0 100 Z"
-                    fill="url(#chartGradient)"
-                  />
-                  <path
-                    d="M 0 60 Q 40 40 80 70 T 160 50 T 240 75 T 320 35 T 400 55"
-                    fill="none"
-                    stroke="#7a0000"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                  <circle cx="80" cy="70" r="4" fill="#7a0000" stroke="#fff" strokeWidth="2" />
-                  <circle cx="240" cy="75" r="4" fill="#7a0000" stroke="#fff" strokeWidth="2" />
-                  <circle cx="320" cy="35" r="4" fill="#7a0000" stroke="#fff" strokeWidth="2" />
-                </svg>
-
-                <div className="axis-labels-timeline">
-                  <span>Day 1</span>
-                  <span>Day 10</span>
-                  <span>Day 20</span>
-                  <span>Day 30</span>
-                </div>
-              </div>
-
-              <div className="attendance-summary-data-strip">
-                <div className="streak-badge">Current Streak: <strong>12 days</strong></div>
-                <div className="avg-checkin-badge">Avg. Check-In: <strong>07:51 AM</strong></div>
-              </div>
-              <p className="graphic-footer-caption">My 30 Day Attendance Consistency</p>
-            </div>
-          </div>
+          {/* INTEGRATED CALENDAR WIDGET */}
+          {!isRestricted && <MyCalendar />}
         </section>
 
         {!isRestricted && (
           <section className="table-wrapper-section">
-            <section className="data-table-container-card">
+            <section className="app-card data-table-container-card">
               <div className="table-header-toolbar">
                 <div className="table-header-left">
                   <h3 className="table-title">Recent Leave Applications</h3>
@@ -422,13 +383,14 @@ export default function Dashboard({ onLogout, user }) {
                     <input
                       type="text"
                       placeholder="Search recent filings..."
-                      className="utility-search-field"
+                      className="app-search-input"
+                      style={{ height: '38px', paddingLeft: '34px' }}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
                   <button
-                    className="primary-action-trigger-btn"
+                    className="btn-primary"
                     onClick={() => navigate('/leaveapplication')}
                   >
                     <FilePlus size={16} />
@@ -513,7 +475,7 @@ export default function Dashboard({ onLogout, user }) {
                       })
                     ) : (
                       <tr>
-                        <td colSpan="5" className="empty-table-cell">
+                        <td colSpan="5" className="empty-table-notice">
                           No recent filings found matching your search.
                         </td>
                       </tr>
@@ -528,8 +490,8 @@ export default function Dashboard({ onLogout, user }) {
 
       {/* --- HOD FEEDBACK MODAL --- */}
       {activeFeedback && (
-        <div className="modal-overlay-backdrop" onClick={() => setActiveFeedback(null)}>
-          <div className="modal-container-card feedback-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="app-modal-overlay" onClick={() => setActiveFeedback(null)}>
+          <div className="app-modal-card feedback-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-bar feedback-header">
               <span>Feedback on your {activeFeedback.leave_type} request</span>
               <button
@@ -539,8 +501,8 @@ export default function Dashboard({ onLogout, user }) {
                 <X size={18} />
               </button>
             </div>
-            <div className="modal-body-content">
-              <p className="feedback-text">{activeFeedback.remarks}</p>
+            <div className="modal-body-content" style={{ marginTop: '16px' }}>
+              <p className="feedback-text" style={{ fontSize: '14px', lineHeight: '1.6', color: 'var(--color-text-primary)' }}>{activeFeedback.remarks}</p>
             </div>
           </div>
         </div>
@@ -548,10 +510,10 @@ export default function Dashboard({ onLogout, user }) {
 
       {/* --- IN-PAGE DOCUMENT PREVIEW MODAL --- */}
       {selectedPdfUrl && (
-        <div className="modal-overlay-backdrop" onClick={handleClosePdf}>
-          <div className="modal-container-card pdf-preview-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header-bar pdf-header">
-              <h3 className="modal-title">{previewTitle}</h3>
+        <div className="app-modal-overlay" onClick={handleClosePdf}>
+          <div className="app-modal-card pdf-preview-modal" style={{ maxWidth: '800px', height: '80vh', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-bar pdf-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 className="modal-title" style={{ margin: 0 }}>{previewTitle}</h3>
               <button
                 type="button"
                 onClick={handleClosePdf}
@@ -560,14 +522,15 @@ export default function Dashboard({ onLogout, user }) {
                 <X size={20} />
               </button>
             </div>
-            <div className="pdf-preview-viewport">
+            <div className="pdf-preview-viewport" style={{ flex: 1, position: 'relative' }}>
               {previewFileType === 'image' ? (
-                <img src={selectedPdfUrl} alt="Attachment Preview" className="image-preview-render" />
+                <img src={selectedPdfUrl} alt="Attachment Preview" className="image-preview-render" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               ) : (
                 <iframe
                   src={selectedPdfUrl}
                   title={previewTitle}
                   className="iframe-preview-render"
+                  style={{ width: '100%', height: '100%', border: 'none', borderRadius: '8px' }}
                 />
               )}
             </div>

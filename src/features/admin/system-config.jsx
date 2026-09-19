@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Added for routing
+import { useNavigate } from "react-router-dom"; // RESTORED: Required for button routing
 import { 
   Server, 
   Database, 
@@ -17,11 +17,10 @@ import Header from "../../components/Header.jsx";
 import "./system-config.css";
 
 export default function SystemConfig({ onLogout, user }) {
-  const navigate = useNavigate(); // Initialize navigation
+  const navigate = useNavigate(); // RESTORED: Initialize navigation
   const [cacheStatus, setCacheStatus] = useState("idle"); // idle | executing | success
   const [syncStatus, setSyncStatus] = useState("idle");   // idle | executing | success
 
-  // Simulated backend executions for the UI
   const handleClearCache = () => {
     setCacheStatus("executing");
     setTimeout(() => {
@@ -47,18 +46,9 @@ export default function SystemConfig({ onLogout, user }) {
       <main className="sysconfig-main-content fade-in-up">
         
         {/* STANDARDIZED HEADER BLOCK */}
+        {/* Notice how we just pass the Header now! Our global Header.jsx automatically draws the title based on the route. */}
         <header className="tr-header">
-          <div className="tr-header-title">
-            <span className="tr-header-badge">
-              <span className="tr-badge-dot"></span> IT OPERATIONS PORTAL
-            </span>
-            <h2>
-              <span className="tr-title-dark">System </span>
-              <span className="tr-title-maroon">Configuration</span>
-            </h2>
-          </div>
-
-          <Header user={user} onLogout={onLogout} />
+          <Header user={user} onLogout={onLogout} onNavigate={navigate} />
         </header>
 
         {/* METRICS ROW */}
@@ -115,6 +105,7 @@ export default function SystemConfig({ onLogout, user }) {
               </p>
 
               <div className="sysconfig-actions-group">
+                {/* RESTORED: onClick navigation routing */}
                 <button 
                   className="sysconfig-btn-primary"
                   onClick={() => navigate('/role-management')}

@@ -1,12 +1,58 @@
-// src/components/Header.jsx
 import React, { useState, useRef, useEffect } from 'react';
-import { User, ChevronDown, LogOut, ShieldCheck, Sparkles } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { 
+  LayoutDashboard, Clock, User, HelpCircle, FileText, 
+  Wallet, Award, FilePlus, Users, CalendarCheck, 
+  TrendingUp, AlertTriangle, BarChart3, Building2, 
+  Calendar, DollarSign, UserCheck, Settings, Shield, 
+  Database, Cpu, Key, Sliders, ChevronDown, LogOut 
+} from 'lucide-react';
 import NotificationBell from './NotificationBell.jsx';
 import './Header.css';
 
-export default function Header({ user, onLogout, title, subtitle, onNavigate }) {
+// Configured metadata per route with custom icons & visual themes
+const ROUTE_CONFIG = {
+  '/dashboard': { title: 'Employee Dashboard', icon: LayoutDashboard, tag: 'Overview', color: '#7a1220', bg: '#fcf2f4' },
+  '/attendance': { title: 'My Attendance Log', icon: Clock, tag: 'Time Tracker', color: '#2563eb', bg: '#eff6ff' },
+  '/profile': { title: 'Profile Management', icon: User, tag: 'Account', color: '#0d9488', bg: '#f0fdfa' },
+  '/support': { title: 'Support Center', icon: HelpCircle, tag: 'Helpdesk', color: '#4f46e5', bg: '#eef2ff' },
+  '/leavehistory': { title: 'Leave History', icon: FileText, tag: 'Records', color: '#d97706', bg: '#fffbeb' },
+  '/creditledger': { title: 'Credit Ledger', icon: Wallet, tag: 'Balances', color: '#059669', bg: '#ecfdf5' },
+  '/trainingrecords': { title: 'Training Records', icon: Award, tag: 'Learning', color: '#9333ea', bg: '#faf5ff' },
+  '/leaveapplication': { title: 'File Leave Application', icon: FilePlus, tag: 'Requests', color: '#e11d48', bg: '#fff1f2' },
+  '/hod-dashboard': { title: 'HOD Dashboard', icon: Users, tag: 'Management', color: '#0284c7', bg: '#f0f9ff' },
+  '/leave-approvals': { title: 'Leave Approvals', icon: CalendarCheck, tag: 'Workflow', color: '#16a34a', bg: '#f0fdf4' },
+  '/workforce-forecast': { title: 'Workforce Forecast', icon: TrendingUp, tag: 'Analytics', color: '#2563eb', bg: '#eff6ff' },
+  '/anomaly-alerts': { title: 'Anomaly Alerts', icon: AlertTriangle, tag: 'Security', color: '#dc2626', bg: '#fef2f2' },
+  '/department-reports': { title: 'Department Reports', icon: BarChart3, tag: 'Insights', color: '#7c3aed', bg: '#f5f3ff' },
+  '/hr-dashboard': { title: 'HR Dashboard', icon: Building2, tag: 'HR Portal', color: '#c026d3', bg: '#fdf4ff' },
+  '/event-management': { title: 'Event Management', icon: Calendar, tag: 'Schedule', color: '#ea580c', bg: '#fff7ed' },
+  '/departments': { title: 'Department Setup', icon: Building2, tag: 'Structure', color: '#0891b2', bg: '#ecfeff' },
+  '/payroll': { title: 'Payroll & Ledger', icon: DollarSign, tag: 'Finance', color: '#15803d', bg: '#f0fdf4' },
+  '/profile-requests': { title: 'Profile Management Requests', icon: UserCheck, tag: 'Approvals', color: '#0284c7', bg: '#f0f9ff' },
+  '/system-config': { title: 'System Configuration', icon: Settings, tag: 'Admin', color: '#4b5563', bg: '#f9fafb' },
+  '/role-management': { title: 'Role Management', icon: Shield, tag: 'Permissions', color: '#b91c1c', bg: '#fef2f2' },
+  '/database-metrics': { title: 'Database Metrics', icon: Database, tag: 'Infrastructure', color: '#2563eb', bg: '#eff6ff' },
+  '/api-gateway': { title: 'API Gateway', icon: Cpu, tag: 'Developer', color: '#9333ea', bg: '#faf5ff' },
+  '/password-reset-requests': { title: 'Password Reset Requests', icon: Key, tag: 'Security', color: '#d97706', bg: '#fffbeb' },
+  '/system-settings': { title: 'System Settings', icon: Sliders, tag: 'Preferences', color: '#374151', bg: '#f3f4f6' },
+};
+
+export default function Header({ user, onLogout, onNavigate, title, subtitle, controlsOnly = false }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const location = useLocation();
+
+  // 1. Get active route configuration or fallback
+  const activeRoute = ROUTE_CONFIG[location.pathname] || {
+    title: 'Dashboard',
+    icon: LayoutDashboard,
+    tag: 'Portal',
+    color: '#7a1220',
+    bg: '#fcf2f4',
+  };
+
+  const PageIcon = activeRoute.icon;
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -23,31 +69,30 @@ export default function Header({ user, onLogout, title, subtitle, onNavigate }) 
     return `${first || ''} ${last || ''}`.trim();
   };
 
-  const renderStyledTitle = (rawTitle) => {
-    if (!rawTitle) return null;
-    const words = rawTitle.split(' ');
-    if (words.length <= 1) return rawTitle;
-
-    const mainText = words.slice(0, -1).join(' ');
-    const lastWord = words[words.length - 1];
-
-    return (
-      <>
-        {mainText} <span className="title-accent-glow">{lastWord}</span>
-      </>
-    );
-  };
-
+  // 2. Extracted Right-Side Controls (Used in both layouts)
   const renderControls = () => (
     <div className="header-user-controls">
-      {/* Dynamic Notification Bell Component */}
-      <NotificationBell 
-        employeeKey={user?.employee_key || ''} 
-        onNavigate={onNavigate} 
-      />
+      <button 
+        type="button" 
+        className="header-utility-btn" 
+        title="Support Center"
+        onClick={() => onNavigate && onNavigate('/support')}
+      >
+        <HelpCircle size={18} />
+      </button>
 
+      {NotificationBell ? (
+        <NotificationBell
+          employeeKey={user?.employee_key || ''}
+          onNavigate={onNavigate}
+        />
+      ) : null}
+
+      <div className="header-divider-vertical"></div>
+
+      {/* User Pill */}
       <div className="header-profile-dropdown" ref={dropdownRef}>
-        <button 
+        <button
           type="button"
           className={`profile-pill-trigger ${isDropdownOpen ? 'active' : ''}`}
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -81,30 +126,38 @@ export default function Header({ user, onLogout, title, subtitle, onNavigate }) 
     </div>
   );
 
-  // If a title prop is passed, render a self-contained top header row
-  if (title) {
-    return (
-      <header className="app-top-header">
-        <div className="header-page-title">
-          <div className="header-portal-tag">
-            <ShieldCheck size={13} className="portal-tag-icon" />
-            <span>{user?.role ? `${user.role.toUpperCase()} PORTAL` : 'LEAP-A SYSTEM'}</span>
-          </div>
-          <h2>{renderStyledTitle(title)}</h2>
-          {subtitle ? (
-            <p className="header-subtitle">{subtitle}</p>
-          ) : (
-            <p className="header-subtitle">
-              <Sparkles size={12} className="subtitle-sparkle-icon" />
-              <span>Real-time operational portal & analytics engine</span>
-            </p>
-          )}
-        </div>
-        {renderControls()}
-      </header>
-    );
+  // 3. IF controlsOnly IS TRUE: Return ONLY the right side (fixes UI breaks on complex pages)
+  if (controlsOnly) {
+    return renderControls();
   }
 
-  // Otherwise, render strictly as inline control actions for nesting inside existing page headers
-  return renderControls();
+  // 4. OTHERWISE: Render the beautiful full header utilizing your ROUTE_CONFIG
+  return (
+    <header className="global-page-header">
+      <div className="header-left-title">
+        <div 
+          className="header-icon-badge" 
+          style={{ backgroundColor: activeRoute.bg, borderColor: `${activeRoute.color}25` }}
+        >
+          <PageIcon size={18} style={{ color: activeRoute.color }} />
+        </div>
+        <div className="header-title-text-group">
+          <div className="header-title-row">
+            {/* If a custom title is passed as a prop, use it, otherwise use the auto-routing title */}
+            <h1 className="header-page-title">{title || activeRoute.title}</h1>
+            <span 
+              className="header-route-tag" 
+              style={{ color: activeRoute.color, backgroundColor: activeRoute.bg }}
+            >
+              {activeRoute.tag}
+            </span>
+          </div>
+          {/* Support for custom subtitles if passed */}
+          {subtitle && <p className="header-subtitle-text" style={{margin: 0, fontSize: '13px', color: '#64748b'}}>{subtitle}</p>}
+        </div>
+      </div>
+
+      {renderControls()}
+    </header>
+  );
 }

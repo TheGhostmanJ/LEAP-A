@@ -162,265 +162,282 @@ export default function ProfileRequests({ onLogout, user }) {
   }, []);
 
   return (
-    <div style={{ display: 'flex', width: '100vw', height: '100vh', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
+    // UI FIX: Apply standard layout wrapper
+    <div className="app-layout-wrapper">
       <HrSidebar user={user} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-        <header style={{ padding: '16px 32px', backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <Header user={user} onLogout={onLogout} />
-        </header>
-
-        <main style={{ padding: '32px' }} className="fade-in-up">
-            
-          <div className="page-title-layout">
-            <div className="title-icon-badge">
-              <UserCheck size={26} className="title-icon-svg" />
+      <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
+        
+        {/* UNIFIED GLOBAL HEADER ROW */}
+        <header className="app-global-header">
+          <div className="app-title-layout">
+            <div className="app-title-icon-badge">
+              <UserCheck size={20} />
             </div>
-            <div className="title-text-group">
-              <h2>Employee Profile Management</h2>
-              <p className="subtitle-department">
-                Portal: <span className="highlight-maroon">HR Operations</span>
+            <div>
+              <h1 className="app-title">Employee Profile Management</h1>
+              <p className="app-subtitle">
+                Portal: <span className="app-subtitle-accent">HR Operations</span>
               </p>
             </div>
           </div>
+          
+          <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
+        </header>
 
-          {/* SECTION 1: PROFILE EDIT REQUESTS */}
-          <section className="profile-requests-card" style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', marginTop: '24px', overflow: 'hidden' }}>
-            <div className="flex-header-bar" style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-              <span style={{ fontWeight: '700', fontSize: '16px' }}>Pending Data Alteration Requests</span>
-              <div className="bar-search-input-wrapper" style={{ border: '1px solid #cbd5e1' }}>
-                <Search size={16} color="#64748b" />
-                <input
-                  type="text"
-                  placeholder="Filter requests..."
-                  className="bar-search-field"
-                  value={requestSearchTerm}
-                  onChange={(e) => setRequestSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="table-full-height-wrapper">
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#f8fafc', color: '#64748b', fontSize: '13px', textTransform: 'uppercase' }}>
-                    <th style={{ padding: '16px 24px', width: '22%' }}>Employee</th>
-                    <th style={{ padding: '16px 24px', width: '18%' }}>Field to Change</th>
-                    <th style={{ padding: '16px 24px', width: '18%' }}>Current Record</th>
-                    <th style={{ padding: '16px 24px', width: '18%' }}>Requested Change</th>
-                    <th style={{ padding: '16px 24px', width: '14%' }}>Supporting Document</th>
-                    <th style={{ padding: '16px 24px', width: '10%' }} className="text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isReqLoading ? (
-                    <tr><td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>Loading requests...</td></tr>
-                  ) : filteredRequests.length === 0 ? (
-                    <tr><td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>No pending alteration requests found.</td></tr>
-                  ) : (
-                    filteredRequests.map((req) => (
-                      <tr key={req.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <td style={{ padding: '16px 24px' }} className="employee-name-cell">{req.employee}</td>
-                        <td style={{ padding: '16px 24px' }}>{req.field}</td>
-                        <td style={{ padding: '16px 24px' }} className="old-value-cell">{req.oldValue}</td>
-                        <td style={{ padding: '16px 24px' }} className="new-value-cell">{req.newValue}</td>
-                        <td style={{ padding: '16px 24px' }}>
-                          {req.proofAttached ? (
-                            <span className="attachment-link">
-                              <Paperclip size={15} /> View Attachment
-                            </span>
-                          ) : (
-                            <span className="no-attachment-note">Provided in-person</span>
-                          )}
-                        </td>
-                        <td style={{ padding: '16px 24px' }} className="actions-cell">
-                          {req.status === 'Pending' ? (
-                            <>
-                              <button
-                                style={{ backgroundColor: '#d1fae5', color: '#059669', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}
-                                onClick={() => handleAction(req.id, 'Approved')}
-                                title="Approve Request"
-                              >
-                                <CheckCircle size={18} />
-                              </button>
-                              <button
-                                style={{ backgroundColor: '#fee2e2', color: '#dc2626', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}
-                                onClick={() => handleAction(req.id, 'Rejected')}
-                                title="Reject Request"
-                              >
-                                <XCircle size={18} />
-                              </button>
-                            </>
-                          ) : (
-                            <span className={`status-badge status-${req.status.toLowerCase()}`}>
-                              {req.status}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          {/* SECTION 2: EMPLOYEE DIRECTORY & ROSTER */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '32px', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#fff', padding: '8px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', width: '350px' }}>
-              <Search size={18} color="#64748b" style={{ marginRight: '8px' }} />
+        {/* SECTION 1: PROFILE EDIT REQUESTS */}
+        <section className="app-card" style={{ marginTop: '24px' }}>
+          <div className="app-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Pending Data Alteration Requests</span>
+            <div style={{ position: 'relative', width: '280px', fontWeight: 'normal' }}>
+              <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
               <input
                 type="text"
-                placeholder="Search by name, ID, or department..."
-                value={employeeSearchTerm}
-                onChange={(e) => setEmployeeSearchTerm(e.target.value)}
-                style={{ border: 'none', outline: 'none', width: '100%', fontSize: '14px' }}
+                placeholder="Filter requests..."
+                className="app-search-input"
+                style={{ paddingLeft: '36px', height: '36px' }}
+                value={requestSearchTerm}
+                onChange={(e) => setRequestSearchTerm(e.target.value)}
               />
             </div>
-            <button 
-              onClick={handleOpenCreateModal}
-              style={{ backgroundColor: '#800020', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', cursor: 'pointer' }}
-            >
-              <UserPlus size={18} /> Onboard Employee
-            </button>
           </div>
 
-          <section style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', fontWeight: '700', fontSize: '16px' }}>
-              Active Employee Roster ({filteredEmployees.length} found)
-            </div>
+          <div className="responsive-table-overflow-scroller">
+            <table className="record-grid-system">
+              <thead>
+                <tr>
+                  <th style={{ width: '22%' }}>Employee</th>
+                  <th style={{ width: '18%' }}>Field to Change</th>
+                  <th style={{ width: '18%' }}>Current Record</th>
+                  <th style={{ width: '18%' }}>Requested Change</th>
+                  <th style={{ width: '14%' }}>Supporting Document</th>
+                  <th style={{ width: '10%', textAlign: 'center' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isReqLoading ? (
+                  <tr><td colSpan="6" style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-muted)' }}>Loading requests...</td></tr>
+                ) : filteredRequests.length === 0 ? (
+                  <tr><td colSpan="6" style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-muted)' }}>No pending alteration requests found.</td></tr>
+                ) : (
+                  filteredRequests.map((req) => (
+                    <tr key={req.id}>
+                      <td style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>{req.employee}</td>
+                      <td>{req.field}</td>
+                      <td style={{ color: 'var(--color-text-muted)', textDecoration: 'line-through' }}>{req.oldValue}</td>
+                      <td style={{ color: 'var(--color-success)', fontWeight: '700' }}>{req.newValue}</td>
+                      <td>
+                        {req.proofAttached ? (
+                          <span className="attachment-link">
+                            <Paperclip size={14} /> View Attachment
+                          </span>
+                        ) : (
+                          <span className="no-attachment-note">Provided in-person</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {req.status === 'Pending' ? (
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                            <button
+                              className="action-btn-green"
+                              onClick={() => handleAction(req.id, 'Approved')}
+                              title="Approve Request"
+                            >
+                              <CheckCircle size={16} />
+                            </button>
+                            <button
+                              className="action-btn-red"
+                              onClick={() => handleAction(req.id, 'Rejected')}
+                              title="Reject Request"
+                            >
+                              <XCircle size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className={`app-status-badge ${req.status === 'Approved' ? 'status-success' : 'status-danger'}`}>
+                            {req.status}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
-            <div className="table-full-height-wrapper">
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#f8fafc', color: '#64748b', fontSize: '13px', textTransform: 'uppercase' }}>
-                    <th style={{ padding: '16px 24px', width: '18%' }}>Employee ID</th>
-                    <th style={{ padding: '16px 24px', width: '25%' }}>Full Name</th>
-                    <th style={{ padding: '16px 24px', width: '27%' }}>Department</th>
-                    <th style={{ padding: '16px 24px', width: '20%' }}>Position Title</th>
-                    <th style={{ padding: '16px 24px', width: '10%' }} className="text-center">Manage</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isEmpLoading ? (
-                    <tr><td colSpan="5" style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>Loading employee records...</td></tr>
-                  ) : empError ? (
-                    <tr><td colSpan="5" style={{ padding: '24px', textAlign: 'center', color: '#dc2626' }}>Error: {empError}</td></tr>
-                  ) : filteredEmployees.length === 0 ? (
-                    <tr><td colSpan="5" style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>No matching employees found.</td></tr>
-                  ) : (
-                    filteredEmployees.map((emp) => (
-                      <tr key={emp.employee_key} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <td style={{ padding: '16px 24px', color: '#6b7280', fontFamily: 'monospace', fontWeight: 600 }}>{emp.employee_id}</td>
-                        <td style={{ padding: '16px 24px', fontWeight: 600 }}>
-                          {emp.first_name} {emp.last_name}
-                        </td>
-                        <td style={{ padding: '16px 24px' }}>{emp.department}</td>
-                        <td style={{ padding: '16px 24px' }}>{emp.position_title}</td>
-                        <td style={{ padding: '16px 24px' }} className="actions-cell">
-                          <button
-                            onClick={() => handleOpenEditModal(emp)}
-                            style={{ backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '500', padding: '6px 12px' }}
-                          >
-                            <Settings size={15} /> Profile
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
+        {/* SECTION 2: EMPLOYEE DIRECTORY & ROSTER */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '36px', marginBottom: '16px' }}>
+          <div style={{ position: 'relative', width: '350px' }}>
+            <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+            <input
+              type="text"
+              className="app-search-input"
+              placeholder="Search by name, ID, or department..."
+              value={employeeSearchTerm}
+              onChange={(e) => setEmployeeSearchTerm(e.target.value)}
+            />
+          </div>
+          <button className="btn-primary" onClick={handleOpenCreateModal}>
+            <UserPlus size={18} /> Onboard Employee
+          </button>
+        </div>
 
-        </main>
-      </div>
+        <section className="app-card">
+          <div className="app-card-header">
+            Active Employee Roster ({filteredEmployees.length} found)
+          </div>
+
+          <div className="responsive-table-overflow-scroller">
+            <table className="record-grid-system">
+              <thead>
+                <tr>
+                  <th style={{ width: '18%' }}>Employee ID</th>
+                  <th style={{ width: '25%' }}>Full Name</th>
+                  <th style={{ width: '27%' }}>Department</th>
+                  <th style={{ width: '20%' }}>Position Title</th>
+                  <th style={{ width: '10%', textAlign: 'center' }}>Manage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isEmpLoading ? (
+                  <tr><td colSpan="5" style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-muted)' }}>Loading employee records...</td></tr>
+                ) : empError ? (
+                  <tr><td colSpan="5" style={{ padding: '32px', textAlign: 'center', color: 'var(--color-danger)' }}>Error: {empError}</td></tr>
+                ) : filteredEmployees.length === 0 ? (
+                  <tr><td colSpan="5" style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-muted)' }}>No matching employees found.</td></tr>
+                ) : (
+                  filteredEmployees.map((emp) => (
+                    <tr key={emp.employee_key}>
+                      <td style={{ fontFamily: 'monospace', color: 'var(--color-text-secondary)', fontWeight: '700' }}>{emp.employee_id}</td>
+                      <td style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                        {emp.first_name} {emp.last_name}
+                      </td>
+                      <td style={{ color: 'var(--color-text-secondary)' }}>{emp.department}</td>
+                      <td>{emp.position_title}</td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button
+                          className="btn-secondary"
+                          onClick={() => handleOpenEditModal(emp)}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <Settings size={14} /> Profile
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </main>
 
       {/* ONBOARD / EDIT EMPLOYEE MODAL */}
       {isEmpModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <div className="modal-header">
-              <h3>{isEditMode ? 'Edit Employee Profile' : 'Onboard New Employee'}</h3>
-              <button onClick={() => setIsEmpModalOpen(false)} className="modal-close-btn">
+        <div className="app-modal-overlay" onClick={() => setIsEmpModalOpen(false)}>
+          <div className="app-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: 'var(--color-maroon)' }}>
+                {isEditMode ? 'Edit Employee Profile' : 'Onboard New Employee'}
+              </h3>
+              <button onClick={() => setIsEmpModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleEmployeeSubmit} className="modal-form">
-              <div className="form-field-group">
-                <label>Employee ID <span className="required-star">*</span></label>
+            <form onSubmit={handleEmployeeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                  Employee ID <span style={{ color: 'var(--color-danger)' }}>*</span>
+                </label>
                 <input
                   type="text"
                   placeholder="e.g., LIPA-2026-102"
                   required
-                  className="modal-form-input"
-                  style={{ backgroundColor: isEditMode ? '#f1f5f9' : '#fff' }}
+                  className="app-search-input"
+                  style={{ paddingLeft: '14px', backgroundColor: isEditMode ? 'var(--color-border-light)' : '#fff' }}
                   value={empFormData.employee_id}
                   onChange={(e) => setEmpFormData({...empFormData, employee_id: e.target.value})}
                   disabled={isEditMode}
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="form-field-group">
-                  <label>First Name <span className="required-star">*</span></label>
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                  <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                    First Name <span style={{ color: 'var(--color-danger)' }}>*</span>
+                  </label>
                   <input
                     type="text"
                     required
-                    className="modal-form-input"
+                    className="app-search-input"
+                    style={{ paddingLeft: '14px' }}
                     value={empFormData.first_name}
                     onChange={(e) => setEmpFormData({...empFormData, first_name: e.target.value})}
                   />
                 </div>
-                <div className="form-field-group">
-                  <label>Last Name <span className="required-star">*</span></label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                  <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                    Last Name <span style={{ color: 'var(--color-danger)' }}>*</span>
+                  </label>
                   <input
                     type="text"
                     required
-                    className="modal-form-input"
+                    className="app-search-input"
+                    style={{ paddingLeft: '14px' }}
                     value={empFormData.last_name}
                     onChange={(e) => setEmpFormData({...empFormData, last_name: e.target.value})}
                   />
                 </div>
               </div>
 
-              <div className="form-field-group">
-                <label>Department <span className="required-star">*</span></label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                  Department <span style={{ color: 'var(--color-danger)' }}>*</span>
+                </label>
                 <input
                   type="text"
-                  placeholder="e.g., City Personnel Office"
+                  placeholder="e.g., City Human Resource Management Office"
                   required
-                  className="modal-form-input"
+                  className="app-search-input"
+                  style={{ paddingLeft: '14px' }}
                   value={empFormData.department}
                   onChange={(e) => setEmpFormData({...empFormData, department: e.target.value})}
                 />
               </div>
 
-              <div className="form-field-group">
-                <label>Position Title <span className="required-star">*</span></label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                  Position Title <span style={{ color: 'var(--color-danger)' }}>*</span>
+                </label>
                 <input
                   type="text"
-                  placeholder="e.g., HR Analyst II"
+                  placeholder="e.g., Administrative Officer V"
                   required
-                  className="modal-form-input"
+                  className="app-search-input"
+                  style={{ paddingLeft: '14px' }}
                   value={empFormData.position_title}
                   onChange={(e) => setEmpFormData({...empFormData, position_title: e.target.value})}
                 />
               </div>
 
-              <div className="modal-actions-row">
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '12px' }}>
                 <button
                   type="button"
                   onClick={() => setIsEmpModalOpen(false)}
-                  className="modal-cancel-btn"
+                  className="btn-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="modal-submit-btn"
+                  className="btn-primary"
                 >
                   {isSubmitting ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Onboard Employee')}
                 </button>
