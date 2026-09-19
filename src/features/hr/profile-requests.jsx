@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HrSidebar from '../../components/hr-sidebar.jsx';
 import Header from '../../components/Header.jsx';
-import { Search, CheckCircle, XCircle, Paperclip, UserCheck, Settings, X, UserPlus } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Paperclip, Settings, X, UserPlus } from 'lucide-react';
 import './profile-requests.css';
 
 export default function ProfileRequests({ onLogout, user }) {
@@ -162,11 +162,14 @@ export default function ProfileRequests({ onLogout, user }) {
   }, []);
 
   return (
-    // UI FIX: Apply standard layout wrapper
     <div className="app-layout-wrapper">
       <HrSidebar user={user} />
 
-      <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
+      {/* FIXED: Added app-main-content class and scrolling layout styles */}
+      <main 
+        className="app-main-container app-main-content fade-in-up" 
+        style={{ padding: '32px', overflowY: 'auto', flex: 1 }}
+      >
         
         {/* UNIFIED GLOBAL HEADER ROW */}
         <header className="app-global-header">
