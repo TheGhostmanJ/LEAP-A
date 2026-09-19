@@ -219,18 +219,6 @@ export default function EventManagement({ currentUserEmployeeKey, user, onLogout
         
         {/* UNIFIED GLOBAL HEADER BLOCK */}
         <header className="app-global-header">
-          <div className="app-title-layout">
-            <div className="app-title-icon-badge">
-              <Calendar size={20} />
-            </div>
-            <div>
-              <h1 className="app-title">Event Management</h1>
-              <p className="app-subtitle">
-                Portal: <span className="app-subtitle-accent">{user?.department || 'HR Operations'}</span>
-              </p>
-            </div>
-          </div>
-
           <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
         </header>
 
