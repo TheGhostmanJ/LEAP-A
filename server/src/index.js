@@ -478,10 +478,12 @@ app.get('/api/attendance/:employee_key', async (req, res) => {
         // Apply month filtering if provided from the frontend picker
         if (month) {
             const [year, m] = month.split('-');
-            monthFilter = `AND EXTRACT(YEAR FROM d.full_date) = $2 AND EXTRACT(MONTH FROM d.full_date) = $3`;
+            // FIX: Added a space before AND so it doesn't crash the SQL query
+            monthFilter = ` AND EXTRACT(YEAR FROM d.full_date) = $2 AND EXTRACT(MONTH FROM d.full_date) = $3`;
             queryParams.push(year, m);
         }
 
+        // FIX: Cast employee_key to TEXT to ensure it matches the database schema
         const query = `
             SELECT 
                 a.attendance_id,
@@ -491,7 +493,8 @@ app.get('/api/attendance/:employee_key', async (req, res) => {
                 d.full_date
             FROM public.fact_attendance a
             JOIN public.dim_date d ON a.date_key = d.date_key
-            WHERE a.employee_key = $1${monthFilter}
+            WHERE a.employee_key::TEXT = $1::TEXT
+            ${monthFilter}
             ORDER BY d.full_date DESC;
         `;
         
