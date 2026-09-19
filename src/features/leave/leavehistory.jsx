@@ -335,397 +335,146 @@ export default function LeaveHistory({ onNavigate, onLogout, user }) {
         <main className="dashboard-main-content fade-in-up">
         <Header user={user} onLogout={onLogout} title="Leave History" badgeText="RECORDS" />
 
-        {/* METRIC PANEL */}
-        <section className="analytics-display-grid">
-          {/* Card 1: Remaining Leave Balance */}
-          <div className="analytics-visual-card hover-lift">
-            <div className="lh-card-header">
-              <h3 className="card-section-title">
-                <Calendar size={16} className="title-icon" /> Remaining Leave Balance
-              </h3>
-            </div>
-
-            <div className="mock-graphic-frame">
-              <div className="chart-flex-container">
-                <div className="donut-wrapper">
-                  <svg viewBox="0 0 36 36" className="donut-chart-svg">
-                    {donutSegments.map((seg) => (
-                      <circle
-                        key={seg.type}
-                        cx="18"
-                        cy="18"
-                        r="15.915"
-                        fill="none"
-                        stroke={seg.color}
-                        strokeWidth="4"
-                        strokeDasharray={seg.dasharray}
-                        strokeDashoffset={seg.dashoffset}
-                      />
-                    ))}
-                  </svg>
-                  <div className="donut-center-badge">
-                    <Calendar size={18} className="donut-center-icon" />
-                  </div>
-                </div>
-
-                <div className="chart-legend-stack">
-                  <div className="lh-total-val-badge">{totalRemaining.toFixed(1)} Days</div>
-                  <div className="legend-row-item">
-                    <span className="legend-swatch swatch-amber"></span>
-                    <span className="legend-text">Sick Leave ({getRemaining('Sick Leave').toFixed(2)} days)</span>
-                  </div>
-                  <div className="legend-row-item">
-                    <span className="legend-swatch swatch-maroon"></span>
-                    <span className="legend-text">Vacation Leave ({getRemaining('Vacation Leave').toFixed(2)} days)</span>
-                  </div>
-                  <div className="legend-row-item">
-                    <span className="legend-swatch swatch-slate"></span>
-                    <span className="legend-text">Emergency Leave ({getRemaining('Emergency Leave').toFixed(2)} days)</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="lh-card-footer-action">
-                <button
-                  className="lh-see-more-btn"
-                  onClick={() => navigate('/leaveledger')}
-                >
-                  See Details →
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: Leaves Used Progress Tracking */}
-          <div className="analytics-visual-card hover-lift">
-            <div className="lh-card-header">
-              <h3 className="card-section-title">
-                <FileText size={16} className="title-icon" /> Leaves Used
-              </h3>
-            </div>
-
-            <div className="mock-graphic-frame">
-              <div className="lh-stat-total-display">
-                <span className="lh-stat-number">{totalUsed.toFixed(1)}</span>
-                <span className="lh-stat-unit">Days Used This Year</span>
-              </div>
-
-              <div className="lh-progress-stacked-bar">
-                {usedBarSegments.map((seg) => (
-                  seg.widthPct > 0 && (
-                    <div
-                      key={seg.type}
-                      className={`bar-segment ${seg.type === 'Sick Leave' ? 'seg-sick' : seg.type === 'Vacation Leave' ? 'seg-vacation' : 'seg-emergency'}`}
-                      style={{ width: `${seg.widthPct}%` }}
-                    >
-                      <span>{seg.used.toFixed(1)} days</span>
-                      <span className="segment-sub">{seg.type}</span>
-                    </div>
-                  )
-                ))}
-                <div className="bar-segment seg-empty" style={{ width: `${emptyBarWidthPct}%` }}></div>
-              </div>
-
-              <div className="lh-stacked-legend">
-                <span>Used: <strong>{totalUsed.toFixed(1)} days</strong></span>
-                <span>Available: <strong>{totalRemaining.toFixed(1)} days</strong></span>
-              </div>
-
-              <div className="lh-card-footer-action">
-                <button
-                  className="lh-see-more-btn"
-                  onClick={() => navigate('/leaveledger')}
-                >
-                  See Breakdown →
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* FILTER CONTROLS */}
-        <section className="filter-utilities-panel">
-          <div className="filter-panel-header-row">
-            <div className="filter-section-title">
-              <Filter size={15} color="#7a0000" /> Filter Options
-            </div>
-            {hasActiveFilters && (
-              <button type="button" className="lh-clear-filters-btn" onClick={clearFilters}>
-                Clear Filters
-              </button>
-            )}
-          </div>
-
-          <div className="filter-controls-grid">
-            <div className="filter-field-wrapper">
-              <label>Date Filed From</label>
-              <div className="input-with-icon">
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="filter-input-element"
-                />
-              </div>
-            </div>
-
-            <div className="filter-field-wrapper">
-              <label>Date Filed To</label>
-              <div className="input-with-icon">
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="filter-input-element"
-                />
-              </div>
-            </div>
-
-            <div className="filter-field-wrapper">
-              <label>Status</label>
-              <div className="input-with-icon">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="filter-select-element"
-                >
-                  <option value="All">All Statuses</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Approved">Approved</option>
-                  <option value="Rejected">Rejected</option>
-                </select>
-                <ChevronDown size={15} className="field-icon-right pointer-events-none" />
-              </div>
-            </div>
-
-            <div className="filter-field-wrapper">
-              <label>Leave Type</label>
-              <div className="input-with-icon">
-                <select
-                  value={leaveTypeFilter}
-                  onChange={(e) => setLeaveTypeFilter(e.target.value)}
-                  className="filter-select-element"
-                >
-                  <option value="All">All Types</option>
-                  <option value="Sick Leave">Sick Leave</option>
-                  <option value="Vacation Leave">Vacation Leave</option>
-                  <option value="Emergency Leave">Emergency Leave</option>
-                </select>
-                <ChevronDown size={15} className="field-icon-right pointer-events-none" />
-              </div>
-            </div>
-
-            <div className="filter-field-wrapper filter-field-search">
-              <label>Search Keywords</label>
-              <div className="input-with-icon">
-                <Search size={15} className="field-icon-left" />
-                <input
-                  type="text"
-                  placeholder="Type keywords..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="filter-input-element has-left-icon"
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* DATA TABLE */}
-        <section className="data-table-container-card">
-          <div className="table-header-title-banner white-text-banner">
-            <span>Leave Application Table</span>
-            <span className="table-header-caption light-caption">
-              Showing {filteredRecords.length} entries
-            </span>
-          </div>
-
-          <div className="responsive-table-overflow-scroller">
-            <table className="record-grid-system">
-              <thead>
-                <tr>
-                  <th>Date Filed</th>
-                  <th>Leave Type</th>
-                  <th>Status</th>
-                  <th>HOD Remarks</th>
-                  <th>Days</th>
-                  <th style={{ textAlign: 'right' }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td colSpan="6" className="empty-table-notice">Loading leave history...</td>
-                  </tr>
-                ) : filteredRecords.length > 0 ? (
-                  filteredRecords.map((item) => (
-                    <tr key={item.id}>
-                      <td className="font-semibold">{item.dateFiled}</td>
-                      <td>{item.leaveType}</td>
-                      <td>
-                        <span className={`status-badge status-${item.status ? item.status.toLowerCase() : ''}`}>
-                          <span className="status-dot"></span>
-                          {item.status}
-                        </span>
-                      </td>
-                      <td>
-                        {item.hodRemarks ? (
-                          <div style={{
-                            fontSize: '12px',
-                            color: '#475569',
-                            backgroundColor: '#F8FAFC',
-                            border: '1px solid #E2E8F0',
-                            borderRadius: '6px',
-                            padding: '4px 8px',
-                            display: 'inline-block',
-                            maxWidth: '220px',
-                            lineHeight: '1.4'
-                          }}>
-                            <span style={{ fontWeight: 600, color: '#334155', marginRight: '4px' }}>Note:</span>
-                            {item.hodRemarks}
-                          </div>
-                        ) : (
-                          <span style={{ color: '#94A3B8', fontSize: '13px' }}>—</span>
-                        )}
-                      </td>
-                      <td>
-                        <strong className="days-counter-label">{item.days}</strong>
-                      </td>
-                      <td style={{ textAlign: 'right', verticalAlign: 'middle', padding: '12px' }}>
-                        <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenPdf(item.raw)}
-                            className="table-action-details-btn"
-                            disabled={isLoadingPdf}
-                            style={{ margin: 0, whiteSpace: 'nowrap' }}
-                          >
-                            <Eye size={14} /> View Details <ChevronRight size={14} />
-                          </button>
-
-                          {item.attachments.length > 0 && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
-                              {item.attachments.map((att, idx) => (
-                                <button
-                                  key={idx}
-                                  type="button"
-                                  onClick={() => handleOpenAttachment(att)}
-                                  title={att.fileName}
-                                  style={{
-                                    backgroundColor: '#F1F5F9',
-                                    color: '#334155',
-                                    border: '1px solid #CBD5E1',
-                                    borderRadius: '4px',
-                                    padding: '3px 8px',
-                                    cursor: 'pointer',
-                                    fontSize: '11px',
-                                    fontWeight: 500,
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    maxWidth: '160px',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                    lineHeight: '1.2'
-                                  }}
-                                >
-                                  <Paperclip size={11} style={{ flexShrink: 0 }} />
-                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {att.requirementLabel || att.fileName || `Attachment ${idx + 1}`}
-                                  </span>
-                                </button>
-                              ))}
-                            </div>
-                          )}
+        {/* WORKFLOW STATUS TRACKER */}
+                <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '32px' }}>
+                    <div className="app-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '48px', height: '48px', backgroundColor: 'var(--color-border-light)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <FileText size={20} color="var(--color-text-secondary)" />
                         </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="empty-table-notice">
-                      No leave history records match your criteria.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </main>
+                        <div>
+                            <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text-secondary)' }}>Total Applications</div>
+                            <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--color-text-primary)' }}>{totalApplications}</div>
+                        </div>
+                    </div>
+                    <div className="app-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '48px', height: '48px', backgroundColor: 'var(--color-warning-bg)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Clock size={20} color="var(--color-warning)" />
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text-secondary)' }}>Pending Review</div>
+                            <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--color-text-primary)' }}>{pendingCount}</div>
+                        </div>
+                    </div>
+                    <div className="app-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '48px', height: '48px', backgroundColor: 'var(--color-success-bg)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <CheckCircle2 size={20} color="var(--color-success)" />
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text-secondary)' }}>Approved</div>
+                            <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--color-text-primary)' }}>{approvedCount}</div>
+                        </div>
+                    </div>
+                    <div className="app-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '48px', height: '48px', backgroundColor: 'var(--color-danger-bg)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <XCircle size={20} color="var(--color-danger)" />
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text-secondary)' }}>Rejected</div>
+                            <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--color-text-primary)' }}>{rejectedCount}</div>
+                        </div>
+                    </div>
+                </section>
 
-      {/* DOCUMENT PREVIEW MODAL */}
-      {selectedPdfUrl && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.65)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 9999
-          }}
-          onClick={handleClosePdf}
-        >
-          <div
-            style={{
-              backgroundColor: '#fff',
-              width: '85%',
-              maxWidth: '900px',
-              height: '85vh',
-              borderRadius: '8px',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                padding: '12px 20px',
-                backgroundColor: '#7a0000',
-                color: '#fff',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}
-            >
-              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>
-                {previewTitle}
-              </h3>
-              <button
-                type="button"
-                onClick={handleClosePdf}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div style={{ flex: 1, width: '100%', height: '100%' }}>
-              <iframe
-                src={selectedPdfUrl}
-                title={previewTitle}
-                width="100%"
-                height="100%"
-                style={{ border: 'none' }}
-              />
-            </div>
-          </div>
+                <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-secondary)' }}>Filter by Status</label>
+                        <select className="app-search-input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                            <option value="All">All Statuses</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-secondary)' }}>Filter by Leave Type</label>
+                        <select className="app-search-input" value={leaveTypeFilter} onChange={(e) => setLeaveTypeFilter(e.target.value)}>
+                            <option value="All">All Types</option>
+                            <option value="Sick Leave">Sick Leave</option>
+                            <option value="Vacation Leave">Vacation Leave</option>
+                            <option value="Emergency Leave">Emergency Leave</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* THE APPLICATION TRACKER TABLE - Focuses entirely on the form itself */}
+                <section className="app-card">
+                    <div className="app-card-header">Leave Application Vault</div>
+                    <div className="responsive-table-overflow-scroller">
+                        <table className="record-grid-system">
+                            <thead>
+                                <tr>
+                                    <th>Date Filed</th>
+                                    <th>Leave Type</th>
+                                    <th>Inclusive Dates (Start - End)</th>
+                                    <th>HOD Remarks</th>
+                                    <th style={{ textAlign: 'center' }}>Workflow Status</th>
+                                    <th style={{ textAlign: 'right' }}>Document Vault</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {isLoading ? (
+                                    <tr><td colSpan="6" style={{ textAlign: 'center', padding: '32px' }}>Loading leave history...</td></tr>
+                                ) : filteredRecords.length > 0 ? (
+                                    filteredRecords.map((item) => (
+                                        <tr key={item.id}>
+                                            <td style={{ fontWeight: '600', color: 'var(--color-text-primary)' }}>{item.dateFiled}</td>
+                                            <td style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>
+                                                {item.leaveType}
+                                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 'normal' }}>{item.days} requested</div>
+                                            </td>
+                                            <td style={{ color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>{item.inclusiveDates}</td>
+                                            <td>
+                                                {item.hodRemarks ? (
+                                                    <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', backgroundColor: 'var(--color-border-light)', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '6px 10px', display: 'inline-block', maxWidth: '220px' }}>
+                                                        <span style={{ fontWeight: 600, color: 'var(--color-text-primary)', marginRight: '4px' }}>Note:</span>
+                                                        {item.hodRemarks}
+                                                    </div>
+                                                ) : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}
+                                            </td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <span className={`app-status-badge ${item.status === 'Approved' ? 'status-success' : item.status === 'Rejected' ? 'status-danger' : 'status-warning'}`}>
+                                                    {item.status}
+                                                </span>
+                                            </td>
+                                            <td style={{ textAlign: 'right' }}>
+                                                <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                                                    <button type="button" onClick={() => handleOpenPdf(item.raw)} className="btn-primary" disabled={isLoadingPdf} style={{ padding: '6px 12px', fontSize: '12px' }}>
+                                                        <Eye size={14} /> View CS Form 6
+                                                    </button>
+                                                    {item.attachments.map((att, idx) => (
+                                                        <button key={idx} type="button" onClick={() => handleOpenAttachment(att)} className="btn-secondary" style={{ padding: '4px 8px', fontSize: '11px' }}>
+                                                            <Paperclip size={12} /> View Attachment
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr><td colSpan="6" style={{ textAlign: 'center', padding: '32px' }}>No leave history records match your criteria.</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+
+            {/* DOCUMENT PREVIEW MODAL */}
+            {selectedPdfUrl && (
+                <div className="app-modal-overlay" onClick={handleClosePdf}>
+                    <div className="app-modal-card" style={{ maxWidth: '900px', height: '85vh', padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header-bar" style={{ backgroundColor: 'var(--color-maroon)', color: '#fff', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700' }}>{previewTitle}</h3>
+                            <button onClick={handleClosePdf} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <iframe src={selectedPdfUrl} title={previewTitle} style={{ width: '100%', height: '100%', border: 'none' }} />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 }
