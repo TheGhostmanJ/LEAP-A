@@ -80,17 +80,7 @@ export default function WorkforceForecast({ onLogout, user }) {
         
         {/* STANDARDIZED HEADER */}
         <header className="wf-header-row">
-          <div className="wf-title-wrapper">
-            <BarChart3 size={28} className="wf-icon-maroon" /> 
-            <div className="wf-title-text">
-              <h2>
-                <span className="wf-title-dark">Workforce</span> <span className="wf-title-maroon">Forecast</span>
-              </h2>
-              <p className="wf-subtitle">
-                Department: <span className="wf-highlight-maroon">{user?.role === 'HR Admin' ? 'All Departments' : user?.department || 'Unassigned'}</span>
-              </p>
-            </div>
-          </div>
+          
           
           <Header user={user} onLogout={onLogout} />
         </header>
