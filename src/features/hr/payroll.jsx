@@ -41,7 +41,7 @@ export default function Payroll({ onLogout, user }) {
         }
       } catch (error) {
         console.error("Failed to load payroll data:", error);
-      } finally {
+      } fontally {
         setIsLoading(false);
       }
     };
@@ -81,12 +81,14 @@ export default function Payroll({ onLogout, user }) {
   });
 
   return (
-    // UI FIX: Apply standard layout wrapper
     <div className="app-layout-wrapper">
       <HrSidebar user={user} />
 
-      {/* UI FIX: Standardized main container */}
-      <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
+      {/* FIXED: Included app-main-content class and overflowY scrolling */}
+      <main 
+        className="app-main-container app-main-content fade-in-up" 
+        style={{ padding: '32px', overflowY: 'auto', flex: 1 }}
+      >
         
         {/* UNIFIED GLOBAL HEADER BLOCK */}
         <header className="app-global-header">
@@ -157,7 +159,7 @@ export default function Payroll({ onLogout, user }) {
 
           <button 
             className="btn-primary" 
-            style={{ backgroundColor: 'var(--color-success)' }} // Use standard button but make it green!
+            style={{ backgroundColor: 'var(--color-success)' }}
           >
             <FileDown size={18} /> {activeTab === 'payroll' ? 'Export Payroll Report' : 'Export Master Ledger'}
           </button>
@@ -168,7 +170,6 @@ export default function Payroll({ onLogout, user }) {
           <section className="app-card">
             <div className="app-card-header">Payroll Summary — Pay Period July 1–15</div>
             <div className="responsive-table-overflow-scroller" style={{ maxHeight: '520px' }}>
-              {/* UI FIX: Utilize the global record-grid-system */}
               <table className="record-grid-system">
                 <thead>
                   <tr>
