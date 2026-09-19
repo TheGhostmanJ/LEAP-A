@@ -41,16 +41,6 @@ export default function DatabaseMetrics({ onLogout, user }) {
         
         {/* STANDARDIZED HEADER BLOCK */}
         <header className="tr-header">
-          <div className="tr-header-title">
-            <span className="tr-header-badge">
-              <span className="tr-badge-dot"></span> IT OPERATIONS PORTAL
-            </span>
-            <h2>
-              <span className="tr-title-dark">Database </span>
-              <span className="tr-title-maroon">Metrics & Health</span>
-            </h2>
-          </div>
-
           <Header user={user} onLogout={onLogout} />
         </header>
 
