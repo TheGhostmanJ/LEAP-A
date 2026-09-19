@@ -131,16 +131,6 @@ export default function CreditLedger({ onLogout, user }) {
             <main className="cl-main-content fade-in-up">
                 {/* HEADER SECTION */}
                 <header className="cl-header">
-                    <div className="cl-header-title">
-                        <span className="cl-header-badge">
-                            <span className="cl-badge-dot"></span> CREDIT LEDGER RECORDS
-                        </span>
-                        <h2>
-                            <span className="cl-title-dark">My </span>
-                            <span className="cl-title-maroon">Credit Ledger</span>
-                        </h2>
-                    </div>
-
                     <Header user={user} onLogout={onLogout} />
                 </header>
 
