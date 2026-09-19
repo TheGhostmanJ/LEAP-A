@@ -106,19 +106,6 @@ export default function Attendance({ onLogout, user }) {
         
         {/* UNIFIED TOP HEADER */}
         <header className="app-global-header">
-          <div className="app-title-layout">
-            <div className="app-title-icon-badge">
-              <Clock size={20} />
-            </div>
-            <div>
-              <h1 className="app-title">My Attendance Log</h1>
-              <p className="app-subtitle">
-                Track your daily <span className="app-subtitle-accent">check-in trends</span>
-              </p>
-            </div>
-          </div>
-          
-          {/* UI FIX: Added controlsOnly to prevent layout breaking */}
           <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
         </header>
 
