@@ -2,6 +2,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
+:root {
+  --app-bg: #f8fafc;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -16,7 +20,7 @@ html, body, #root {
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #f3f4f6;
+  background-color: var(--app-bg);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -187,7 +191,7 @@ button:active,
     height: 100vh;
     height: 100dvh;
     padding: 16px !important; 
-    background-color: #f3f4f6 !important; 
+    background-color: var(--app-bg) !important; 
     overflow-y: auto;
   }
 
@@ -210,35 +214,6 @@ button:active,
   }
 }
 
-/* =========================================================
-   APP SHELL: window is locked, each page's main column scrolls
-   ========================================================= */
-.dashboard-container,
-.app-layout-wrapper,
-.cl-dashboard-container {
-  display: flex;
-  width: 100%;
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
-}
-
-.dashboard-main-content,
-.hr-dash-main-content,
-.cl-main-content,
-.app-main-content {
-  flex: 1;
-  min-width: 0;
-  height: 100vh;
-  height: 100dvh;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-/* =========================================================
-   APP SHELL (all pages using .app-layout-wrapper)
-   Window is locked. Sidebar stays put. <main> scrolls.
-   ========================================================= */
 /* =========================================================
    APP SHELL (all pages using .app-layout-wrapper)
    Window is locked. Sidebar stays put. <main> scrolls.
@@ -270,4 +245,19 @@ button:active,
   max-height: none !important;
   min-height: 0 !important;
   overflow: clip !important;   /* keeps rounded corners without clipping the height */
+}
+
+/* =========================================================
+   ONE BACKGROUND FOR EVERY PAGE SHELL
+   Change --app-bg in :root to update every page at once.
+   ========================================================= */
+.dashboard-main-content,
+.hr-dash-main-content,
+.cl-main-content,
+.app-main-content,
+.app-layout-wrapper,
+.app-layout-wrapper > main,
+.dashboard-container,
+.cl-dashboard-container {
+  background-color: var(--app-bg) !important;
 }
