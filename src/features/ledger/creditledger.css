@@ -3,19 +3,20 @@
 /* MAIN CONTAINER & FULL-BLEED BACKGROUND FIX */
 .cl-dashboard-container {
   display: flex;
+  height: 100vh;
   width: 100vw;
-  min-height: 100vh;
   background-color: #eef0f2;
   font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color: #1f2937;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .cl-main-content {
-  flex: 1 1 0%;
-  width: 100%;
-  padding: 32px;
+  flex: 1;
+  height: 100vh;
+  overflow-y: auto !important;
   box-sizing: border-box;
+  padding: 32px;
 }
 
 /* HEADER SECTION */
@@ -273,6 +274,7 @@
   border: 1px solid #e5e7eb;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   overflow: hidden;
+  margin-bottom: 24px;
 }
 
 .cl-table-header {
@@ -291,6 +293,11 @@
   font-weight: 700;
 }
 
+.cl-data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
 .cl-data-table th {
   background-color: #ffffff;
   color: #6b7280;
@@ -301,6 +308,7 @@
   letter-spacing: 0.5px;
   padding: 14px 24px;
   border-bottom: 1px solid #f1f5f9;
+  text-align: left;
 }
 
 .cl-data-table td {
@@ -308,6 +316,10 @@
   font-size: 13px;
   color: #374151;
   border-bottom: 1px solid #f8fafc;
+}
+
+.cl-th-right, .cl-td-right {
+  text-align: right;
 }
 
 /* MATCHING DASHBOARD REJECTED/APPROVED PILLS */
