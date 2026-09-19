@@ -54,19 +54,7 @@ export default function HrDashboard({ onLogout, user }) {
         
         {/* UNIFIED GLOBAL HEADER ROW */}
         <header className="app-global-header">
-          <div className="app-title-layout">
-            <div className="app-title-icon-badge">
-              <Building2 size={20} />
-            </div>
-            <div>
-              <h1 className="app-title">City HR Management System</h1>
-              <p className="app-subtitle">
-                Executive <span className="app-subtitle-accent">Control Panel</span>
-              </p>
-            </div>
-          </div>
-
-          {/* This renders your profile pill perfectly at the top right */}
+        
           <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
         </header>
 
