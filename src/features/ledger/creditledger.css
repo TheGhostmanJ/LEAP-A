@@ -7,20 +7,21 @@
    ========================================================= */
 .cl-dashboard-container {
   display: flex;
-  min-height: 100vh;          /* was height: 100vh (locked the page) */
-  width: 100%;                /* was 100vw (caused sideways overflow) */
+  height: 100vh;
+  width: 100%;
   background-color: #eef0f2;
   font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color: #1f2937;
-  overflow: visible;          /* was hidden */
+  overflow: hidden;          /* the sidebar stays put */
 }
 
 .cl-main-content {
   flex: 1;
   min-width: 0;
+  height: 100vh !important;
+  overflow-y: auto !important;   /* the only scrollbar on this page */
   box-sizing: border-box;
-  padding: 42px 46px 60px 46px;   /* matches the Workforce Forecast page */
-  /* no height / overflow here: the window handles scrolling */
+  padding: 42px 46px 80px 46px;
 }
 
 /* HEADER SECTION */
