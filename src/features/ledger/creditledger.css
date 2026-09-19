@@ -1,76 +1,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Roboto:wght@400;500;700&display=swap');
 
-/* MAIN CONTAINER & SCROLL FIX */
+/* =========================================================
+   PAGE LAYOUT
+   The browser window is the only scroller (same as other pages).
+   The sidebar stays pinned via position: sticky in sidebar.css.
+   ========================================================= */
 .cl-dashboard-container {
   display: flex;
-  height: 100vh; /* Lock container to viewport height */
-  width: 100vw;
+  min-height: 100vh;          /* was height: 100vh (locked the page) */
+  width: 100%;                /* was 100vw (caused sideways overflow) */
   background-color: #eef0f2;
   font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color: #1f2937;
-  overflow: hidden; /* Sidebar stays fixed, main section scrolls */
+  overflow: visible;          /* was hidden */
 }
 
-/* 2. Force scroll inside the main content column */
 .cl-main-content {
   flex: 1;
-  height: 100vh;
-  overflow-y: auto !important; /* Forces scrollbar directly on content */
+  min-width: 0;
   box-sizing: border-box;
-  padding: 32px;
-  padding-bottom: 80px !important; /* Space at bottom so table rows aren't cut off */
+  padding: 42px 46px 60px 46px;   /* matches the Workforce Forecast page */
+  /* no height / overflow here: the window handles scrolling */
 }
 
 /* HEADER SECTION */
 .cl-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 30px;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
-
-.cl-header-title {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.cl-header-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background-color: #fde8e8;
-  border: 1px solid #fbd5d5;
-  color: #680000;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  margin-bottom: 6px;
-  text-transform: uppercase;
-}
-
-.cl-badge-dot {
-  width: 6px;
-  height: 6px;
-  background-color: #680000;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.cl-header-title h2 {
-  margin: 0;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 26px;
-  font-weight: 800;
-  line-height: 1.2;
-}
-
-.cl-title-dark { color: #0f172a; }
-.cl-title-maroon { color: #680000; }
 
 /* METRIC CARDS */
 .cl-metrics-two-col {
@@ -115,27 +72,40 @@
   padding: 8px 0;
 }
 
+/* Donut: fixed size + position so the center icon can't drift out of the ring */
 .cl-donut-ring {
   position: relative;
   width: 100px;
   height: 100px;
-  flex-shrink: 0;
+  flex: 0 0 100px;
 }
 
 .cl-donut-svg {
+  display: block;
   width: 100px;
   height: 100px;
   transform: rotate(-90deg);
 }
 
-.cl-donut-center {
+/* Pin the ring thickness in CSS so other stylesheets can't turn it into a pie */
+.cl-donut-svg circle {
+  fill: none;
+  stroke-width: 4px;
+}
+
+.cl-donut-ring .cl-donut-center {
   position: absolute;
   top: 50%;
   left: 50%;
+  width: 52px;
+  height: 52px;
   transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
 }
 
 .cl-donut-value {
@@ -255,6 +225,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
   margin-bottom: 16px;
 }
 
@@ -284,19 +256,35 @@
   box-sizing: border-box;
 }
 
+.cl-filter-actions {
+  display: flex;
+  align-items: center;
+}
+
 .cl-date-picker-btn {
   display: flex;
   align-items: center;
+  gap: 8px;
   background: #ffffff;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
+  padding: 0 4px 0 12px;
   overflow: hidden;
+}
+
+.cl-date-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  white-space: nowrap;
 }
 
 .cl-month-input {
   border: none;
-  padding: 8px 12px;
+  padding: 8px 8px;
+  font-family: inherit;
   font-size: 13px;
+  min-width: 150px;
   outline: none;
   background: transparent;
   color: #374151;
@@ -308,7 +296,7 @@
   border-radius: 12px;
   border: 1px solid #e5e7eb;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  overflow: hidden;
+  overflow: hidden;           /* fine here: keeps the rounded corners clean */
   margin-bottom: 24px;
 }
 
@@ -334,11 +322,15 @@
 }
 
 .cl-table-wrapper {
-  overflow-x: auto;
+  width: 100%;
+  overflow-x: auto;           /* wide tables scroll inside the card */
 }
 
+/* Table fills the whole card */
 .cl-data-table {
-  width: 100%;
+  display: table;
+  width: 100% !important;
+  min-width: 720px;
   border-collapse: collapse;
 }
 
@@ -430,4 +422,28 @@
 .cl-action-btn:hover {
   background-color: #f9fafb;
   border-color: #9ca3af;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width: 1024px) {
+  .cl-main-content {
+    padding: 24px 20px 60px 20px;
+  }
+
+  .cl-metrics-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .cl-main-content {
+    padding: 16px 14px 80px 14px;   /* extra bottom space for the floating menu button */
+  }
+
+  .cl-donut-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
