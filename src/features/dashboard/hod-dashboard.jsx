@@ -209,13 +209,15 @@ export default function HodDashboard({ onLogout, user }) {
   };
 
   return (
-    // UI FIX: Apply the global layout wrapper class
     <div className="app-layout-wrapper">
       <HodSidebar user={user} />
 
-      <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
+      {/* UI FIX: Added app-main-content class and overflow-y: auto to trigger correct scrolling */}
+      <main 
+        className="app-main-container app-main-content dashboard-main-content fade-in-up" 
+        style={{ padding: '32px', overflowY: 'auto' }}
+      >
 
-        {/* UI FIX: Apply the standardized header block */}
         <header className="app-global-header">
           <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
         </header>
@@ -442,7 +444,7 @@ export default function HodDashboard({ onLogout, user }) {
 
       </main>
 
-      {/* UI FIX: Refactored Document Preview Modal to use standard CSS classes */}
+      {/* Document Preview Modal */}
       {isPreviewOpen && (
         <div className="app-modal-overlay" onClick={() => setIsPreviewOpen(false)}>
           <div 
