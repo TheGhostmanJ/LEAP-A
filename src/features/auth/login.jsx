@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Eye, EyeOff, AlertCircle, X, User } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Eye, EyeOff, AlertCircle, X, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { loginUser } from './services/authService';
@@ -188,45 +188,10 @@ export default function Login({ onLoginSuccess }) {
             </form>
           </div>
 
-          {/* RIGHT PANEL: Carousel Display */}
+          {/* RIGHT PANEL: Logo only (carousel removed) */}
           <div className="right-panel">
             <div className="logo-wrapper">
               <img src="/leaplogo.png" alt="LEAP-A Logo" className="logo-image" />
-            </div>
-
-            <div className="glass-slider-box">
-              {carouselData.map((slide, index) => (
-                <div
-                  key={index}
-                  className={`carousel-slide ${index === currentSlide ? 'active' : 'inactive'}`}
-                >
-                  <div className="carousel-image-wrapper">
-                    <img src={slide.imgSrc} alt={slide.title} className="carousel-image" />
-                  </div>
-
-                  <div className="carousel-text">
-                    <h3 className="carousel-title">{slide.title}</h3>
-                    <div className="carousel-divider" />
-                    <p className="carousel-description">{slide.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Carousel Controllers */}
-            <div className="carousel-controls-row">
-              <button type="button" onClick={handlePrev} className="arrow-button"><ChevronLeft size={22} /></button>
-              <div className="carousel-dots">
-                {carouselData.map((_, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => setCurrentSlide(index)}
-                    className={`carousel-dot ${index === currentSlide ? 'active' : ''}`}
-                  />
-                ))}
-              </div>
-              <button type="button" onClick={handleNext} className="arrow-button"><ChevronRight size={22} /></button>
             </div>
           </div>
 
