@@ -210,12 +210,14 @@ export default function EventManagement({ currentUserEmployeeKey, user, onLogout
   }
 
   return (
-    // UI FIX: Apply the global layout wrapper class
     <div className="app-layout-wrapper">
       <HrSidebar user={user} />
 
-      {/* UI FIX: Standardized main container */}
-      <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
+      {/* FIXED: Included app-main-content class and overflowY scrolling */}
+      <main 
+        className="app-main-container app-main-content fade-in-up" 
+        style={{ padding: '32px', overflowY: 'auto', flex: 1 }}
+      >
         
         {/* UNIFIED GLOBAL HEADER BLOCK */}
         <header className="app-global-header">
