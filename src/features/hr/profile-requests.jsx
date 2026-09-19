@@ -170,18 +170,6 @@ export default function ProfileRequests({ onLogout, user }) {
         
         {/* UNIFIED GLOBAL HEADER ROW */}
         <header className="app-global-header">
-          <div className="app-title-layout">
-            <div className="app-title-icon-badge">
-              <UserCheck size={20} />
-            </div>
-            <div>
-              <h1 className="app-title">Employee Profile Management</h1>
-              <p className="app-subtitle">
-                Portal: <span className="app-subtitle-accent">HR Operations</span>
-              </p>
-            </div>
-          </div>
-          
           <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
         </header>
 
