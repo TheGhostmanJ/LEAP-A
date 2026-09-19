@@ -33,21 +33,18 @@ export default function CreditLedger({ onLogout, user }) {
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // Format Balances array into an easily readable object
                     const balObj = {};
                     data.balances.forEach(b => {
                         balObj[b.leave_type] = parseFloat(b.remaining_credits);
                     });
                     setBalances(balObj);
 
-                    // Format Usage array
                     const useObj = {};
                     data.used.forEach(u => {
                         useObj[u.leave_type] = parseFloat(u.used_days);
                     });
                     setUsage(useObj);
 
-                    // Format History
                     const formattedHistory = data.history.map(item => ({
                         ...item,
                         formattedDate: new Date(item.date).toLocaleDateString('en-US', { 
@@ -125,18 +122,10 @@ export default function CreditLedger({ onLogout, user }) {
     });
 
     return (
-        <div className="cl-dashboard-container" style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+        <div className="cl-dashboard-container">
             <RoleSidebar user={user}/>
 
-            <main 
-                className="cl-main-content app-main-content fade-in-up" 
-                style={{ 
-                    flex: 1, 
-                    height: '100vh', 
-                    overflowY: 'auto', 
-                    paddingBottom: '40px' 
-                }}
-            >
+            <main className="cl-main-content app-main-content fade-in-up">
                 {/* HEADER SECTION */}
                 <header className="cl-header">
                     <Header user={user} onLogout={onLogout} />
@@ -153,7 +142,7 @@ export default function CreditLedger({ onLogout, user }) {
 
                         <div className="cl-donut-content">
                             <div className="cl-donut-ring">
-                                <svg viewBox="0 0 36 36" style={{ width: '100px', height: '100px', transform: 'rotate(-90deg)' }}>
+                                <svg viewBox="0 0 36 36" className="cl-donut-svg">
                                     <circle cx="18" cy="18" r="15.915" fill="none" stroke="#e2e8f0" strokeWidth="4" />
                                     {donutSegments.map((seg) => (
                                         <circle
@@ -169,7 +158,7 @@ export default function CreditLedger({ onLogout, user }) {
                                         />
                                     ))}
                                 </svg>
-                                <div className="cl-donut-center" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+                                <div className="cl-donut-center">
                                     <BookOpen size={20} color="#475569" />
                                 </div>
                             </div>
@@ -212,31 +201,34 @@ export default function CreditLedger({ onLogout, user }) {
                                 {totalUsed.toFixed(1)} <span className="cl-unit">Days Used This Year</span>
                             </div>
 
-                            <div className="cl-multi-bar" style={{ display: 'flex', height: '12px', width: '100%', borderRadius: '6px', overflow: 'hidden', marginTop: '12px' }}>
+                            <div className="cl-multi-bar">
                                 {usedBarSegments.map(seg => (
                                     seg.widthPct > 0 && (
-                                        <div key={seg.type} style={{ 
-                                            width: `${seg.widthPct}%`, 
-                                            backgroundColor: seg.type === 'Sick Leave' ? '#d97706' : seg.type === 'Vacation Leave' ? '#7a0000' : '#475569',
-                                            height: '100%'
-                                        }}></div>
+                                        <div 
+                                            key={seg.type} 
+                                            style={{ 
+                                                width: `${seg.widthPct}%`, 
+                                                backgroundColor: seg.type === 'Sick Leave' ? '#d97706' : seg.type === 'Vacation Leave' ? '#7a0000' : '#475569'
+                                            }}
+                                            className="cl-bar-segment"
+                                        ></div>
                                     )
                                 ))}
-                                <div style={{ width: `${emptyBarWidthPct}%`, backgroundColor: '#e2e8f0', height: '100%' }}></div>
+                                <div style={{ width: `${emptyBarWidthPct}%` }} className="cl-bar-empty-segment"></div>
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', fontSize: '12px', color: '#475569' }}>
+                            <div className="cl-used-breakdown">
                                 {usedBarSegments.map(seg => (
                                     seg.used > 0 && (
-                                        <div key={seg.type} style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <span style={{ fontWeight: 600 }}>{seg.used.toFixed(1)} days</span>
+                                        <div key={seg.type} className="cl-breakdown-item">
+                                            <span className="cl-breakdown-val">{seg.used.toFixed(1)} days</span>
                                             <span>{seg.type.split(' ')[0]}</span>
                                         </div>
                                     )
                                 ))}
                             </div>
 
-                            <div className="cl-sub-bar-text" style={{ marginTop: 'auto', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+                            <div className="cl-sub-bar-text">
                                 <span>Used: {totalUsed.toFixed(1)} days</span>
                                 <span>Available: {totalRemaining.toFixed(1)} days</span>
                             </div>
@@ -258,12 +250,12 @@ export default function CreditLedger({ onLogout, user }) {
                     </div>
 
                     <div className="cl-filter-actions">
-                        <div className="cl-date-picker-btn" style={{ padding: 0, overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                        <div className="cl-date-picker-btn">
                             <input 
                                 type="month" 
                                 value={selectedMonth}
                                 onChange={(e) => setSelectedMonth(e.target.value)}
-                                style={{ border: 'none', padding: '8px 12px', fontSize: '13px', outline: 'none', background: 'transparent' }}
+                                className="cl-month-input"
                             />
                         </div>
                     </div>
@@ -291,14 +283,14 @@ export default function CreditLedger({ onLogout, user }) {
                             <tbody>
                                 {isLoading ? (
                                     <tr>
-                                        <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
-                                            <Loader2 size={24} className="spin" style={{ margin: '0 auto', display: 'block' }}/>
-                                            <p style={{ marginTop: '8px' }}>Fetching ledger data...</p>
+                                        <td colSpan="6" className="cl-state-cell">
+                                            <Loader2 size={24} className="cl-spin-loader" />
+                                            <p>Fetching ledger data...</p>
                                         </td>
                                     </tr>
                                 ) : filteredHistory.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
+                                        <td colSpan="6" className="cl-state-cell">
                                             No ledger transactions found matching your criteria.
                                         </td>
                                     </tr>
