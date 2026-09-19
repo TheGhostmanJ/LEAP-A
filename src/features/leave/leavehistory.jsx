@@ -333,16 +333,6 @@ export default function LeaveHistory({ onNavigate, onLogout, user }) {
       <RoleSidebar user={user} />
 
       <main className="dashboard-main-content fade-in-up">
-        <header className="content-top-header">
-          <div className="welcome-banner-group">
-            <div className="welcome-subtitle-badge">
-              <span className="badge-pulse"></span> Leave Application Records
-            </div>
-            <h1 className="welcome-heading">
-              My <span className="highlight-name">Leave History</span>
-            </h1>
-          </div>
-
           <Header user={user} onLogout={onLogout} />
         </header>
 
