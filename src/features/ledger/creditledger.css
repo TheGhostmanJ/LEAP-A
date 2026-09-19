@@ -3,22 +3,22 @@
 /* MAIN CONTAINER & SCROLL FIX */
 .cl-dashboard-container {
   display: flex;
-  min-height: 100vh;
-  width: 100%;
+  height: 100vh; /* Lock container to viewport height */
+  width: 100vw;
   background-color: #eef0f2;
   font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color: #1f2937;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden; /* Sidebar stays fixed, main section scrolls */
 }
 
+/* 2. Force scroll inside the main content column */
 .cl-main-content {
   flex: 1;
-  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto !important; /* Forces scrollbar directly on content */
   box-sizing: border-box;
   padding: 32px;
-  padding-bottom: 60px;
-  overflow: visible;
+  padding-bottom: 80px !important; /* Space at bottom so table rows aren't cut off */
 }
 
 /* HEADER SECTION */
