@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Search, BookOpen, Loader2, Wallet, PlusCircle, MinusCircle } from 'lucide-react';
+import {
+    Calendar,
+    Search,
+    ChevronRight,
+    BookOpen,
+    Loader2
+} from 'lucide-react';
 import RoleSidebar from '../../components/RoleSidebar.jsx';
 import Header from '../../components/Header.jsx';
-import './creditledger.css'; // You can keep your existing CSS file for this
+import './creditledger.css';
 
 export default function CreditLedger({ onLogout, user }) {
     const [searchQuery, setSearchQuery] = useState('');
@@ -12,7 +18,7 @@ export default function CreditLedger({ onLogout, user }) {
     const [isLoading, setIsLoading] = useState(true);
     const [balances, setBalances] = useState({});
     const [usage, setUsage] = useState({});
-    const [ledgerTransactions, setLedgerTransactions] = useState([]);
+    const [history, setHistory] = useState([]);
 
     useEffect(() => {
         const fetchLedgerData = async () => {
@@ -22,7 +28,6 @@ export default function CreditLedger({ onLogout, user }) {
             setIsLoading(true);
             try {
                 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-                // This assumes your backend returns the UNION of Leave Applications, Monetizations, and (eventually) Monthly Accruals.
                 const response = await fetch(`${apiUrl}/api/credit-ledger/${empKey}`);
                 
                 if (response.ok) {
@@ -40,22 +45,13 @@ export default function CreditLedger({ onLogout, user }) {
                     });
                     setUsage(useObj);
 
-                    // Transform history into a strict +/- ledger format
-                    const formattedHistory = data.history.map(item => {
-                        // Logic to determine if it's an addition or deduction
-                        const isAccrual = item.transaction.includes('Accrual') || item.transaction.includes('Earned');
-                        const isDeduction = item.transaction.includes('Application') || item.transaction.includes('Monetization');
-                        
-                        return {
-                            ...item,
-                            isAccrual,
-                            isDeduction,
-                            formattedDate: new Date(item.date).toLocaleDateString('en-US', { 
-                                month: 'short', day: 'numeric', year: 'numeric' 
-                            })
-                        };
-                    });
-                    setLedgerTransactions(formattedHistory);
+                    const formattedHistory = data.history.map(item => ({
+                        ...item,
+                        formattedDate: new Date(item.date).toLocaleDateString('en-US', { 
+                            month: 'short', day: 'numeric', year: 'numeric' 
+                        })
+                    }));
+                    setHistory(formattedHistory);
                 }
             } catch (err) {
                 console.error("Failed to load credit ledger data:", err);
@@ -67,13 +63,53 @@ export default function CreditLedger({ onLogout, user }) {
         fetchLedgerData();
     }, [user]);
 
+    // --- Chart Calculations ---
     const getRemaining = (type) => balances[type] || 0;
     const getUsed = (type) => usage[type] || 0;
 
-    const filteredHistory = ledgerTransactions.filter((item) => {
+    const totalRemaining = Object.values(balances).reduce((a, b) => a + b, 0);
+    const totalUsed = Object.values(usage).reduce((a, b) => a + b, 0);
+    const totalAvailableAndUsed = totalRemaining + totalUsed;
+
+    const leaveTypes = ['Sick Leave', 'Vacation Leave', 'Emergency Leave'];
+    
+    // SVG Donut Chart Logic
+    const donutSegments = (() => {
+        if (totalRemaining <= 0) return [];
+        let cumulative = 0;
+        const colors = { 'Sick Leave': '#d97706', 'Vacation Leave': '#7a0000', 'Emergency Leave': '#64748b' };
+        
+        return leaveTypes.map((type) => {
+            const value = getRemaining(type);
+            const pct = totalRemaining > 0 ? (value / totalRemaining) * 100 : 0;
+            const segment = {
+                type,
+                color: colors[type] || '#475569',
+                dasharray: `${pct.toFixed(2)} ${(100 - pct).toFixed(2)}`,
+                dashoffset: -cumulative,
+            };
+            cumulative += pct;
+            return segment;
+        });
+    })();
+
+    // Stacked Bar Logic
+    const usedBarSegments = leaveTypes.map((type) => {
+        const usedVal = getUsed(type);
+        const widthPct = totalAvailableAndUsed > 0 ? (usedVal / totalAvailableAndUsed) * 100 : 0;
+        return { type, used: usedVal, widthPct };
+    });
+
+    const emptyBarWidthPct = totalAvailableAndUsed > 0
+        ? Math.max(0, 100 - usedBarSegments.reduce((s, seg) => s + seg.widthPct, 0))
+        : 100;
+
+    // --- Filters ---
+    const filteredHistory = history.filter((item) => {
         const matchesSearch = 
             item.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.transaction.toLowerCase().includes(searchQuery.toLowerCase());
+            item.transaction.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.status.toLowerCase().includes(searchQuery.toLowerCase());
         
         let matchesMonth = true;
         if (selectedMonth) {
@@ -86,24 +122,13 @@ export default function CreditLedger({ onLogout, user }) {
     });
 
     return (
-        <div className="app-layout-wrapper">
+        <div className="cl-dashboard-container">
             <RoleSidebar user={user}/>
 
-            <main className="app-main-container fade-in-up" style={{ padding: '32px' }}>
-                
-                <header className="app-global-header">
-                    <div className="app-title-layout">
-                        <div className="app-title-icon-badge" style={{ backgroundColor: 'var(--color-success-bg)', color: 'var(--color-success)' }}>
-                            <Wallet size={20} />
-                        </div>
-                        <div>
-                            <h1 className="app-title">Credit Ledger</h1>
-                            <p className="app-subtitle">
-                                Track your <span className="app-subtitle-accent" style={{ color: 'var(--color-success)' }}>Leave Balances & Accruals</span>
-                            </p>
-                        </div>
-                    </div>
-                    {/* The Header component for controls */}
+            <main className="cl-main-content fade-in-up">
+                {/* HEADER SECTION */}
+                <header className="cl-header">
+                    <Header user={user} onLogout={onLogout} />
                 </header>
 
                 {/* THE WALLET CARDS - Focuses only on the current numeric state */}
