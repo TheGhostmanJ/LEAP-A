@@ -2,16 +2,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
-/* Consistent sizing everywhere */
 *, *::before, *::after {
   box-sizing: border-box;
-}
-
-/* The browser window is the only scroller */
-html, #root {
-  margin: 0;
-  padding: 0;
-  min-height: 100%;
 }
 
 body {
@@ -19,11 +11,7 @@ body {
   font-family: 'Inter', sans-serif;
   background-color: #f3f4f6;
   -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
-  /* "hidden" can turn body into its own scroll container (second scrollbar).
-     "clip" hides horizontal overflow without creating one. */
-  overflow-x: hidden;  /* fallback for very old browsers */
-  overflow-x: clip;
+  overflow-x: hidden; /* Prevents unwanted horizontal scrolling on mobile */
 }
 
 /* 1. Global Tactile Button Press */
@@ -66,9 +54,9 @@ button:active,
   100% { background-position: -200% 0; }
 }
 
-/* 4. Smooth Page / Component Entrance Fade */
+/* 4. Smooth Page / Component Entrance Fade (no "forwards", so no leftover transform) */
 .fade-in-up {
-  animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes fadeInUp {
@@ -86,11 +74,10 @@ button:active,
    5. GLOBAL RESPONSIVE & LAYOUT RULES (Applies Everywhere)
    ========================================================= */
 
-/* Core Dashboard Grid Setup */
 .dashboard-container,
 .app-layout-wrapper {
   display: flex;
-  min-height: 100vh;   /* min-height, NOT height: the window scrolls, not the wrapper */
+  min-height: 100vh;
   width: 100%;
 }
 
@@ -98,9 +85,7 @@ button:active,
   flex: 1;
   padding: 24px;
   box-sizing: border-box;
-  min-width: 0;        /* Prevents flex items from overflowing container */
-  min-height: 100vh;
-  overflow: visible;   /* The main area must not scroll on its own */
+  min-width: 0; /* Prevents flex items from overflowing container */
 }
 
 /* Universal Table Scroll Handler */
@@ -123,9 +108,9 @@ button:active,
   .dashboard-container,
   .app-layout-wrapper {
     display: flex;
-    flex-direction: row; /* Row so the sidebar overlaps instead of stacking */
-    width: 100%;         /* Not 100vw: that includes the scrollbar width */
-    overflow-x: clip;
+    flex-direction: row;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   /* 1. Slide sidebar completely off-screen by default */
@@ -174,32 +159,4 @@ button:active,
     flex-direction: column;
     gap: 12px;
   }
-}
-
-/* =========================================================
-   6. SINGLE SCROLLBAR RULE
-   Only the browser window scrolls. Main areas never do.
-   ========================================================= */
-main,
-.dashboard-main-content,
-[class*="main-content"] {
-  overflow: visible !important;
-  overflow-y: visible !important;
-  height: auto !important;
-  max-height: none !important;
-}
-
-/* Sidebar keeps its own scroll, but with a slim, quiet bar */
-.dashboard-sidebar {
-  scrollbar-width: thin;
-  scrollbar-color: #d0d5dd transparent;
-}
-
-.dashboard-sidebar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.dashboard-sidebar::-webkit-scrollbar-thumb {
-  background: #d0d5dd;
-  border-radius: 6px;
 }
