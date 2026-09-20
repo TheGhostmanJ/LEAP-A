@@ -1874,6 +1874,47 @@ app.get('/api/database/metrics', async (req, res) => {
 });
 
 // ==========================================
+// API GATEWAY TRAFFIC LOGGER (Middleware)
+// ==========================================
+const apiTrafficLogs = [];
+
+// Intercept all incoming requests
+app.use((req, res, next) => {
+    const start = Date.now();
+    
+    res.on('finish', () => {
+        // Only track /api/ routes to avoid logging static images or frontend files
+        if (req.originalUrl.startsWith('/api')) {
+            const duration = Date.now() - start;
+            
+            const newLog = {
+                id: Date.now().toString() + Math.random().toString(36).substring(7),
+                time: new Date().toLocaleTimeString('en-GB', { hour12: false }), // HH:MM:SS
+                method: req.method,
+                endpoint: req.originalUrl.split('?')[0], // Clean URL without query params
+                status: res.statusCode,
+                latency: duration >= 1000 ? `${(duration / 1000).toFixed(1)}s` : `${duration}ms`,
+                latencyMs: duration // Keep raw number for math averages
+            };
+            
+            // Add to the beginning of the array
+            apiTrafficLogs.unshift(newLog);
+            
+            // Keep memory clean by only storing the last 50 requests
+            if (apiTrafficLogs.length > 50) {
+                apiTrafficLogs.pop();
+            }
+        }
+    });
+    next();
+});
+
+// GET: Expose the live logs to the IT Dashboard
+app.get('/api/gateway/logs', (req, res) => {
+    res.status(200).json(apiTrafficLogs);
+});
+
+// ==========================================
 // IT OPERATIONS: ROLE MANAGEMENT (RBAC)
 // ==========================================
 
