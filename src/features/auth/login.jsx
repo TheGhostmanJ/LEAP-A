@@ -17,6 +17,27 @@ export default function Login({ onLoginSuccess }) {
   const [activeModal, setActiveModal] = useState(null);
   const [captchaToken, setCaptchaToken] = useState(null);
   
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+
+  // ADD THIS USE-EFFECT TO CHECK SYSTEM STATUS ON LOAD:
+  useEffect(() => {
+    const checkMaintenanceStatus = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${apiUrl}/api/system-settings`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.maintenance_mode === 'true') {
+            setIsMaintenanceMode(true);
+          }
+        }
+      } catch (err) {
+        console.error("Could not fetch system status", err);
+      }
+    };
+    checkMaintenanceStatus();
+  }, []);
+
   const recaptchaRef = useRef(null);
 
   const handleCaptchaChange = (token) => {
@@ -87,6 +108,15 @@ export default function Login({ onLoginSuccess }) {
               <h1 className="login-header">Log In</h1>
               <p className="login-subtext">Welcome back! Enter your credentials to access the system.</p>
             </div>
+
+            {isMaintenanceMode && (
+              <div className="error-banner" style={{ backgroundColor: '#fffbeb', color: '#92400e', border: '1px solid #fde68a', marginBottom: '16px' }}>
+                <AlertCircle size={18} />
+                <span style={{ fontSize: '13px' }}>
+                  <strong>System Maintenance:</strong> LEAP-A is currently undergoing scheduled maintenance. Only IT Administrators may log in at this time.
+                </span>
+              </div>
+            )}
 
             {errorMessage && (
               <div className="error-banner">
