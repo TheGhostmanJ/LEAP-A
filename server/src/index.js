@@ -44,6 +44,21 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
+const logAuditAction = async (action, targetRecord, details, performedBy) => {
+    try {
+        const auditSet = await pool.query("SELECT setting_value FROM public.system_settings WHERE setting_key = 'audit_logs'");
+        if (auditSet.rows.length > 0 && auditSet.rows[0].setting_value === 'true') {
+            await pool.query(`
+                INSERT INTO public.audit_logs (action, target_record, details, performed_by) 
+                VALUES ($1, $2, $3, $4)
+            `, [action, targetRecord, details, performedBy || 'System']);
+            console.log(`[Audit Logged] ${action} on ${targetRecord}`);
+        }
+    } catch (error) {
+        console.error("Failed to write audit log:", error);
+    }
+};
+
 // 2. Expose the /uploads folder to the internet so React can render the images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -241,30 +256,11 @@ app.post('/api/login', async (req, res) => {
   try {
    const queryText = `
       SELECT 
-        a.username, 
-        a.email, 
-        a.system_access_level,
-        a.contact_number,
-        a.password,
-        e.employee_key,
-        e.employee_id,
-        e.first_name,        
-        e.middle_name,       
-        e.last_name,         
-        e.department,
-        e.position_title,
-        e.civil_status,
-        e.date_of_birth,
-        e.gender,
-        e.salary_grade,
-        (SELECT salary_amount 
-         FROM public.salary_history 
-         WHERE employee_key = e.employee_key 
-         ORDER BY effective_date DESC 
-         LIMIT 1) AS current_salary_amount,
-        e.hire_date,
-        e.employment_type,
-        e.civil_service_eligibility,
+        a.username, a.email, a.system_access_level, a.contact_number, a.password,
+        e.employee_key, e.employee_id, e.first_name, e.middle_name, e.last_name,         
+        e.department, e.position_title, e.civil_status, e.date_of_birth, e.gender, e.salary_grade,
+        (SELECT salary_amount FROM public.salary_history WHERE employee_key = e.employee_key ORDER BY effective_date DESC LIMIT 1) AS current_salary_amount,
+        e.hire_date, e.employment_type, e.civil_service_eligibility,
         EXTRACT(YEAR FROM AGE(CURRENT_DATE, e.hire_date)) AS years_of_service
       FROM public.user_accounts a
       INNER JOIN public.dim_employee e ON a.employee_key = e.employee_key
@@ -283,9 +279,24 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid username or password' });
     }
 
+    // FUNCTIONAL UPDATE: Check if the System is in Maintenance Mode!
+    const settingsRes = await pool.query("SELECT setting_key, setting_value FROM public.system_settings");
+    const settingsMap = settingsRes.rows.reduce((acc, row) => { acc[row.setting_key] = row.setting_value; return acc; }, {});
+    
+    const isMaintenance = settingsMap['maintenance_mode'] === 'true';
+    const timeoutMins = parseInt(settingsMap['session_timeout'] || 30);
+
+    if (isMaintenance && activeUser.system_access_level !== 'IT Admin' && activeUser.system_access_level !== 'Super Admin') {
+        return res.status(503).json({ 
+            success: false, 
+            message: 'System is currently under scheduled maintenance. Only IT Administrators can log in at this time.' 
+        });
+    }
+
     res.status(200).json({
       success: true,
       message: 'Login successful!',
+      sessionTimeout: timeoutMins, // Sends active timeout settings to frontend
       user: {
         username: activeUser.username,
         email: activeUser.email,
@@ -1068,41 +1079,6 @@ app.put('/api/anomalies/:id/status', async (req, res) => {
 // ==========================================
 // EMPLOYEE PROFILE & PAYROLL
 // ==========================================
-
-app.put('/api/profile/:employee_key', async (req, res) => {
-  const { employee_key } = req.params;
-  const { first_name, middle_name, last_name, civil_status, contact_number, email } = req.body;
-
-  const client = await pool.connect();
-
-  try {
-    await client.query('BEGIN');
-
-    const updateEmployeeQuery = `
-      UPDATE public.dim_employee 
-      SET first_name = $1, middle_name = $2, last_name = $3, civil_status = $4
-      WHERE employee_key = $5
-    `;
-    await client.query(updateEmployeeQuery, [first_name, middle_name, last_name, civil_status, employee_key]);
-
-    const updateAccountQuery = `
-      UPDATE public.user_accounts 
-      SET contact_number = $1, email = $2
-      WHERE employee_key = $3
-    `;
-    await client.query(updateAccountQuery, [contact_number, email, employee_key]);
-
-    await client.query('COMMIT');
-    res.status(200).json({ success: true, message: 'Profile updated successfully.' });
-
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error("Profile update error:", error);
-    res.status(500).json({ success: false, message: 'Failed to update profile data' });
-  } finally {
-    client.release();
-  }
-});
 
 app.post('/api/salary/update', async (req, res) => {
     const { employee_key, salary_amount, salary_grade, reason } = req.body;
@@ -1946,7 +1922,7 @@ app.get('/api/roles', async (req, res) => {
 // PUT: Update user system_access_level
 app.put('/api/roles/:username', async (req, res) => {
     const { username } = req.params;
-    const { role } = req.body;
+    const { role, updated_by } = req.body;
     
     try {
         const query = `
@@ -1961,11 +1937,52 @@ app.put('/api/roles/:username', async (req, res) => {
             return res.status(404).json({ error: "Account not found." });
         }
         
+        // FUNCTIONAL UPDATE: Trigger Audit Log automatically if setting is enabled!
+        await logAuditAction("Role Changed", username, `Role updated to ${role}`, updated_by);
+
         res.status(200).json({ success: true, message: "Role updated successfully." });
     } catch (error) {
         console.error("Error updating role:", error);
         res.status(500).json({ error: "Failed to update role." });
     }
+});
+
+app.put('/api/profile/:employee_key', async (req, res) => {
+  const { employee_key } = req.params;
+  const { first_name, middle_name, last_name, civil_status, contact_number, email, updated_by } = req.body;
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const updateEmployeeQuery = `
+      UPDATE public.dim_employee 
+      SET first_name = $1, middle_name = $2, last_name = $3, civil_status = $4
+      WHERE employee_key = $5
+    `;
+    await client.query(updateEmployeeQuery, [first_name, middle_name, last_name, civil_status, employee_key]);
+
+    const updateAccountQuery = `
+      UPDATE public.user_accounts 
+      SET contact_number = $1, email = $2
+      WHERE employee_key = $3
+    `;
+    await client.query(updateAccountQuery, [contact_number, email, employee_key]);
+
+    await client.query('COMMIT');
+    
+    // FUNCTIONAL UPDATE: Trigger Audit Log automatically!
+    await logAuditAction("Profile Edited", employee_key, `Profile and contact info updated`, updated_by);
+
+    res.status(200).json({ success: true, message: 'Profile updated successfully.' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error("Profile update error:", error);
+    res.status(500).json({ success: false, message: 'Failed to update profile data' });
+  } finally {
+    client.release();
+  }
 });
 
 // GET: Fetch all password reset requests for the IT Dashboard
@@ -2121,18 +2138,38 @@ app.put('/api/password-reset-requests/:id/reject', async (req, res) => {
 // ==========================================
 
 // GET: Fetch System Configurations
-app.get('/api/system-settings', async (req, res) => {
+app.put('/api/system-settings', async (req, res) => {
+    const settings = req.body;
+    const client = await pool.connect();
+    
     try {
-        const result = await pool.query('SELECT setting_key, setting_value FROM public.system_settings');
-        // Convert rows [{setting_key: 'x', setting_value: 'y'}] into a single object {x: 'y'}
-        const settingsObj = result.rows.reduce((acc, row) => {
-            acc[row.setting_key] = row.setting_value;
-            return acc;
-        }, {});
-        res.status(200).json(settingsObj);
+        await client.query('BEGIN');
+        
+        for (const [key, value] of Object.entries(settings)) {
+            if (key !== 'updated_by') {
+                await client.query(
+                    `UPDATE public.system_settings 
+                     SET setting_value = $1, updated_at = CURRENT_TIMESTAMP, updated_by = $2 
+                     WHERE setting_key = $3`,
+                    [value, settings.updated_by || null, key]
+                );
+            }
+        }
+        
+        await client.query('COMMIT');
+
+        // Restart the ML Background Sync Timer whenever settings change!
+        if (typeof setupMlSyncTimer === 'function') {
+            setupMlSyncTimer(); 
+        }
+
+        res.status(200).json({ success: true, message: "Settings updated successfully." });
     } catch (error) {
-        console.error("Error fetching settings:", error);
-        res.status(500).json({ error: "Failed to fetch settings." });
+        await client.query('ROLLBACK');
+        console.error("Error saving settings:", error);
+        res.status(500).json({ error: "Failed to save settings." });
+    } finally {
+        client.release();
     }
 });
 
@@ -2180,7 +2217,39 @@ app.post('/api/system-action/:action', async (req, res) => {
     }, 1500);
 });
 
+// ==========================================
+// BACKGROUND TASKS (ML INTERVAL FUNCTION)
+// ==========================================
+let mlSyncTimer = null;
+
+const setupMlSyncTimer = async () => {
+    try {
+        const intRes = await pool.query("SELECT setting_value FROM public.system_settings WHERE setting_key = 'ml_interval'");
+        const hours = intRes.rows.length > 0 ? parseInt(intRes.rows[0].setting_value) : 24;
+        
+        if (mlSyncTimer) clearInterval(mlSyncTimer);
+        console.log(`[System Task] ML Analytics Background Sync initialized to every ${hours} hours.`);
+        
+        const intervalMs = hours * 60 * 60 * 1000;
+        
+        // This timer will automatically trigger the Python scan behind the scenes
+        mlSyncTimer = setInterval(async () => {
+            console.log(`[System Task] Executing scheduled Automated ML Scan...`);
+            try {
+                const pythonApiUrl = process.env.PYTHON_API_URL || 'http://127.0.0.1:5000';
+                await axios.get(`${pythonApiUrl}/api/detect-anomalies`);
+            } catch (e) {
+                console.log(`[System Task] Python ML Engine offline. Scheduled scan skipped.`);
+            }
+        }, intervalMs);
+        
+    } catch (error) {
+        console.error("Failed to setup ML background timer:", error);
+    }
+};
+
 // Start listening for API calls
 app.listen(PORT, () => {
   console.log(`Node.js server executing on http://localhost:${PORT}`);
+  setupMlSyncTimer(); // Boot up the background task manager!
 });
