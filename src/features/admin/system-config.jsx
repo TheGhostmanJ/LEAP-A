@@ -1,11 +1,10 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // RESTORED: Required for button routing
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Server, 
   Database, 
   Shield, 
   Terminal, 
-  Users, 
   RefreshCw, 
   Settings,
   CheckCircle2,
@@ -17,24 +16,73 @@ import Header from "../../components/Header.jsx";
 import "./system-config.css";
 
 export default function SystemConfig({ onLogout, user }) {
-  const navigate = useNavigate(); // RESTORED: Initialize navigation
+  const navigate = useNavigate();
   const [cacheStatus, setCacheStatus] = useState("idle"); // idle | executing | success
   const [syncStatus, setSyncStatus] = useState("idle");   // idle | executing | success
 
-  const handleClearCache = () => {
+  // Live Metrics State
+  const [metrics, setMetrics] = useState({
+    dbStatus: "Checking...",
+    activeConnections: "-",
+    uptime: "99.9%" // Simulated 30-day uptime
+  });
+
+  useEffect(() => {
+    const fetchSystemMetrics = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        
+        // Concurrently check the basic health endpoint and detailed DB metrics
+        const [healthRes, dbRes] = await Promise.all([
+          fetch(`${apiUrl}/api/health`),
+          fetch(`${apiUrl}/api/database/metrics`)
+        ]);
+
+        const dbStatus = healthRes.ok ? "Online" : "Offline";
+        const dbData = dbRes.ok ? await dbRes.json() : { activeConnections: 0 };
+
+        setMetrics(prev => ({
+          ...prev,
+          dbStatus,
+          activeConnections: dbData.activeConnections || 0
+        }));
+      } catch (error) {
+        console.error("Failed to fetch system metrics:", error);
+        setMetrics(prev => ({ ...prev, dbStatus: "Offline", activeConnections: 0 }));
+      }
+    };
+
+    fetchSystemMetrics();
+    
+    // Auto-refresh metrics every 10 seconds
+    const interval = setInterval(fetchSystemMetrics, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleClearCache = async () => {
     setCacheStatus("executing");
-    setTimeout(() => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      await fetch(`${apiUrl}/api/system-action/cache`, { method: 'POST' });
       setCacheStatus("success");
+    } catch (error) {
+      console.error("Failed to clear cache:", error);
+    } finally {
       setTimeout(() => setCacheStatus("idle"), 2500);
-    }, 1200);
+    }
   };
 
-  const handleSyncModels = () => {
+  const handleSyncModels = async () => {
     setSyncStatus("executing");
-    setTimeout(() => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      await fetch(`${apiUrl}/api/system-action/sync`, { method: 'POST' });
       setSyncStatus("success");
+    } catch (error) {
+      console.error("Failed to sync models:", error);
+    } finally {
       setTimeout(() => setSyncStatus("idle"), 2500);
-    }, 1500);
+    }
   };
 
   return (
@@ -46,7 +94,6 @@ export default function SystemConfig({ onLogout, user }) {
       <main className="sysconfig-main-content fade-in-up">
         
         {/* STANDARDIZED HEADER BLOCK */}
-        {/* Notice how we just pass the Header now! Our global Header.jsx automatically draws the title based on the route. */}
         <header className="tr-header">
           <Header user={user} onLogout={onLogout} onNavigate={navigate} />
         </header>
@@ -59,8 +106,10 @@ export default function SystemConfig({ onLogout, user }) {
             </div>
             <div className="sysconfig-stat-info">
               <span className="sysconfig-stat-label">DATABASE STATUS</span>
-              <span className="sysconfig-stat-value text-green">Online</span>
-              <span className="sysconfig-stat-sub">PostgreSQL 14.0 Engine</span>
+              <span className={`sysconfig-stat-value ${metrics.dbStatus === 'Online' ? 'text-green' : ''}`}>
+                {metrics.dbStatus}
+              </span>
+              <span className="sysconfig-stat-sub">PostgreSQL Engine</span>
             </div>
           </div>
 
@@ -70,7 +119,7 @@ export default function SystemConfig({ onLogout, user }) {
             </div>
             <div className="sysconfig-stat-info">
               <span className="sysconfig-stat-label">API GATEWAY</span>
-              <span className="sysconfig-stat-value">42</span>
+              <span className="sysconfig-stat-value">{metrics.activeConnections}</span>
               <span className="sysconfig-stat-sub">Active concurrent connections</span>
             </div>
           </div>
@@ -81,7 +130,7 @@ export default function SystemConfig({ onLogout, user }) {
             </div>
             <div className="sysconfig-stat-info">
               <span className="sysconfig-stat-label">SYSTEM HEALTH</span>
-              <span className="sysconfig-stat-value">99.9%</span>
+              <span className="sysconfig-stat-value">{metrics.uptime}</span>
               <span className="sysconfig-stat-sub">Uptime (Last 30 Days)</span>
             </div>
           </div>
@@ -101,17 +150,11 @@ export default function SystemConfig({ onLogout, user }) {
 
             <div className="sysconfig-card-body sysconfig-padded-box">
               <p className="sysconfig-description">
-                Manage system access level variables, permissions, and security roles for Lipa City personnel accounts across all departments.
+                Manage system access level variables, permissions, and security roles for City personnel accounts across all departments.
               </p>
 
               <div className="sysconfig-actions-group">
-                {/* RESTORED: onClick navigation routing */}
-                <button 
-                  className="sysconfig-btn-primary"
-                  onClick={() => navigate('/role-management')}
-                >
-                  <Users size={16} /> Audit User Roles
-                </button>
+                {/* REMOVED "Audit User Roles" button, kept only Configure Permissions */}
                 <button 
                   className="sysconfig-btn-secondary"
                   onClick={() => navigate('/role-management')}
@@ -138,7 +181,7 @@ export default function SystemConfig({ onLogout, user }) {
                     <RefreshCw size={20} className="sysconfig-task-icon" />
                     <div>
                       <span className="sysconfig-task-title">Clear Server Cache</span>
-                      <span className="sysconfig-task-sub">Flush Redis application runtime memory</span>
+                      <span className="sysconfig-task-sub">Flush application runtime memory</span>
                     </div>
                   </div>
                   <button 
