@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Database, 
   HardDrive, 
@@ -15,20 +15,48 @@ import "./database-metrics.css";
 export default function DatabaseMetrics({ onLogout, user }) {
   const [isVacuuming, setIsVacuuming] = useState(false);
   const [lastVacuumTime, setLastVacuumTime] = useState("Just now");
+  
+  // Dynamic State
+  const [metrics, setMetrics] = useState({
+    activeConnections: 0,
+    maxConnections: 100,
+    totalStorage: 'Calculating...',
+    tables: []
+  });
 
-  const dbTables = [
-    { name: "fact_attendance", rows: "1,245,030", size: "142 MB", bloat: "2.1%", status: "Healthy" },
-    { name: "fact_leave_application", rows: "32,150", size: "18 MB", bloat: "1.5%", status: "Healthy" },
-    { name: "dim_employee", rows: "1,450", size: "2 MB", bloat: "0.4%", status: "Healthy" },
-    { name: "dim_event", rows: "412", size: "1.2 MB", bloat: "0.1%", status: "Healthy" }
-  ];
+  const fetchMetrics = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/database/metrics`);
+      if (response.ok) {
+        const data = await response.json();
+        setMetrics(data);
+      }
+    } catch (error) {
+      console.error("Failed to load database metrics", error);
+    }
+  };
 
-  const handleRunVacuum = () => {
+  useEffect(() => {
+    fetchMetrics();
+  }, []);
+
+  const handleRunVacuum = async () => {
     setIsVacuuming(true);
-    setTimeout(() => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      // Hits the simulated IT Danger Zone endpoint we created in server.js earlier!
+      const response = await fetch(`${apiUrl}/api/system-action/vacuum`, { method: 'POST' });
+      
+      if (response.ok) {
+        setLastVacuumTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        fetchMetrics(); // Refresh data after vacuum
+      }
+    } catch (error) {
+      console.error("Vacuum failed", error);
+    } finally {
       setIsVacuuming(false);
-      setLastVacuumTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    }, 1500);
+    }
   };
 
   return (
@@ -52,7 +80,7 @@ export default function DatabaseMetrics({ onLogout, user }) {
             </div>
             <div className="dbm-stat-info">
               <span className="dbm-stat-label">ACTIVE CONNECTIONS</span>
-              <span className="dbm-stat-value">48 / 100</span>
+              <span className="dbm-stat-value">{metrics.activeConnections} / {metrics.maxConnections}</span>
               <span className="dbm-stat-sub">Current connection pool usage</span>
             </div>
           </div>
@@ -63,7 +91,7 @@ export default function DatabaseMetrics({ onLogout, user }) {
             </div>
             <div className="dbm-stat-info">
               <span className="dbm-stat-label">TOTAL STORAGE</span>
-              <span className="dbm-stat-value">1.4 GB</span>
+              <span className="dbm-stat-value">{metrics.totalStorage}</span>
               <span className="dbm-stat-sub">Allocated data + index files</span>
             </div>
           </div>
@@ -108,22 +136,30 @@ export default function DatabaseMetrics({ onLogout, user }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {dbTables.map((tbl, index) => (
-                    <tr key={index}>
-                      <td className="dbm-table-name">
-                        <Layers size={15} className="dbm-table-icon" />
-                        <code>{tbl.name}</code>
-                      </td>
-                      <td className="dbm-numeric-cell">{tbl.rows}</td>
-                      <td className="dbm-size-cell">{tbl.size}</td>
-                      <td className="dbm-bloat-cell">{tbl.bloat}</td>
-                      <td className="text-center">
-                        <span className="dbm-status-badge healthy">
-                          <CheckCircle2 size={13} /> {tbl.status}
-                        </span>
+                  {metrics.tables.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
+                        Loading table schema metrics...
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    metrics.tables.map((tbl, index) => (
+                      <tr key={index}>
+                        <td className="dbm-table-name">
+                          <Layers size={15} className="dbm-table-icon" />
+                          <code>{tbl.name}</code>
+                        </td>
+                        <td className="dbm-numeric-cell">{Number(tbl.rows).toLocaleString()}</td>
+                        <td className="dbm-size-cell">{tbl.size}</td>
+                        <td className="dbm-bloat-cell">{tbl.bloat}</td>
+                        <td className="text-center">
+                          <span className="dbm-status-badge healthy">
+                            <CheckCircle2 size={13} /> {tbl.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
