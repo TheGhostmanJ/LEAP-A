@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Eye, EyeOff, AlertCircle, X, User } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, X, User, Smartphone, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { loginUser } from './services/authService';
@@ -16,11 +16,14 @@ export default function Login({ onLoginSuccess }) {
   const [showSplash, setShowSplash] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
   const [captchaToken, setCaptchaToken] = useState(null);
-  
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
 
-  // ADD THIS USE-EFFECT TO CHECK SYSTEM STATUS ON LOAD:
+  // Mobile App Download State
+  const [showAppPrompt, setShowAppPrompt] = useState(false);
+
+  // CHECK MAINTENANCE STATUS AND MOBILE DEVICE ON LOAD:
   useEffect(() => {
+    // 1. Maintenance Check
     const checkMaintenanceStatus = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -36,6 +39,14 @@ export default function Login({ onLoginSuccess }) {
       }
     };
     checkMaintenanceStatus();
+
+    // 2. Mobile Detection
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const hasDismissedAppPrompt = sessionStorage.getItem('dismissedAppPrompt');
+    
+    if (isMobileDevice && !hasDismissedAppPrompt) {
+      setShowAppPrompt(true);
+    }
   }, []);
 
   const recaptchaRef = useRef(null);
@@ -94,10 +105,52 @@ export default function Login({ onLoginSuccess }) {
 
   const closeModal = () => setActiveModal(null);
 
+  const handleDismissAppPrompt = () => {
+    sessionStorage.setItem('dismissedAppPrompt', 'true');
+    setShowAppPrompt(false);
+  };
+
+  const handleDownloadApp = () => {
+    // Triggers the download of the APK located in your React public folder
+    window.location.href = '/leap-a-app.apk'; 
+    handleDismissAppPrompt();
+  };
+
   return (
     <>
       {/* Dynamic Animated Splash Screen Overlay */}
       {showSplash && <AuthSplashScreen />}
+
+      {/* MOBILE APP DOWNLOAD PROMPT */}
+      {showAppPrompt && (
+        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+          <div className="modal-box" style={{ maxWidth: '380px', padding: '0', textAlign: 'center' }}>
+            <div style={{ backgroundColor: '#7a0000', padding: '24px', color: 'white', borderTopLeftRadius: '20px', borderTopRightRadius: '20px' }}>
+              <Smartphone size={48} style={{ margin: '0 auto 12px auto', opacity: 0.9 }} />
+              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '700', fontFamily: 'var(--font-family-heading)' }}>Mobile App Available!</h2>
+            </div>
+            <div style={{ padding: '24px' }}>
+              <p style={{ color: '#4b5563', fontSize: '14px', lineHeight: 1.5, margin: '0 0 24px 0' }}>
+                It looks like you're on a mobile device. Download the official LEAP-A mobile app for a faster and smoother experience.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <button 
+                  onClick={handleDownloadApp}
+                  style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  <Download size={18} /> Download APK
+                </button>
+                <button 
+                  onClick={handleDismissAppPrompt}
+                  style={{ backgroundColor: 'transparent', color: '#6b7280', border: '1px solid #e5e7eb', padding: '12px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}
+                >
+                  Continue to Website
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="screen-container">
         <div className="main-card">
@@ -218,7 +271,7 @@ export default function Login({ onLoginSuccess }) {
             </form>
           </div>
 
-          {/* RIGHT PANEL: Logo only (carousel removed) */}
+          {/* RIGHT PANEL: Logo only */}
           <div className="right-panel">
             <div className="logo-wrapper">
               <img src="/leaplogo.png" alt="LEAP-A Logo" className="logo-image" />
@@ -309,7 +362,6 @@ export default function Login({ onLoginSuccess }) {
             </div>
           </div>
         )}
-
       </div>
     </>
   );
