@@ -2138,6 +2138,22 @@ app.put('/api/password-reset-requests/:id/reject', async (req, res) => {
 // ==========================================
 
 // GET: Fetch System Configurations
+app.get('/api/system-settings', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT setting_key, setting_value FROM public.system_settings');
+        // Convert rows [{setting_key: 'x', setting_value: 'y'}] into a single object {x: 'y'}
+        const settingsObj = result.rows.reduce((acc, row) => {
+            acc[row.setting_key] = row.setting_value;
+            return acc;
+        }, {});
+        res.status(200).json(settingsObj);
+    } catch (error) {
+        console.error("Error fetching settings:", error);
+        res.status(500).json({ error: "Failed to fetch settings." });
+    }
+});
+
+// PUT: Bulk Update System Configurations
 app.put('/api/system-settings', async (req, res) => {
     const settings = req.body;
     const client = await pool.connect();
@@ -2173,40 +2189,7 @@ app.put('/api/system-settings', async (req, res) => {
     }
 });
 
-// PUT: Bulk Update System Configurations
-app.put('/api/system-settings', async (req, res) => {
-    const settings = req.body;
-    const client = await pool.connect();
-    
-    try {
-        await client.query('BEGIN');
-        
-        // Loop through the provided object and update existing keys
-        for (const [key, value] of Object.entries(settings)) {
-            // Ignore the updated_by key for the dynamic loop, handle it below if necessary
-            if (key !== 'updated_by') {
-                await client.query(
-                    `UPDATE public.system_settings 
-                     SET setting_value = $1, updated_at = CURRENT_TIMESTAMP, updated_by = $2 
-                     WHERE setting_key = $3`,
-                    [value, settings.updated_by || null, key]
-                );
-            }
-        }
-        
-        await client.query('COMMIT');
-        res.status(200).json({ success: true, message: "Settings updated successfully." });
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.error("Error saving settings:", error);
-        res.status(500).json({ error: "Failed to save settings." });
-    } finally {
-        client.release();
-    }
-});
-
 // POST: Simulated Action Handlers for IT Danger Zone
-// Because this is a capstone, we simulate the delay to show the UI loading states perfectly
 app.post('/api/system-action/:action', async (req, res) => {
     const { action } = req.params;
     
