@@ -12,6 +12,7 @@ import {
   Lock,
   RefreshCw,
   CheckCircle2,
+  Settings,
   Save
 } from "lucide-react";
 import ItSidebar from "../../components/it-sidebar.jsx";
