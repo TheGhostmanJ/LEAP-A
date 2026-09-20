@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import ItSidebar from '../../components/it-sidebar';
-import Header from '../../components/Header';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
-  Save, 
   ServerCrash, 
   Key, 
   Sliders, 
@@ -12,47 +10,67 @@ import {
   Database, 
   Lock,
   RefreshCw,
-  CheckCircle2
-} from 'lucide-react';
-import './system-settings.css';
+  CheckCircle2,
+  Save
+} from "lucide-react";
+import ItSidebar from "../../components/it-sidebar.jsx";
+import Header from "../../components/Header.jsx";
+import "./system-settings.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export default function SystemSettings({ onLogout, user }) {
+  const navigate = useNavigate();
+  
   // Form States
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [mlInterval, setMlInterval] = useState('24');
   const [auditLogs, setAuditLogs] = useState(true);
   const [sessionTimeout, setSessionTimeout] = useState('30');
 
-  // Loading States
+  // Loading & Health States
   const [isLoading, setIsLoading] = useState(true);
+  const [systemHealth, setSystemHealth] = useState("Checking...");
   const [saveStatus, setSaveStatus] = useState('idle'); // idle | executing | success
   
   // Danger Zone States
   const [rotateStatus, setRotateStatus] = useState('idle');
   const [restartStatus, setRestartStatus] = useState('idle');
   const [flushStatus, setFlushStatus] = useState('idle');
+  const [cacheStatus, setCacheStatus] = useState('idle');
+  const [syncStatus, setSyncStatus] = useState('idle');
 
-  // Load Initial Settings
+  // Load Initial Settings & System Health
   useEffect(() => {
-    const fetchSettings = async () => {
+    const fetchInitialData = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/system-settings`);
-        if (response.ok) {
-          const data = await response.json();
+        const [settingsRes, healthRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/system-settings`),
+          fetch(`${API_BASE_URL}/api/health`)
+        ]);
+
+        if (settingsRes.ok) {
+          const data = await settingsRes.json();
           setMaintenanceMode(data.maintenance_mode === 'true');
           setMlInterval(data.ml_interval || '24');
           setSessionTimeout(data.session_timeout || '30');
           setAuditLogs(data.audit_logs === 'true');
         }
+
+        if (healthRes.ok) {
+          setSystemHealth("99.98% Operational");
+        } else {
+          setSystemHealth("System Degraded");
+        }
       } catch (error) {
-        console.error("Failed to fetch system settings", error);
+        console.error("Failed to fetch system data", error);
+        setSystemHealth("Offline");
       } finally {
         setIsLoading(false);
       }
     };
-    fetchSettings();
+
+    fetchInitialData();
   }, []);
 
   // Handle Save Configuration
@@ -81,13 +99,16 @@ export default function SystemSettings({ onLogout, user }) {
     }
   };
 
-  // Simulated Danger Zone Handlers
-  const handleDangerAction = async (actionName, stateSetter) => {
-    if (!window.confirm(`Are you absolutely sure you want to ${actionName.toUpperCase()}? This action may disrupt active users.`)) return;
+  // Automated Danger Zone / Maintenance Handlers
+  const handleSystemAction = async (actionName, stateSetter) => {
+    const isDangerZone = ['rotate', 'restart', 'flush'].includes(actionName);
+    
+    if (isDangerZone) {
+      if (!window.confirm(`Are you absolutely sure you want to execute [${actionName.toUpperCase()}]? This action may disrupt active users.`)) return;
+    }
     
     stateSetter('executing');
     try {
-      // Calls a simulated backend endpoint
       await fetch(`${API_BASE_URL}/api/system-action/${actionName}`, { method: 'POST' });
       stateSetter('success');
       setTimeout(() => stateSetter('idle'), 3000);
@@ -104,7 +125,7 @@ export default function SystemSettings({ onLogout, user }) {
       <main className="sys-main-content fade-in-up">
         {/* STANDARDIZED HEADER BLOCK */}
         <header className="tr-header">
-          <Header user={user} onLogout={onLogout} />
+          <Header user={user} onLogout={onLogout} onNavigate={navigate} />
         </header>
 
         {/* SYSTEM STATUS STAT CARDS */}
@@ -115,7 +136,9 @@ export default function SystemSettings({ onLogout, user }) {
             </div>
             <div className="sys-metric-info">
               <span className="sys-metric-label">SYSTEM HEALTH</span>
-              <span className="sys-metric-value green">99.98% Operational</span>
+              <span className={`sys-metric-value ${systemHealth.includes('Operational') ? 'green' : 'text-danger'}`}>
+                {systemHealth}
+              </span>
             </div>
           </div>
 
@@ -142,7 +165,10 @@ export default function SystemSettings({ onLogout, user }) {
 
         {/* MAIN CONFIGURATION GRID */}
         {isLoading ? (
-           <div style={{ padding: '40px', textAlign: 'center' }}><RefreshCw className="spin" size={24}/></div>
+           <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+             <RefreshCw className="spin" size={24} style={{ marginBottom: '12px' }}/>
+             <p>Loading System Configurations...</p>
+           </div>
         ) : (
           <div className="sys-grid-split">
             
@@ -245,10 +271,84 @@ export default function SystemSettings({ onLogout, user }) {
 
                 </div>
               </div>
+
+              {/* Maintenance Tasks Box (Moved from the previous Right Column) */}
+              <div className="sys-card sys-card-shadow" style={{ marginTop: '24px' }}>
+                <div className="sys-card-header-maroon" style={{ backgroundColor: '#475569' }}>
+                  <Activity size={16} /> System Maintenance & Operations
+                </div>
+                <div className="sys-card-body">
+                  <ul className="sysconfig-task-list">
+                    <li className="sysconfig-task-item">
+                      <div className="sysconfig-task-info">
+                        <RefreshCw size={20} className="sysconfig-task-icon" style={{ color: '#475569' }} />
+                        <div>
+                          <span className="sysconfig-task-title">Clear Server Cache</span>
+                          <span className="sysconfig-task-sub">Flush application runtime memory</span>
+                        </div>
+                      </div>
+                      <button 
+                        className={`sysconfig-action-btn ${cacheStatus}`}
+                        onClick={() => handleSystemAction('cache', setCacheStatus)}
+                        disabled={cacheStatus !== "idle"}
+                        style={{ backgroundColor: cacheStatus === 'success' ? '#10b981' : '#f1f5f9', color: cacheStatus === 'success' ? '#fff' : '#475569', border: cacheStatus === 'success' ? 'none' : '1px solid #cbd5e1' }}
+                      >
+                        {cacheStatus === "executing" && <RefreshCw size={14} className="spin" />}
+                        {cacheStatus === "success" && <CheckCircle2 size={14} />}
+                        {cacheStatus === "idle" ? "Execute" : cacheStatus === "executing" ? "Clearing..." : "Cleared"}
+                      </button>
+                    </li>
+
+                    <li className="sysconfig-task-item">
+                      <div className="sysconfig-task-info">
+                        <Database size={20} className="sysconfig-task-icon" style={{ color: '#475569' }} />
+                        <div>
+                          <span className="sysconfig-task-title">Sync Machine Learning Models</span>
+                          <span className="sysconfig-task-sub">Re-index predictive analytics pipeline</span>
+                        </div>
+                      </div>
+                      <button 
+                        className={`sysconfig-action-btn ${syncStatus}`}
+                        onClick={() => handleSystemAction('sync', setSyncStatus)}
+                        disabled={syncStatus !== "idle"}
+                        style={{ backgroundColor: syncStatus === 'success' ? '#10b981' : '#f1f5f9', color: syncStatus === 'success' ? '#fff' : '#475569', border: syncStatus === 'success' ? 'none' : '1px solid #cbd5e1' }}
+                      >
+                        {syncStatus === "executing" && <RefreshCw size={14} className="spin" />}
+                        {syncStatus === "success" && <CheckCircle2 size={14} />}
+                        {syncStatus === "idle" ? "Sync Data" : syncStatus === "executing" ? "Syncing..." : "Synced"}
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
             </div>
 
-            {/* Right Column: Danger Zone & Critical Operations */}
+            {/* Right Column: Danger Zone & Access Control */}
             <div className="sys-column-right">
+              
+              {/* Access Control Box */}
+              <div className="sys-card sys-card-shadow" style={{ marginBottom: '24px' }}>
+                <div className="sys-card-header-maroon" style={{ backgroundColor: '#0f172a' }}>
+                  <Shield size={16} /> Role Management (RBAC)
+                </div>
+                <div className="sys-card-body sysconfig-padded-box">
+                  <p className="sysconfig-description">
+                    Manage system access level variables, permissions, and security roles for City personnel accounts across all departments.
+                  </p>
+                  <div className="sysconfig-actions-group">
+                    <button 
+                      className="sysconfig-btn-secondary"
+                      onClick={() => navigate('/role-management')}
+                      style={{ width: '100%', justifyContent: 'center' }}
+                    >
+                      <Settings size={16} /> Configure Permissions
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Danger Zone Box */}
               <div className="sys-card sys-card-danger">
                 <div className="sys-card-header-danger">
                   <ShieldAlert size={16} /> Security & Operations Control
@@ -268,7 +368,7 @@ export default function SystemSettings({ onLogout, user }) {
                     <button 
                       className="sys-btn-danger"
                       disabled={rotateStatus !== 'idle'}
-                      onClick={() => handleDangerAction('rotate', setRotateStatus)}
+                      onClick={() => handleSystemAction('rotate', setRotateStatus)}
                     >
                       {rotateStatus === 'executing' ? <RefreshCw size={12} className="spin" /> : rotateStatus === 'success' ? <CheckCircle2 size={12}/> : <RefreshCw size={12} />} 
                       {rotateStatus === 'executing' ? 'Rotating...' : rotateStatus === 'success' ? 'Rotated' : 'Rotate'}
@@ -288,7 +388,7 @@ export default function SystemSettings({ onLogout, user }) {
                     <button 
                       className="sys-btn-danger"
                       disabled={restartStatus !== 'idle'}
-                      onClick={() => handleDangerAction('restart', setRestartStatus)}
+                      onClick={() => handleSystemAction('restart', setRestartStatus)}
                     >
                       {restartStatus === 'executing' ? <RefreshCw size={12} className="spin" /> : restartStatus === 'success' ? <CheckCircle2 size={12}/> : <ServerCrash size={12} />} 
                       {restartStatus === 'executing' ? 'Restarting...' : restartStatus === 'success' ? 'Restarted' : 'Restart'}
@@ -308,7 +408,7 @@ export default function SystemSettings({ onLogout, user }) {
                     <button 
                       className="sys-btn-danger"
                       disabled={flushStatus !== 'idle'}
-                      onClick={() => handleDangerAction('flush', setFlushStatus)}
+                      onClick={() => handleSystemAction('flush', setFlushStatus)}
                     >
                       {flushStatus === 'executing' ? 'Flushing...' : flushStatus === 'success' ? 'Flushed' : 'Flush Sessions'}
                     </button>
