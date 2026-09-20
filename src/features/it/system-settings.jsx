@@ -5,6 +5,7 @@ import {
   Key, 
   Sliders, 
   ShieldAlert, 
+  Shield,
   Activity, 
   Cpu, 
   Database, 
