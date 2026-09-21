@@ -2231,6 +2231,31 @@ const setupMlSyncTimer = async () => {
     }
 };
 
+// MOBILE APP
+
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+// POST: Secure bridge for the Flutter app's AI Assistant
+app.post('/api/ai/chat', async (req, res) => {
+    const { message } = req.body;
+    
+    try {
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash",
+            systemInstruction: "You are an HR assistant for LEAP-A, a Human Capital Management system for Lipa City personnel. Be helpful, concise, and professional. You help users navigate their leave balances, training events, and HR rules."
+        });
+
+        const result = await model.generateContent(message);
+        const responseText = result.response.text();
+        
+        res.status(200).json({ success: true, text: responseText });
+    } catch (error) {
+        console.error("Gemini API Error:", error);
+        res.status(500).json({ success: false, text: "Sorry, I am having trouble connecting to the AI service right now." });
+    }
+});
+
 // Start listening for API calls
 app.listen(PORT, () => {
   console.log(`Node.js server executing on http://localhost:${PORT}`);
