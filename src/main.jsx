@@ -17,7 +17,8 @@ import LeaveHistory from './features/leave/leavehistory.jsx';
 import LeaveApplication from './features/leave/leaveapplication.jsx';
 import CreditLedger from './features/ledger/creditledger.jsx';
 import TrainingRecords from './features/training/trainingrecords.jsx';
-import EmployeeEvents from './features/training/employee-events.jsx'; // RESTORED
+import EmployeeEvents from './features/training/employee-events.jsx';
+import OpenPositions from './features/hiring/OpenPositions.jsx';
 
 // Management Features (HOD)
 import HodDashboard from './features/dashboard/hod-dashboard.jsx';
@@ -146,7 +147,7 @@ export default function Root() {
         element={!currentUser ? <ChangePasswordRequest /> : <Navigate to={getRoleBasedHome(currentUser?.role)} replace />} 
       />
       
-      {/* SHARED ACTIVE ROUTES (Accessible by everyone, including Restricted profiles) */}
+      {/* SHARED ACTIVE ROUTES (Accessible by everyone) */}
       <Route path="/dashboard" element={
         <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
           <Dashboard onLogout={handleLogout} user={currentUser} />
@@ -167,6 +168,11 @@ export default function Root() {
           <Support onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
+      <Route path="/open-positions" element={
+        <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
+          <OpenPositions user={currentUser} onLogout={handleLogout} />
+        </ProtectedRoute>
+      } />
 
       {/* FULL SELF-SERVICE ROUTES */}
       <Route path="/leavehistory" element={
@@ -184,7 +190,6 @@ export default function Root() {
           <TrainingRecords onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
-      {/* RESTORED EMPLOYEE EVENTS ROUTE */}
       <Route path="/employee-events" element={
         <ProtectedRoute user={currentUser} allowedRoles={FULL_SELF_SERVICE_ROLES}>
           <EmployeeEvents onLogout={handleLogout} user={currentUser} />
