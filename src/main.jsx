@@ -17,7 +17,8 @@ import LeaveHistory from './features/leave/leavehistory.jsx';
 import LeaveApplication from './features/leave/leaveapplication.jsx';
 import CreditLedger from './features/ledger/creditledger.jsx';
 import TrainingRecords from './features/training/trainingrecords.jsx';
-import EmployeeEvents from './features/training/employee-events.jsx'; // RESTORED
+import EmployeeEvents from './features/training/employee-events.jsx';
+import OpenPositions from './features/hiring/OpenPositions.jsx';
 
 // Management Features (HOD)
 import HodDashboard from './features/dashboard/hod-dashboard.jsx';
@@ -184,10 +185,14 @@ export default function Root() {
           <TrainingRecords onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
-      {/* RESTORED EMPLOYEE EVENTS ROUTE */}
       <Route path="/employee-events" element={
         <ProtectedRoute user={currentUser} allowedRoles={FULL_SELF_SERVICE_ROLES}>
           <EmployeeEvents onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
+      <Route path="/open-positions" element={
+        <ProtectedRoute user={currentUser} allowedRoles={FULL_SELF_SERVICE_ROLES}>
+          <OpenPositions onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
       <Route path="/leaveapplication" element={
