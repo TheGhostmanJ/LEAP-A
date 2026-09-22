@@ -1386,40 +1386,6 @@ app.get('/api/departments', async (req, res) => {
 // POST: Create a new department
 app.post('/api/departments', async (req, res) => {
     const { department_id, department_name, max_capacity } = req.body;
-    try {
-        await pool.query(
-            `INSERT INTO public.dim_department (department_id, department_name, max_capacity) 
-             VALUES ($1, $2, $3)`,
-            [department_id, department_name, max_capacity]
-        );
-        res.status(201).json({ success: true, message: "Department created." });
-    } catch (error) {
-        if (error.code === '23505') {
-            return res.status(409).json({ error: "Department code already exists." });
-        }
-        res.status(500).json({ error: "Failed to create department." });
-    }
-});
-
-// PUT: Update an existing department
-app.put('/api/departments/:id', async (req, res) => {
-    const { id } = req.params;
-    const { department_name, max_capacity } = req.body;
-    try {
-        await pool.query(
-            `UPDATE public.dim_department 
-             SET department_name = $1, max_capacity = $2 
-             WHERE department_id = $3`,
-            [department_name, max_capacity, id]
-        );
-        res.status(200).json({ success: true, message: "Department updated." });
-    } catch (error) {
-        res.status(500).json({ error: "Failed to update department." });
-    }
-});
-
-app.post('/api/departments', async (req, res) => {
-    const { department_id, department_name, max_capacity } = req.body;
 
     if (!department_id || !department_name || !max_capacity) {
         return res.status(400).json({ error: "Department code, name, and capacity are required." });
@@ -1444,6 +1410,7 @@ app.post('/api/departments', async (req, res) => {
     }
 });
 
+// PUT: Update an existing department
 app.put('/api/departments/:id', async (req, res) => {
     const { id } = req.params;
     const { department_name, max_capacity } = req.body;
@@ -1985,56 +1952,6 @@ app.put('/api/profile/:employee_key', async (req, res) => {
   }
 });
 
-// GET: Fetch all password reset requests for the IT Dashboard
-app.get('/api/password-reset-requests', async (req, res) => {
-    try {
-        const query = `
-            SELECT 
-                request_id,
-                employee_id_input,
-                first_name,
-                last_name,
-                department,
-                position_title,
-                status,
-                requested_at
-            FROM public.password_reset_requests
-            ORDER BY 
-                CASE WHEN status = 'Pending' THEN 1 ELSE 2 END,
-                requested_at DESC;
-        `;
-        const result = await pool.query(query);
-        res.status(200).json(result.rows);
-    } catch (error) {
-        console.error("Error fetching password reset requests:", error);
-        res.status(500).json({ error: "Failed to fetch password reset requests." });
-    }
-});
-
-// PUT: Update password reset request status (e.g., mark as 'Resolved')
-app.put('/api/password-reset-requests/:id', async (req, res) => {
-    const { id } = req.params;
-    const { status, resolved_by } = req.body;
-    
-    try {
-        const query = `
-            UPDATE public.password_reset_requests 
-            SET status = $1, resolved_at = CURRENT_TIMESTAMP, resolved_by = $2
-            WHERE request_id = $3 
-            RETURNING *;
-        `;
-        const result = await pool.query(query, [status, resolved_by || null, id]);
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: "Request not found." });
-        }
-        res.status(200).json({ success: true, message: `Request marked as ${status}` });
-    } catch (error) {
-        console.error("Error updating password reset request:", error);
-        res.status(500).json({ error: "Failed to update request." });
-    }
-});
-
 // ==========================================
 // IT DASHBOARD: PASSWORD RESET MANAGEMENT
 // ==========================================
@@ -2285,7 +2202,7 @@ app.get('/api/succession/shortlist/:departmentId', async (req, res) => {
             SELECT e.employee_key, e.first_name, e.last_name, e.position_title,
                    e.hire_date,
                    EXTRACT(YEAR FROM AGE(NOW(), e.hire_date)) AS years_of_service,
-                   so.status AS offer_status, so.offer_rank
+                   so.offer_id, so.status AS offer_status, so.offer_rank
             FROM public.dim_employee e
             LEFT JOIN public.succession_offer so
               ON so.employee_key = e.employee_key AND so.department_id = $1
