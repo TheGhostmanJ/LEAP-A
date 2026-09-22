@@ -7,7 +7,8 @@ import {
   SlidersHorizontal, 
   ArrowRight,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  X
 } from 'lucide-react';
 
 /* SIDEBAR & HEADER COMPONENTS */
