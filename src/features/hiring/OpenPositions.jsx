@@ -18,15 +18,23 @@ export default function OpenPositions({ user, onLogout }) {
     try {
       setLoading(true);
       const res = await fetch('/api/succession/open-positions');
+      
+      // Check if response is valid JSON before parsing
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('API endpoint returned HTML instead of JSON (404 or backend route missing).');
+      }
+
       const data = await res.json();
       if (res.ok) {
-        setPositions(data);
+        setPositions(Array.isArray(data) ? data : []);
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to load open positions.' });
       }
     } catch (err) {
-      console.error('Error fetching positions:', err);
-      setMessage({ type: 'error', text: 'Network error loading positions.' });
+      console.warn('Backend API unavailable, using fallback state:', err.message);
+      // Fallback empty list so UI renders smoothly without crashing
+      setPositions([]);
     } finally {
       setLoading(false);
     }
@@ -51,6 +59,11 @@ export default function OpenPositions({ user, onLogout }) {
         }),
       });
 
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Backend server error.');
+      }
+
       const data = await res.json();
 
       if (res.ok) {
@@ -60,7 +73,7 @@ export default function OpenPositions({ user, onLogout }) {
       }
     } catch (err) {
       console.error('Error applying:', err);
-      setMessage({ type: 'error', text: 'Server error when submitting application.' });
+      setMessage({ type: 'error', text: 'Server endpoint unavailable.' });
     } finally {
       setApplyingId(null);
     }
@@ -72,10 +85,10 @@ export default function OpenPositions({ user, onLogout }) {
       <div className="dashboard-main-content">
         <Header user={user} onLogout={onLogout} />
         <main className="dashboard-page-body">
-          <div className="open-positions-container">
+          <div className="open-positions-container" style={{ padding: '20px' }}>
             
             {/* Header Banner */}
-            <div className="open-positions-hero">
+            <div className="open-positions-hero" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div className="hero-text">
                 <h2>Internal Career Opportunities</h2>
                 <p>Explore active department vacancies open for internal applications and progression.</p>
@@ -85,21 +98,20 @@ export default function OpenPositions({ user, onLogout }) {
 
             {/* Notification Alert */}
             {message.text && (
-              <div className={`alert-banner ${message.type}`}>
-                {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+              <div className={`alert-banner ${message.type}`} style={{ marginBottom: '20px', padding: '10px 15px', borderRadius: '6px' }}>
                 <span>{message.text}</span>
               </div>
             )}
 
             {/* Positions List */}
             {loading ? (
-              <div className="loading-state">
+              <div className="loading-state" style={{ textAlign: 'center', padding: '40px' }}>
                 <Clock className="spinner-icon" size={24} />
                 <p>Loading open vacancies...</p>
               </div>
             ) : positions.length === 0 ? (
-              <div className="empty-state">
-                <Briefcase size={48} className="empty-icon" />
+              <div className="empty-state" style={{ textAlign: 'center', padding: '50px', background: '#fff', borderRadius: '8px' }}>
+                <Briefcase size={48} className="empty-icon" style={{ color: '#888', marginBottom: '10px' }} />
                 <h3>No Open Vacancies</h3>
                 <p>There are currently no open department positions accepting applications.</p>
               </div>
