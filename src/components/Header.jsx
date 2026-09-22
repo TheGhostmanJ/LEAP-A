@@ -17,6 +17,7 @@ const ROUTE_CONFIG = {
   '/attendance': { title: 'My Attendance Log', icon: Clock, tag: 'Time Tracker', color: '#2563eb', bg: '#eff6ff' },
   '/profile': { title: 'Profile Management', icon: User, tag: 'Account', color: '#0d9488', bg: '#f0fdfa' },
   '/support': { title: 'Support Center', icon: HelpCircle, tag: 'Helpdesk', color: '#4f46e5', bg: '#eef2ff' },
+  '/open-positions': { title: 'Open Positions', icon: Briefcase, tag: 'Careers', color: '#be123c', bg: '#fff1f2' },
   '/leavehistory': { title: 'Leave History', icon: FileText, tag: 'Records', color: '#d97706', bg: '#fffbeb' },
   '/creditledger': { title: 'Credit Ledger', icon: Wallet, tag: 'Balances', color: '#059669', bg: '#ecfdf5' },
   '/trainingrecords': { title: 'Training Records', icon: Award, tag: 'Learning', color: '#9333ea', bg: '#faf5ff' },
@@ -45,7 +46,6 @@ export default function Header({ user, onLogout, onNavigate }) {
   const dropdownRef = useRef(null);
   const location = useLocation();
 
-  // Get active route configuration or fallback
   const activeRoute = ROUTE_CONFIG[location.pathname] || {
     title: 'Dashboard',
     icon: LayoutDashboard,
@@ -93,9 +93,7 @@ export default function Header({ user, onLogout, onNavigate }) {
         </div>
       </div>
 
-      {/* Control Actions */}
       <div className="header-user-controls">
-        {/* Directly navigates to /support on click */}
         <Link 
           to="/support" 
           className="header-utility-btn" 
@@ -113,7 +111,6 @@ export default function Header({ user, onLogout, onNavigate }) {
 
         <div className="header-divider-vertical"></div>
 
-        {/* User Pill */}
         <div className="header-profile-dropdown" ref={dropdownRef}>
           <button
             type="button"
