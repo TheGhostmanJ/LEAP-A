@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../../components/Header.jsx';
-import Sidebar from '../../components/Sidebar.jsx';
+import Sidebar from '../../components/sidebar.jsx';
 import { Briefcase, CheckCircle, AlertCircle, Clock, Building } from 'lucide-react';
 import './OpenPositions.css';
 
