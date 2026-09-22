@@ -10,6 +10,9 @@ export default function OpenPositions({ user, onLogout }) {
   const [applyingId, setApplyingId] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
 
+  // Use the same base API URL as Hiring.jsx
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
   useEffect(() => {
     fetchOpenPositions();
   }, []);
@@ -17,12 +20,12 @@ export default function OpenPositions({ user, onLogout }) {
   const fetchOpenPositions = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/succession/open-positions');
-      
-      // Check if response is valid JSON before parsing
+      // Changed endpoint from '/api/succession/open-positions' to match Hiring.jsx ('/api/succession/vacancies')
+      const res = await fetch(`${apiUrl}/api/succession/vacancies`);
+
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('API endpoint returned HTML instead of JSON (404 or backend route missing).');
+        throw new Error('API server returned HTML instead of JSON.');
       }
 
       const data = await res.json();
@@ -32,8 +35,7 @@ export default function OpenPositions({ user, onLogout }) {
         setMessage({ type: 'error', text: data.error || 'Failed to load open positions.' });
       }
     } catch (err) {
-      console.warn('Backend API unavailable, using fallback state:', err.message);
-      // Fallback empty list so UI renders smoothly without crashing
+      console.warn('Error fetching vacancies:', err.message);
       setPositions([]);
     } finally {
       setLoading(false);
@@ -50,7 +52,7 @@ export default function OpenPositions({ user, onLogout }) {
       setApplyingId(departmentId);
       setMessage({ type: '', text: '' });
 
-      const res = await fetch('/api/succession/apply', {
+      const res = await fetch(`${apiUrl}/api/succession/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -61,7 +63,7 @@ export default function OpenPositions({ user, onLogout }) {
 
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Backend server error.');
+        throw new Error('Server returned an invalid response.');
       }
 
       const data = await res.json();
@@ -85,7 +87,7 @@ export default function OpenPositions({ user, onLogout }) {
       <div className="dashboard-main-content">
         <Header user={user} onLogout={onLogout} />
         <main className="dashboard-page-body">
-          <div className="open-positions-container" style={{ padding: '20px' }}>
+          <div className="open-positions-container" style={{ padding: '24px' }}>
             
             {/* Header Banner */}
             <div className="open-positions-hero" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -98,7 +100,7 @@ export default function OpenPositions({ user, onLogout }) {
 
             {/* Notification Alert */}
             {message.text && (
-              <div className={`alert-banner ${message.type}`} style={{ marginBottom: '20px', padding: '10px 15px', borderRadius: '6px' }}>
+              <div className={`alert-banner ${message.type}`} style={{ marginBottom: '20px', padding: '12px 16px', borderRadius: '6px' }}>
                 <span>{message.text}</span>
               </div>
             )}
@@ -110,8 +112,8 @@ export default function OpenPositions({ user, onLogout }) {
                 <p>Loading open vacancies...</p>
               </div>
             ) : positions.length === 0 ? (
-              <div className="empty-state" style={{ textAlign: 'center', padding: '50px', background: '#fff', borderRadius: '8px' }}>
-                <Briefcase size={48} className="empty-icon" style={{ color: '#888', marginBottom: '10px' }} />
+              <div className="empty-state" style={{ textAlign: 'center', padding: '48px', background: '#fff', borderRadius: '8px' }}>
+                <Briefcase size={48} className="empty-icon" style={{ color: '#888', marginBottom: '12px' }} />
                 <h3>No Open Vacancies</h3>
                 <p>There are currently no open department positions accepting applications.</p>
               </div>
@@ -124,11 +126,11 @@ export default function OpenPositions({ user, onLogout }) {
                         <Building size={16} />
                         <span>{pos.department_name}</span>
                       </div>
-                      <span className="stage-pill">{pos.vacancy_stage}</span>
+                      <span className="stage-pill">{pos.vacancy_stage || 'Vacant'}</span>
                     </div>
 
                     <div className="card-body">
-                      <h3 className="position-title">{pos.department_name} Leadership Position</h3>
+                      <h3 className="position-title">{pos.department_name} Department Head</h3>
                       <p className="position-desc">
                         Open for internal transfers, succession planning, and lateral growth opportunities.
                       </p>
