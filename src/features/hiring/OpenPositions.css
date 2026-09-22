@@ -1,57 +1,51 @@
-/* Layout & Container */
-.open-positions-layout {
+/* Layout Wrappers matching the app design system */
+.app-layout-wrapper {
   display: flex;
   min-height: 100vh;
   width: 100vw;
-  background-color: #f8fafc;
-  color: #1e293b;
-  font-family: inherit;
+  background-color: #f4f5f7;
 }
 
-.open-positions-main {
+.app-main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.open-positions-body {
-  flex: 1;
-  padding: 32px;
+  padding: 24px 32px;
   overflow-y: auto;
 }
 
-.open-positions-container {
-  max-width: 1000px;
-  margin: 0 auto;
+/* Floating Card Header Styling */
+.app-global-header {
+  margin-bottom: 24px;
 }
 
-/* Header Section */
-.open-positions-header {
+/* Page Body Container */
+.open-positions-container {
+  width: 100%;
+}
+
+.open-positions-hero {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 20px;
 }
 
-.header-title-group h1 {
-  font-size: 24px;
+.open-positions-hero .hero-text h2 {
+  font-size: 22px;
   font-weight: 800;
   color: #0f172a;
   margin: 0;
 }
 
-.header-title-group p {
+.open-positions-hero .hero-text p {
   color: #64748b;
   margin: 4px 0 0 0;
-  font-size: 14px;
+  font-size: 13.5px;
 }
 
-.header-icon {
-  color: #800000; /* LEAP Maroon accent */
+.open-positions-hero .hero-icon {
+  color: #800000;
 }
 
 /* Alert Notification */
@@ -60,7 +54,7 @@
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  border-radius: 6px;
+  border-radius: 8px;
   margin-bottom: 20px;
   font-size: 14px;
   font-weight: 500;
@@ -78,7 +72,7 @@
   border: 1px solid #bbf7d0;
 }
 
-/* Loading State */
+/* Loading & Empty States */
 .open-positions-loading {
   text-align: center;
   padding: 60px 0;
@@ -95,7 +89,6 @@
   to { transform: rotate(360deg); }
 }
 
-/* Empty State */
 .open-positions-empty {
   text-align: center;
   padding: 60px 24px;
@@ -121,30 +114,31 @@
   font-size: 14px;
 }
 
-/* Cards Grid */
+/* Positions Cards Grid */
 .open-positions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
   gap: 20px;
 }
 
 .position-card {
   background-color: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .position-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.08);
 }
 
-.card-header {
+.card-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -157,42 +151,42 @@
   gap: 8px;
   color: #0f172a;
   font-weight: 700;
+  font-size: 14px;
 }
 
 .badge-vacant {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  color: #991b1b;
-  background-color: #fef2f2;
+  color: #800000;
+  background-color: #fcf2f2;
   padding: 2px 8px;
   border-radius: 12px;
-  border: 1px solid #fecaca;
+  border: 1px solid #f8d7d7;
 }
 
 .role-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: #0f172a;
   margin: 0 0 6px 0;
 }
 
 .role-description {
-  font-size: 13px;
+  font-size: 12.5px;
   color: #64748b;
   margin: 0 0 20px 0;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
-/* Apply Button */
 .btn-apply {
   width: 100%;
   padding: 10px;
-  background-color: #800000; /* LEAP Primary Maroon */
+  background-color: #800000;
   color: #ffffff;
   border: none;
   border-radius: 6px;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 700;
+  font-size: 13.5px;
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
