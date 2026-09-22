@@ -821,6 +821,7 @@ app.post('/api/attendance/upload-dat', async (req, res) => {
         }
 
         await client.query('COMMIT'); 
+        processDailyAttendance();
         res.status(200).json({ success: true, message: "Dat file processed successfully." });
     } catch (error) {
         await client.query('ROLLBACK'); 
@@ -2251,6 +2252,79 @@ app.post('/api/system-action/:action', async (req, res) => {
 // ==========================================
 // BACKGROUND TASKS (ML INTERVAL FUNCTION)
 // ==========================================
+// ==========================================
+// ATTENDANCE ETL: RAW LOGS TO FACT TABLE
+// ==========================================
+const processDailyAttendance = async () => {
+    const client = await pool.connect();
+    console.log('[System Task] Running Attendance ETL Processing...');
+
+    try {
+        await client.query('BEGIN');
+
+        // This query extracts raw logs, pairs Check-Ins (0) with Check-Outs (1), 
+        // calculates tardiness (assuming 8:00 AM start), hours worked, and UPSERTS to fact_attendance.
+        const etlQuery = `
+            WITH DailyPunches AS (
+                SELECT 
+                    employee_key,
+                    TO_CHAR(punch_time, 'YYYYMMDD')::INTEGER AS date_key,
+                    MIN(CASE WHEN punch_type = 0 THEN punch_time END) AS check_in,
+                    MAX(CASE WHEN punch_type = 1 THEN punch_time END) AS check_out
+                FROM public.fact_attendance_log
+                WHERE punch_time >= CURRENT_DATE - INTERVAL '7 days' -- Process recent records
+                GROUP BY employee_key, TO_CHAR(punch_time, 'YYYYMMDD')::INTEGER
+            ),
+            CalculatedMetrics AS (
+                SELECT 
+                    employee_key,
+                    date_key,
+                    check_in,
+                    check_out,
+                    -- Calculate Tardiness (Minutes late past 08:00 AM)
+                    CASE 
+                        WHEN check_in IS NOT NULL AND EXTRACT(HOUR FROM check_in) >= 8 THEN
+                            GREATEST(0, EXTRACT(EPOCH FROM (check_in - DATE_TRUNC('day', check_in) - INTERVAL '8 hours')) / 60)
+                        ELSE 0 
+                    END AS tardy_minutes,
+                    -- Calculate Hours Worked (Check-out minus Check-in)
+                    CASE 
+                        WHEN check_in IS NOT NULL AND check_out IS NOT NULL THEN
+                            GREATEST(0, EXTRACT(EPOCH FROM (check_out - check_in)) / 3600)
+                        ELSE 0 
+                    END AS hours_worked
+                FROM DailyPunches
+            )
+            INSERT INTO public.fact_attendance (employee_key, date_key, status, hours_worked, tardy_minutes)
+            SELECT 
+                employee_key,
+                date_key,
+                CASE 
+                    WHEN hours_worked >= 8 THEN 'Present'
+                    WHEN hours_worked > 0 AND hours_worked < 8 THEN 'Half-day'
+                    ELSE 'Absent'
+                END AS status,
+                ROUND(hours_worked::numeric, 2),
+                ROUND(tardy_minutes::numeric, 0)
+            FROM CalculatedMetrics
+            ON CONFLICT (employee_key, date_key) 
+            DO UPDATE SET 
+                status = EXCLUDED.status,
+                hours_worked = EXCLUDED.hours_worked,
+                tardy_minutes = EXCLUDED.tardy_minutes;
+        `;
+
+        await client.query(etlQuery);
+        await client.query('COMMIT');
+        console.log('[System Task] Attendance ETL Processing complete.');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('[System Task] Error processing attendance:', error);
+    } finally {
+        client.release();
+    }
+};
+
 let mlSyncTimer = null;
 
 const setupMlSyncTimer = async () => {
