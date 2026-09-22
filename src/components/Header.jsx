@@ -5,7 +5,8 @@ import {
   Wallet, Award, FilePlus, Users, CalendarCheck, 
   TrendingUp, AlertTriangle, BarChart3, Building2, 
   Calendar, DollarSign, UserCheck, Settings, Shield, 
-  Database, Cpu, Key, Sliders, ChevronDown, LogOut 
+  Database, Cpu, Key, Sliders, ChevronDown, LogOut,
+  Briefcase
 } from 'lucide-react';
 import NotificationBell from './NotificationBell.jsx';
 import './Header.css';
@@ -28,6 +29,7 @@ const ROUTE_CONFIG = {
   '/hr-dashboard': { title: 'HR Dashboard', icon: Building2, tag: 'HR Portal', color: '#c026d3', bg: '#fdf4ff' },
   '/event-management': { title: 'Event Management', icon: Calendar, tag: 'Schedule', color: '#ea580c', bg: '#fff7ed' },
   '/departments': { title: 'Department Setup', icon: Building2, tag: 'Structure', color: '#0891b2', bg: '#ecfeff' },
+  '/hiring': { title: 'Hiring & Succession', icon: Briefcase, tag: 'Recruitment', color: '#be123c', bg: '#fff1f2' },
   '/payroll': { title: 'Payroll & Ledger', icon: DollarSign, tag: 'Finance', color: '#15803d', bg: '#f0fdf4' },
   '/profile-requests': { title: 'Profile Management Requests', icon: UserCheck, tag: 'Approvals', color: '#0284c7', bg: '#f0f9ff' },
   '/system-config': { title: 'System Configuration', icon: Settings, tag: 'Admin', color: '#4b5563', bg: '#f9fafb' },
