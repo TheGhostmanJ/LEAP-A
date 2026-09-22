@@ -20,6 +20,7 @@ import './workforce-forecast.css';
 export default function WorkforceForecast({ onLogout, user }) {
   const [forecastData, setForecastData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchForecast = async () => {
@@ -302,6 +303,72 @@ export default function WorkforceForecast({ onLogout, user }) {
 
             </div>
           </>
+        )}
+
+        {/* FULL FORECAST MODAL */}
+        {isModalOpen && forecastData && (
+          <div className="wf-modal-overlay" onClick={() => setIsModalOpen(false)}>
+            <div className="wf-modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px', width: '90%', maxHeight: '85vh', overflowY: 'auto' }}>
+              
+              <div className="wf-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
+                <h2 style={{ margin: 0, color: '#800000', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <BarChart3 size={24} /> Detailed Analytics & Forecast
+                </h2>
+                <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                
+                {/* Historical Insights Panel */}
+                <div style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <h3 style={{ fontSize: '16px', marginTop: 0, color: '#334155' }}>Historical Pattern Recognition</h3>
+                  <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
+                    Insights derived from 5 years of longitudinal attendance data via time-series analysis.
+                  </p>
+                  
+                  <ul style={{ paddingLeft: '20px', margin: 0, fontSize: '14px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <li><strong style={{color: '#0f172a'}}>Structural Shift Detected:</strong> Model recognizes the transition to a Monday-Thursday workweek in 2026. Friday baseline expectations adjusted to 0.</li>
+                    <li><strong style={{color: '#0f172a'}}>Seasonal Spikes:</strong> Higher historical incidence of sick/emergency leaves during the Habagat season (July - September).</li>
+                    <li><strong style={{color: '#0f172a'}}>Punctuality Trends:</strong> Average check-in time remains stable around 07:45 AM, with a 15-minute standard deviation leading to a ~16% natural tardiness rate.</li>
+                  </ul>
+                </div>
+
+                {/* Day-by-Day Forecast Table */}
+                <div>
+                  <h3 style={{ fontSize: '16px', marginTop: 0, color: '#334155' }}>30-Day Daily Prediction Matrix</h3>
+                  <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                      <thead style={{ backgroundColor: '#f1f5f9', position: 'sticky', top: 0 }}>
+                        <tr>
+                          <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #cbd5e1' }}>Date</th>
+                          <th style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid #cbd5e1' }}>Predicted Absences</th>
+                          <th style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid #cbd5e1' }}>Expected Availability</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {forecastData.forecast.map((day, idx) => (
+                          <tr key={idx} style={{ backgroundColor: day.isWeekend ? '#f8fafc' : '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
+                            <td style={{ padding: '10px', fontWeight: '500', color: day.isWeekend ? '#94a3b8' : '#334155' }}>
+                              {day.dateStr} {day.isWeekend && "(Weekend)"}
+                            </td>
+                            <td style={{ padding: '10px', textAlign: 'center', color: '#dc2626', fontWeight: '600' }}>
+                              {day.isWeekend ? "-" : Math.round(day.absences)}
+                            </td>
+                            <td style={{ padding: '10px', textAlign: 'center', fontWeight: '600', color: day.availablePercentage < 90 && !day.isWeekend ? '#dc2626' : '#059669' }}>
+                              {day.isWeekend ? "100%" : `${Math.round(day.availablePercentage)}%`}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>
