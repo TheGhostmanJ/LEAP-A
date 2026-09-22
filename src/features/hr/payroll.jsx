@@ -84,17 +84,6 @@ export default function Payroll({ onLogout, user }) {
       >
         
         <header className="app-global-header">
-          <div className="app-title-layout">
-            <div className="app-title-icon-badge">
-              <Banknote size={20} />
-            </div>
-            <div>
-              <h1 className="app-title">Payroll & Ledger</h1>
-              <p className="app-subtitle">
-                Portal: <span className="app-subtitle-accent">HR Operations</span>
-              </p>
-            </div>
-          </div>
           <Header controlsOnly={true} user={user} onLogout={onLogout} onNavigate={navigate} />
         </header>
 
