@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useLayoutEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, UserCheck, History, CreditCard, GraduationCap, User, HelpCircle, Clock,
-  ChevronLeft, ChevronRight, Menu, X
+  ChevronLeft, ChevronRight, Menu, X, Briefcase
 } from 'lucide-react';
 import './sidebar.css';
 
@@ -35,26 +35,22 @@ export default function Sidebar({ user }) {
     return () => clearInterval(timer);
   }, []);
 
-  // 🔴 UPGRADED: useLayoutEffect + location.pathname
+  // useLayoutEffect + location.pathname to retain scroll position
   useLayoutEffect(() => {
     const savedScrollPosition = sessionStorage.getItem('mainSidebarScroll');
     if (sidebarRef.current && savedScrollPosition) {
-      // Set it immediately
       sidebarRef.current.scrollTop = parseInt(savedScrollPosition, 10);
       
-      // Fallback for slower page loads
       setTimeout(() => {
         if (sidebarRef.current) {
           sidebarRef.current.scrollTop = parseInt(savedScrollPosition, 10);
         }
       }, 50);
     }
-  }, [location.pathname]); // This makes it fire EVERY time you change pages!
+  }, [location.pathname]);
 
-  // 3. Save scroll position exactly as the user scrolls
   const handleScroll = (e) => {
     const currentScroll = e.target.scrollTop;
-    console.log("Main Sidebar is scrolling at position:", currentScroll);
     sessionStorage.setItem('mainSidebarScroll', currentScroll);
   };
 
@@ -69,7 +65,6 @@ export default function Sidebar({ user }) {
     return location.pathname === path ? "sidebar-item active" : "sidebar-item";
   };
 
-  // Close mobile menu automatically when navigating
   const handleNavClick = (path) => {
     navigate(path);
     setIsMobileOpen(false); 
@@ -81,6 +76,7 @@ export default function Sidebar({ user }) {
     { path: '/leavehistory', icon: History, label: 'My Leave History' },
     { path: '/creditledger', icon: CreditCard, label: 'My Credit Ledger' },
     { path: '/trainingrecords', icon: GraduationCap, label: 'My Training Records' },
+    { path: '/open-positions', icon: Briefcase, label: 'Open Positions' },
   ];
 
   // Restricted Self-Service (OJT/Contractual) doesn't get leave-related items
@@ -127,7 +123,6 @@ export default function Sidebar({ user }) {
         {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      {/* ATTACHED REF AND ONSCROLL HANDLER HERE */}
       <aside 
         className={`dashboard-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'sidebar-mobile-open' : ''}`}
         ref={sidebarRef}

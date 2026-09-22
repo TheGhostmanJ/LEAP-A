@@ -2438,6 +2438,149 @@ app.post('/api/succession/respond/:offerId', async (req, res) => {
     }
 });
 
+// ==========================================
+// SUCCESSION & OPEN POSITIONS API ROUTES
+// ==========================================
+
+// 1. GET OPEN POSITIONS (Employee View)
+app.get('/api/succession/open-positions', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        svs.department_id,
+        d.department_name,
+        svs.status AS vacancy_stage,
+        svs.updated_at
+      FROM succession_vacancy_status svs
+      JOIN dim_department d ON svs.department_id = d.department_id
+      WHERE svs.status = 'Open - External' OR svs.status = 'Open - Internal'
+      ORDER BY svs.updated_at DESC;
+    `;
+    const result = await db.query(query); // Replace db with your pg pool or client
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching open positions:", err);
+    res.status(500).json({ error: "Failed to fetch open positions." });
+  }
+});
+
+// 2. POST APPLY TO A VACANCY (Employee View)
+app.post('/api/succession/apply', async (req, res) => {
+  const { department_id, employee_key } = req.body;
+
+  if (!department_id || !employee_key) {
+    return res.status(400).json({ error: "Department ID and Employee Key are required." });
+  }
+
+  try {
+    const insertQuery = `
+      INSERT INTO succession_application (department_id, employee_key, status)
+      VALUES ($1, $2, 'Applied')
+      RETURNING *;
+    `;
+    const result = await db.query(insertQuery, [department_id, employee_key]);
+    res.status(201).json({ message: "Application submitted successfully!", application: result.rows[0] });
+  } catch (err) {
+    if (err.code === '23505') { // Unique constraint violation (already applied)
+      return res.status(400).json({ error: "You have already applied for this position." });
+    }
+    console.error("Error submitting application:", err);
+    res.status(500).json({ error: "Failed to submit application." });
+  }
+});
+
+// 3. GET APPLICANTS FOR A DEPARTMENT (HR View - hiring.jsx)
+app.get('/api/succession/applicants/:departmentId', async (req, res) => {
+  const { departmentId } = req.params;
+
+  try {
+    const query = `
+      SELECT 
+        sa.application_id,
+        sa.department_id,
+        sa.employee_key,
+        sa.status,
+        sa.applied_date,
+        e.first_name,
+        e.last_name,
+        e.email,
+        d.department_name AS current_department
+      FROM succession_application sa
+      JOIN dim_employee e ON sa.employee_key = e.employee_key
+      LEFT JOIN dim_department d ON e.department_id = d.department_id
+      WHERE sa.department_id = $1
+      ORDER BY sa.applied_date ASC;
+    `;
+    const result = await db.query(query, [departmentId]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching applicants:", err);
+    res.status(500).json({ error: "Failed to fetch applicants." });
+  }
+});
+
+// 4. PUT DECISION ON APPLICANT (HR View - hiring.jsx)
+app.put('/api/succession/applicants/:applicationId/decision', async (req, res) => {
+  const { applicationId } = req.params;
+  const { decision, department_id } = req.body; // decision: 'Appointed' or 'Rejected'
+
+  if (!['Appointed', 'Rejected'].includes(decision)) {
+    return res.status(400).json({ error: "Invalid decision value." });
+  }
+
+  try {
+    // Update candidate application status
+    const updateAppQuery = `
+      UPDATE succession_application 
+      SET status = $1 
+      WHERE application_id = $2 
+      RETURNING *;
+    `;
+    const appResult = await db.query(updateAppQuery, [decision, applicationId]);
+
+    // If appointed, close the vacancy stage in succession_vacancy_status
+    if (decision === 'Appointed' && department_id) {
+      await db.query(`
+        UPDATE succession_vacancy_status 
+        SET status = 'Filled', updated_at = NOW() 
+        WHERE department_id = $1;
+      `, [department_id]);
+    }
+
+    res.json({ message: `Applicant ${decision.toLowerCase()} successfully!`, application: appResult.rows[0] });
+  } catch (err) {
+    console.error("Error updating applicant status:", err);
+    res.status(500).json({ error: "Failed to update decision." });
+  }
+});
+
+// 5. UPDATE RESPOND TO OFFER (Modifies stage to 'Open - External' when internal list is exhausted)
+app.post('/api/succession/respond/:offerId', async (req, res) => {
+  const { offerId } = req.params;
+  const { response, department_id } = req.body; // response: 'Accepted' or 'Declined'
+
+  try {
+    if (response === 'Accepted') {
+      // Mark offer as accepted and vacancy filled
+      await db.query(`UPDATE succession_vacancy_status SET status = 'Filled', updated_at = NOW() WHERE department_id = $1;`, [department_id]);
+      return res.json({ message: "Offer accepted. Position filled." });
+    } else {
+      // Check if more internal candidates remain; if exhausted, set to 'Open - External'
+      await db.query(`
+        INSERT INTO succession_vacancy_status (department_id, status, updated_at)
+        VALUES ($1, 'Open - External', NOW())
+        ON CONFLICT (department_id) 
+        DO UPDATE SET status = 'Open - External', updated_at = NOW();
+      `, [department_id]);
+
+      return res.json({ message: "Offer declined. Position status set to Open - External." });
+    }
+  } catch (err) {
+    console.error("Error processing response:", err);
+    res.status(500).json({ error: "Failed to process offer response." });
+  }
+});
+
 // Start listening for API calls
 app.listen(PORT, () => {
   console.log(`Node.js server executing on http://localhost:${PORT}`);
