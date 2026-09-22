@@ -30,6 +30,7 @@ import DepartmentReports from './features/reports/department-reports.jsx';
 import HrDashboard from './features/dashboard/hr-dashboard.jsx';
 import EventManagement from './features/hr/event-management.jsx';
 import Departments from './features/hr/departments.jsx';
+import Hiring from './features/hr/hiring.jsx';
 import Payroll from './features/hr/payroll.jsx';
 import ProfileRequests from './features/hr/profile-requests.jsx';
 
@@ -236,6 +237,11 @@ export default function Root() {
       <Route path="/departments" element={
         <ProtectedRoute user={currentUser} allowedRoles={['HR Admin', 'Super Admin']}>
           <Departments onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
+      <Route path="/hiring" element={
+        <ProtectedRoute user={currentUser} allowedRoles={['HR Admin', 'Super Admin']}>
+          <Hiring onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
       <Route path="/payroll" element={
