@@ -4,7 +4,8 @@ import {
   Home, BarChart3, AlertTriangle, FileText,
   User, Clock, Users, Building2, Banknote,
   ChevronLeft, ChevronRight, ClipboardList, Menu, X,
-  UserCheck, History, CreditCard, GraduationCap, Calendar
+  UserCheck, History, CreditCard, GraduationCap, Calendar,
+  Briefcase
 } from 'lucide-react';
 import './sidebar.css';
 
@@ -78,6 +79,7 @@ export default function HrSidebar() {
   const operationsMenuItems = [
     { path: '/event-management', icon: Calendar, label: 'Event Management' },
     { path: '/departments', icon: Building2, label: 'Department Setup' },
+    { path: '/hiring', icon: Briefcase, label: 'Hiring' },
     { path: '/payroll', icon: Banknote, label: 'Payroll & Ledger' },
     { path: '/profile-requests', icon: Users, label: 'Profile Management' },
   ];
