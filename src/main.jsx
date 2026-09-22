@@ -147,7 +147,7 @@ export default function Root() {
         element={!currentUser ? <ChangePasswordRequest /> : <Navigate to={getRoleBasedHome(currentUser?.role)} replace />} 
       />
       
-      {/* SHARED ACTIVE ROUTES (Accessible by everyone, including Restricted profiles) */}
+      {/* SHARED ACTIVE ROUTES (Accessible by everyone) */}
       <Route path="/dashboard" element={
         <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
           <Dashboard onLogout={handleLogout} user={currentUser} />
@@ -166,6 +166,11 @@ export default function Root() {
       <Route path="/support" element={
         <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
           <Support onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
+      <Route path="/open-positions" element={
+        <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
+          <OpenPositions user={currentUser} onLogout={handleLogout} />
         </ProtectedRoute>
       } />
 
@@ -188,11 +193,6 @@ export default function Root() {
       <Route path="/employee-events" element={
         <ProtectedRoute user={currentUser} allowedRoles={FULL_SELF_SERVICE_ROLES}>
           <EmployeeEvents onLogout={handleLogout} user={currentUser} />
-        </ProtectedRoute>
-      } />
-      <Route path="/open-positions" element={
-        <ProtectedRoute user={currentUser} allowedRoles={FULL_SELF_SERVICE_ROLES}>
-          <OpenPositions onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
       <Route path="/leaveapplication" element={
