@@ -83,13 +83,16 @@ export default function OpenPositions({ user, onLogout }) {
     <div className="open-positions-layout">
       <Sidebar user={user} />
 
-      <div className="open-positions-main">
-        {Header && <Header user={user} onLogout={onLogout} />}
+      <main className="open-positions-main">
+        {/* Unified Top Header Container */}
+        <div className="open-positions-header-wrapper">
+          <Header user={user} onLogout={onLogout} />
+        </div>
 
-        <main className="open-positions-body">
+        <div className="open-positions-body">
           <div className="open-positions-container">
             
-            {/* Page Header */}
+            {/* Inner Page Title */}
             <header className="open-positions-header">
               <div className="header-title-group">
                 <h1>Open Positions</h1>
@@ -153,8 +156,8 @@ export default function OpenPositions({ user, onLogout }) {
             )}
 
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
