@@ -2256,6 +2256,143 @@ app.post('/api/ai/chat', async (req, res) => {
     }
 });
 
+// ==========================================
+// HR OPERATIONS: HIRING (SUCCESSION/PROMOTION)
+// ==========================================
+
+// GET: All vacancies (department head is inactive or missing)
+app.get('/api/succession/vacancies', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT d.department_id, d.department_name, d.department_head_key,
+                   e.first_name, e.last_name, e.is_active
+            FROM public.dim_department d
+            LEFT JOIN public.dim_employee e ON e.employee_key = d.department_head_key
+            WHERE e.is_active = false OR d.department_head_key IS NULL
+        `);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching vacancies:", error);
+        res.status(500).json({ error: "Failed to fetch vacancies." });
+    }
+});
+
+// GET: Seniority-ranked shortlist for a department, with any existing offer status
+app.get('/api/succession/shortlist/:departmentId', async (req, res) => {
+    const { departmentId } = req.params;
+    try {
+        const result = await pool.query(`
+            SELECT e.employee_key, e.first_name, e.last_name, e.position_title,
+                   e.hire_date,
+                   EXTRACT(YEAR FROM AGE(NOW(), e.hire_date)) AS years_of_service,
+                   so.status AS offer_status, so.offer_rank
+            FROM public.dim_employee e
+            LEFT JOIN public.succession_offer so
+              ON so.employee_key = e.employee_key AND so.department_id = $1
+            WHERE e.department = (SELECT department_name FROM public.dim_department WHERE department_id = $1)
+              AND e.is_active = true
+            ORDER BY e.hire_date ASC
+        `, [departmentId]);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching shortlist:", error);
+        res.status(500).json({ error: "Failed to fetch shortlist." });
+    }
+});
+
+// POST: Create an offer (used to send the first offer manually)
+app.post('/api/succession/offer', async (req, res) => {
+    const { department_id, employee_key, offer_rank } = req.body;
+    try {
+        const result = await pool.query(`
+            INSERT INTO public.succession_offer (department_id, employee_key, offer_rank, status, offered_date)
+            VALUES ($1, $2, $3, 'Offered', NOW())
+            RETURNING *
+        `, [department_id, employee_key, offer_rank]);
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error("Error creating offer:", error);
+        res.status(500).json({ error: "Failed to create offer." });
+    }
+});
+
+// POST: Accept/decline an offer — declining auto-offers the next candidate
+app.post('/api/succession/respond/:offerId', async (req, res) => {
+    const { offerId } = req.params;
+    const { status } = req.body; // 'Accepted' or 'Declined'
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        const offerResult = await client.query(
+            `SELECT * FROM public.succession_offer WHERE offer_id = $1`,
+            [offerId]
+        );
+        const offer = offerResult.rows[0];
+        if (!offer) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Offer not found' });
+        }
+
+        await client.query(
+            `UPDATE public.succession_offer SET status = $1, responded_date = NOW() WHERE offer_id = $2`,
+            [status, offerId]
+        );
+
+        if (status === 'Accepted') {
+            await client.query(
+                `UPDATE public.dim_department SET department_head_key = $1 WHERE department_id = $2`,
+                [offer.employee_key, offer.department_id]
+            );
+            await client.query('COMMIT');
+            return res.status(200).json({ success: true, message: 'Offer accepted, department head updated.' });
+        }
+
+        if (status === 'Declined') {
+            const nextResult = await client.query(`
+                SELECT e.employee_key
+                FROM public.dim_employee e
+                WHERE e.department = (SELECT department_name FROM public.dim_department WHERE department_id = $1)
+                  AND e.is_active = true
+                  AND e.employee_key NOT IN (
+                      SELECT employee_key FROM public.succession_offer WHERE department_id = $1
+                  )
+                ORDER BY e.hire_date ASC
+                LIMIT 1
+            `, [offer.department_id]);
+
+            if (nextResult.rows.length > 0) {
+                const nextCandidate = nextResult.rows[0];
+                const nextOffer = await client.query(`
+                    INSERT INTO public.succession_offer (department_id, employee_key, offer_rank, status, offered_date)
+                    VALUES ($1, $2, $3, 'Offered', NOW())
+                    RETURNING *
+                `, [offer.department_id, nextCandidate.employee_key, offer.offer_rank + 1]);
+
+                await client.query('COMMIT');
+                return res.status(200).json({ success: true, message: 'Declined. Next candidate offered.', nextOffer: nextOffer.rows[0] });
+            } else {
+                await client.query('COMMIT');
+                return res.status(200).json({
+                    success: true,
+                    message: 'Declined. No more candidates — position open to external hiring.',
+                    status: 'Open - External'
+                });
+            }
+        }
+
+        await client.query('COMMIT');
+        res.status(200).json({ success: true, message: 'Status updated.' });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Error responding to offer:", error);
+        res.status(500).json({ error: "Failed to respond to offer." });
+    } finally {
+        client.release();
+    }
+});
+
 // Start listening for API calls
 app.listen(PORT, () => {
   console.log(`Node.js server executing on http://localhost:${PORT}`);
