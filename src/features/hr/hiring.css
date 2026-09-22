@@ -1,0 +1,44 @@
+/* =========================================================
+   HIRING (SUCCESSION) - COMPONENT SPECIFIC STYLES
+   ========================================================= */
+
+.hiring-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hiring-status-badge.vacant {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: var(--color-danger);
+}
+
+.hiring-status-badge.offered {
+  background-color: rgba(202, 138, 4, 0.12);
+  color: #ca8a04;
+}
+
+.hiring-status-badge.accepted {
+  background-color: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.hiring-status-badge.declined {
+  background-color: var(--color-border-light);
+  color: var(--color-text-muted);
+}
+
+.hiring-candidate-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 10px;
+  background-color: #fff;
+}
