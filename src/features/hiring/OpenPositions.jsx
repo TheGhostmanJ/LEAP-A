@@ -80,83 +80,82 @@ export default function OpenPositions({ user, onLogout }) {
   };
 
   return (
-    <div className="app-layout-wrapper">
+    <div className="open-positions-app-wrapper">
       <Sidebar user={user} />
 
-      <main className="app-main-container app-main-content">
-        {/* Top Header Floating Card */}
-        <header className="app-global-header">
-          <Header user={user} onLogout={onLogout} />
-        </header>
+      <div className="open-positions-main-content">
+        {/* Floating Top Header Component */}
+        <Header user={user} onLogout={onLogout} />
 
-        {/* Inner Page Body Content */}
-        <div className="open-positions-container">
-          
-          {/* Inner Header Title */}
-          <div className="open-positions-hero">
-            <div className="hero-text">
-              <h2>Open Positions</h2>
-              <p>Explore active department vacancies open for internal applications and growth.</p>
+        <main className="open-positions-page-body">
+          <div className="open-positions-content-container">
+            
+            {/* Page Title Row */}
+            <div className="open-positions-hero">
+              <div className="hero-text">
+                <h2>Open Positions</h2>
+                <p>Explore active department vacancies open for internal applications and growth.</p>
+              </div>
+              <Briefcase className="hero-icon" size={28} />
             </div>
-            <Briefcase className="hero-icon" size={28} />
-          </div>
 
-          {/* Notification Alert Banner */}
-          {message.text && (
-            <div className={`open-positions-alert ${message.type}`}>
-              {message.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
-              <span>{message.text}</span>
-            </div>
-          )}
+            {/* Notification Banner */}
+            {message.text && (
+              <div className={`open-positions-alert ${message.type}`}>
+                {message.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+                <span>{message.text}</span>
+              </div>
+            )}
 
-          {/* Content States */}
-          {loading ? (
-            <div className="open-positions-loading">
-              <Clock className="spinner" size={28} />
-              <p>Loading open vacancies...</p>
-            </div>
-          ) : positions.length === 0 ? (
-            <div className="open-positions-empty">
-              <Briefcase size={48} className="empty-icon" />
-              <h3>No Vacancies Currently Available</h3>
-              <p>All department leadership roles are currently fully staffed.</p>
-            </div>
-          ) : (
-            <div className="open-positions-grid">
-              {positions.map((pos) => (
-                <article key={pos.department_id} className="position-card">
-                  <div className="card-top">
-                    <div className="dept-info">
-                      <Building size={16} />
-                      <span className="dept-name">{pos.department_name}</span>
+            {/* Content States */}
+            {loading ? (
+              <div className="open-positions-loading">
+                <Clock className="spinner" size={28} />
+                <p>Loading open vacancies...</p>
+              </div>
+            ) : positions.length === 0 ? (
+              <div className="open-positions-empty">
+                <Briefcase size={48} className="empty-icon" />
+                <h3>No Vacancies Currently Available</h3>
+                <p>All department leadership roles are currently fully staffed.</p>
+              </div>
+            ) : (
+              <div className="open-positions-grid">
+                {positions.map((pos) => (
+                  <article key={pos.department_id} className="position-card">
+                    <div className="card-top">
+                      <div className="dept-info">
+                        <Building size={16} />
+                        <span className="dept-name">{pos.department_name}</span>
+                      </div>
+                      <span className="badge-vacant">Vacant</span>
                     </div>
-                    <span className="badge-vacant">Vacant</span>
-                  </div>
 
-                  <div className="card-body">
-                    <h3 className="role-title">{pos.department_name} Department Head</h3>
-                    <p className="role-description">
-                      Open for internal transfers, succession planning, and lateral advancement.
-                    </p>
-                  </div>
+                    <div className="card-body">
+                      <h3 className="role-title">{pos.department_name} Department Head</h3>
+                      <p className="role-description">
+                        Open for internal transfers, succession planning, and lateral advancement.
+                      </p>
+                    </div>
 
-                  <div className="card-footer">
-                    <button
-                      type="button"
-                      className="btn-apply"
-                      disabled={applyingId === pos.department_id}
-                      onClick={() => handleApply(pos.department_id)}
-                    >
-                      {applyingId === pos.department_id ? 'Submitting...' : 'Apply Now'}
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
+                    <div className="card-footer">
+                      <button
+                        type="button"
+                        className="btn-apply"
+                        disabled={applyingId === pos.department_id}
+                        onClick={() => handleApply(pos.department_id)}
+                      >
+                        {applyingId === pos.department_id ? 'Submitting...' : 'Apply Now'}
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
 
-        </div>
-      </main>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
