@@ -1,29 +1,32 @@
-/* Layout Wrappers matching the app design system */
-.app-layout-wrapper {
+/* Master Layout Wrapper */
+.open-positions-app-wrapper {
   display: flex;
   min-height: 100vh;
   width: 100vw;
-  background-color: #f4f5f7;
+  background-color: #f5f6f8;
 }
 
-.app-main-content {
+/* Main Area Right of Sidebar - Adds uniform padding for Header & Body */
+.open-positions-main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 24px 32px;
+  min-width: 0;
+  padding: 20px 28px;
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
-/* Floating Card Header Styling */
-.app-global-header {
-  margin-bottom: 24px;
+.open-positions-page-body {
+  flex: 1;
+  margin-top: 20px;
 }
 
-/* Page Body Container */
-.open-positions-container {
+.open-positions-content-container {
   width: 100%;
 }
 
+/* Page Sub-Header Row */
 .open-positions-hero {
   display: flex;
   justify-content: space-between;
@@ -48,7 +51,7 @@
   color: #800000;
 }
 
-/* Alert Notification */
+/* Alert Notification Banner */
 .open-positions-alert {
   display: flex;
   align-items: center;
@@ -114,7 +117,7 @@
   font-size: 14px;
 }
 
-/* Positions Cards Grid */
+/* Position Cards Grid */
 .open-positions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
