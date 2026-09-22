@@ -337,6 +337,8 @@ export default function HodDashboard({ onLogout, user }) {
                 <select value={manualEntry.type} onChange={e => setManualEntry({...manualEntry, type: e.target.value})} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}>
                   <option value="0">Check-In</option>
                   <option value="1">Check-Out</option>
+                  <option value="4">OT-In</option>
+                  <option value="5">OT-Out</option>
                 </select>
               </div>
 

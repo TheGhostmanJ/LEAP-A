@@ -781,7 +781,6 @@ app.post('/api/attendance/manual-entry', async (req, res) => {
 
 // POST: Upload NGTeco .dat File
 app.post('/api/attendance/upload-dat', async (req, res) => {
-    // req.body contains the raw text string because we added app.use(express.text())
     const rawText = req.body; 
 
     if (!rawText || typeof rawText !== 'string') {
@@ -792,19 +791,21 @@ app.post('/api/attendance/upload-dat', async (req, res) => {
     const client = await pool.connect();
 
     try {
-        await client.query('BEGIN'); // Start transaction
+        await client.query('BEGIN'); 
 
         for (let line of lines) {
             line = line.trim();
             if (!line) continue;
 
-            // NGTeco .dat files are strictly tab-separated
             const parts = line.split('\t');
 
-            if (parts.length >= 3) {
+            // Require at least 4 columns to safely grab the punch state
+            if (parts.length >= 4) {
                 const empKey = parseInt(parts[0].trim(), 10);
                 const timestamp = parts[1].trim();
-                const punchType = parseInt(parts[2].trim(), 10) || 0;
+                
+                // Shifted to parts[3] based on the NGTeco format mapping
+                const punchType = parseInt(parts[3].trim(), 10) || 0; 
 
                 if (!isNaN(empKey)) {
                     const query = `
@@ -816,10 +817,10 @@ app.post('/api/attendance/upload-dat', async (req, res) => {
             }
         }
 
-        await client.query('COMMIT'); // Save all rows safely
+        await client.query('COMMIT'); 
         res.status(200).json({ success: true, message: "Dat file processed successfully." });
     } catch (error) {
-        await client.query('ROLLBACK'); // If anything fails, undo all inserts
+        await client.query('ROLLBACK'); 
         console.error('DAT Upload Error:', error);
         res.status(500).json({ error: "Failed to process attendance file." });
     } finally {
