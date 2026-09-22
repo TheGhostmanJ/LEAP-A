@@ -80,82 +80,81 @@ export default function OpenPositions({ user, onLogout }) {
   };
 
   return (
-    <div className="open-positions-layout">
+    <div className="app-layout-wrapper">
       <Sidebar user={user} />
 
-      <main className="open-positions-main">
-        {/* Unified Top Header Container */}
-        <div className="open-positions-header-wrapper">
+      <main className="app-main-container app-main-content">
+        {/* Top Header Floating Card */}
+        <header className="app-global-header">
           <Header user={user} onLogout={onLogout} />
-        </div>
+        </header>
 
-        <div className="open-positions-body">
-          <div className="open-positions-container">
-            
-            {/* Inner Page Title */}
-            <header className="open-positions-header">
-              <div className="header-title-group">
-                <h1>Open Positions</h1>
-                <p>Explore active department vacancies open for internal applications and growth.</p>
-              </div>
-              <Briefcase className="header-icon" size={32} />
-            </header>
-
-            {/* Notification Alert */}
-            {message.text && (
-              <div className={`open-positions-alert ${message.type}`}>
-                {message.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
-                <span>{message.text}</span>
-              </div>
-            )}
-
-            {/* Content States */}
-            {loading ? (
-              <div className="open-positions-loading">
-                <Clock className="spinner" size={28} />
-                <p>Loading open vacancies...</p>
-              </div>
-            ) : positions.length === 0 ? (
-              <div className="open-positions-empty">
-                <Briefcase size={48} className="empty-icon" />
-                <h3>No Vacancies Currently Available</h3>
-                <p>All department leadership roles are currently fully staffed.</p>
-              </div>
-            ) : (
-              <div className="open-positions-grid">
-                {positions.map((pos) => (
-                  <article key={pos.department_id} className="position-card">
-                    <div className="card-header">
-                      <div className="dept-info">
-                        <Building size={18} />
-                        <span className="dept-name">{pos.department_name}</span>
-                      </div>
-                      <span className="badge-vacant">Vacant</span>
-                    </div>
-
-                    <div className="card-body">
-                      <h3 className="role-title">{pos.department_name} Department Head</h3>
-                      <p className="role-description">
-                        Open for internal transfers, succession planning, and lateral advancement.
-                      </p>
-                    </div>
-
-                    <div className="card-footer">
-                      <button
-                        type="button"
-                        className="btn-apply"
-                        disabled={applyingId === pos.department_id}
-                        onClick={() => handleApply(pos.department_id)}
-                      >
-                        {applyingId === pos.department_id ? 'Submitting...' : 'Apply Now'}
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-
+        {/* Inner Page Body Content */}
+        <div className="open-positions-container">
+          
+          {/* Inner Header Title */}
+          <div className="open-positions-hero">
+            <div className="hero-text">
+              <h2>Open Positions</h2>
+              <p>Explore active department vacancies open for internal applications and growth.</p>
+            </div>
+            <Briefcase className="hero-icon" size={28} />
           </div>
+
+          {/* Notification Alert Banner */}
+          {message.text && (
+            <div className={`open-positions-alert ${message.type}`}>
+              {message.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+              <span>{message.text}</span>
+            </div>
+          )}
+
+          {/* Content States */}
+          {loading ? (
+            <div className="open-positions-loading">
+              <Clock className="spinner" size={28} />
+              <p>Loading open vacancies...</p>
+            </div>
+          ) : positions.length === 0 ? (
+            <div className="open-positions-empty">
+              <Briefcase size={48} className="empty-icon" />
+              <h3>No Vacancies Currently Available</h3>
+              <p>All department leadership roles are currently fully staffed.</p>
+            </div>
+          ) : (
+            <div className="open-positions-grid">
+              {positions.map((pos) => (
+                <article key={pos.department_id} className="position-card">
+                  <div className="card-top">
+                    <div className="dept-info">
+                      <Building size={16} />
+                      <span className="dept-name">{pos.department_name}</span>
+                    </div>
+                    <span className="badge-vacant">Vacant</span>
+                  </div>
+
+                  <div className="card-body">
+                    <h3 className="role-title">{pos.department_name} Department Head</h3>
+                    <p className="role-description">
+                      Open for internal transfers, succession planning, and lateral advancement.
+                    </p>
+                  </div>
+
+                  <div className="card-footer">
+                    <button
+                      type="button"
+                      className="btn-apply"
+                      disabled={applyingId === pos.department_id}
+                      onClick={() => handleApply(pos.department_id)}
+                    >
+                      {applyingId === pos.department_id ? 'Submitting...' : 'Apply Now'}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
         </div>
       </main>
     </div>
