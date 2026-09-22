@@ -753,24 +753,26 @@ app.put('/api/leave-applications/leave-approvals/:id', async (req, res) => {
 
 // POST: Manual Attendance Entry
 app.post('/api/attendance/manual-entry', async (req, res) => {
-    const { employeeKey, date, time, type } = req.body;
+    // Catch uploaded_by from the JSON body
+    const { employeeKey, date, time, type, uploaded_by } = req.body;
 
     const empKey = parseInt(employeeKey, 10);
     const punchType = parseInt(type, 10) || 0;
+    const uploaderId = parseInt(uploaded_by, 10) || null; // Parse the uploader ID
 
     if (!empKey || !date || !time) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Combine date and time into standard PostgreSQL timestamp
     const timestamp = `${date} ${time}:00`;
 
     try {
         const query = `
-            INSERT INTO public.fact_attendance_log (employee_key, punch_time, punch_type, source) 
-            VALUES ($1, $2, $3, 'Manual Entry')
+            INSERT INTO public.fact_attendance_log 
+            (employee_key, punch_time, punch_type, source, uploaded_by) 
+            VALUES ($1, $2, $3, 'Manual Entry', $4)
         `;
-        await pool.query(query, [empKey, timestamp, punchType]);
+        await pool.query(query, [empKey, timestamp, punchType, uploaderId]);
         
         res.status(200).json({ success: true, message: "Manual entry saved successfully." });
     } catch (error) {
@@ -782,6 +784,9 @@ app.post('/api/attendance/manual-entry', async (req, res) => {
 // POST: Upload NGTeco .dat File
 app.post('/api/attendance/upload-dat', async (req, res) => {
     const rawText = req.body; 
+    // Catch uploaded_by from the URL query string
+    const { uploaded_by } = req.query;
+    const uploaderId = parseInt(uploaded_by, 10) || null; // Parse the uploader ID
 
     if (!rawText || typeof rawText !== 'string') {
         return res.status(400).json({ error: 'Invalid or missing file data' });
@@ -799,20 +804,18 @@ app.post('/api/attendance/upload-dat', async (req, res) => {
 
             const parts = line.split('\t');
 
-            // Require at least 4 columns to safely grab the punch state
             if (parts.length >= 4) {
                 const empKey = parseInt(parts[0].trim(), 10);
                 const timestamp = parts[1].trim();
-                
-                // Shifted to parts[3] based on the NGTeco format mapping
                 const punchType = parseInt(parts[3].trim(), 10) || 0; 
 
                 if (!isNaN(empKey)) {
                     const query = `
-                        INSERT INTO public.fact_attendance_log (employee_key, punch_time, punch_type, source) 
-                        VALUES ($1, $2, $3, 'NGTeco Scanner')
+                        INSERT INTO public.fact_attendance_log 
+                        (employee_key, punch_time, punch_type, source, uploaded_by) 
+                        VALUES ($1, $2, $3, 'NGTeco Scanner', $4)
                     `;
-                    await client.query(query, [empKey, timestamp, punchType]);
+                    await client.query(query, [empKey, timestamp, punchType, uploaderId]);
                 }
             }
         }

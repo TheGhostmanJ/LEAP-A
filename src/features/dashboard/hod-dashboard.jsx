@@ -124,9 +124,9 @@ export default function HodDashboard({ onLogout, user }) {
       const rawText = e.target.result;
       
       try {
-        const response = await fetch(`${apiUrl}/api/attendance/upload-dat`, {
+        const response = await fetch(`${apiUrl}/api/attendance/upload-dat?uploaded_by=${user?.employee_key}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain' }, // Sending as clean text
+          headers: { 'Content-Type': 'text/plain' },
           body: rawText,
         });
 
@@ -151,7 +151,7 @@ export default function HodDashboard({ onLogout, user }) {
       const response = await fetch(`${apiUrl}/api/attendance/manual-entry`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...manualEntry, department: user?.department }),
+        body: JSON.stringify({ ...manualEntry, department: user?.department, uploaded_by: user?.employee_key }),
       });
       if (response.ok) {
         setUploadStatus('Attendance saved successfully!');
