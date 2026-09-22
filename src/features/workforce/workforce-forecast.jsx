@@ -202,7 +202,11 @@ export default function WorkforceForecast({ onLogout, user }) {
                     </div>
                   </div>
 
-                  <div className="wf-card-footer-link">
+                  <div 
+                    className="wf-card-footer-link" 
+                    onClick={() => setIsModalOpen(true)} 
+                    style={{ cursor: 'pointer' }}
+                  >
                     <span>View Full Forecast Detail <ArrowRight size={14} /></span>
                   </div>
                 </div>
