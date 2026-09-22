@@ -23,6 +23,7 @@ pool.connect((err, client, release) => {
 
 app.use(cors());                  
 app.use(express.json());
+app.use(express.text());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const multer = require('multer');
@@ -553,6 +554,50 @@ app.get('/api/attendance/:employee_key', async (req, res) => {
     }
 });
 
+// GET: Fetch dynamic high-level stats for the HOD Dashboard top cards
+app.get('/api/department/stats', async (req, res) => {
+    const { name } = req.query;
+    
+    if (!name) {
+        return res.status(400).json({ error: "Department name is required" });
+    }
+
+    try {
+        // 1. Total Active Employees in this specific department
+        const empQuery = `
+            SELECT COUNT(*) as total 
+            FROM public.dim_employee 
+            WHERE department = $1 AND is_active = true
+        `;
+        const empRes = await pool.query(empQuery, [name]);
+
+        // 2. Total active Anomaly Alerts for this specific department
+        const anomalyQuery = `
+            SELECT a.risk_score 
+            FROM public.fact_anomaly_alerts a
+            JOIN public.dim_employee e ON a.employee_key = e.employee_key
+            WHERE e.department = $1 AND a.status IN ('Flagged', 'Investigating')
+        `;
+        const anomalyRes = await pool.query(anomalyQuery, [name]);
+
+        const anomalies = anomalyRes.rows;
+        
+        // Calculate High vs Medium Risk (Assuming 0.75+ is High Risk)
+        const highRisk = anomalies.filter(a => parseFloat(a.risk_score) >= 0.75).length;
+        const mediumRisk = anomalies.filter(a => parseFloat(a.risk_score) < 0.75).length;
+
+        res.status(200).json({
+            total_employees: parseInt(empRes.rows[0].total) || 0,
+            total_anomalies: anomalies.length,
+            high_risk: highRisk,
+            medium_risk: mediumRisk
+        });
+    } catch (error) {
+        console.error("Error fetching department stats:", error);
+        res.status(500).json({ error: "Failed to fetch department stats" });
+    }
+});
+
 // ==========================================
 // LEAVE & ATTENDANCE ROUTES
 // ==========================================
@@ -697,6 +742,86 @@ app.put('/api/leave-applications/leave-approvals/:id', async (req, res) => {
         await client.query('ROLLBACK');
         console.error("Leave approval transaction failed:", error);
         res.status(500).json({ error: "Failed to process leave approval." });
+    } finally {
+        client.release();
+    }
+});
+
+// ==========================================
+// ATTENDANCE: MANUAL & HARDWARE SYNC
+// ==========================================
+
+// POST: Manual Attendance Entry
+app.post('/api/attendance/manual-entry', async (req, res) => {
+    const { employeeKey, date, time, type } = req.body;
+
+    const empKey = parseInt(employeeKey, 10);
+    const punchType = parseInt(type, 10) || 0;
+
+    if (!empKey || !date || !time) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Combine date and time into standard PostgreSQL timestamp
+    const timestamp = `${date} ${time}:00`;
+
+    try {
+        const query = `
+            INSERT INTO public.fact_attendance_log (employee_key, punch_time, punch_type, source) 
+            VALUES ($1, $2, $3, 'Manual Entry')
+        `;
+        await pool.query(query, [empKey, timestamp, punchType]);
+        
+        res.status(200).json({ success: true, message: "Manual entry saved successfully." });
+    } catch (error) {
+        console.error("Manual Entry Error:", error);
+        res.status(500).json({ error: "Failed to save manual attendance." });
+    }
+});
+
+// POST: Upload NGTeco .dat File
+app.post('/api/attendance/upload-dat', async (req, res) => {
+    // req.body contains the raw text string because we added app.use(express.text())
+    const rawText = req.body; 
+
+    if (!rawText || typeof rawText !== 'string') {
+        return res.status(400).json({ error: 'Invalid or missing file data' });
+    }
+
+    const lines = rawText.split('\n');
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN'); // Start transaction
+
+        for (let line of lines) {
+            line = line.trim();
+            if (!line) continue;
+
+            // NGTeco .dat files are strictly tab-separated
+            const parts = line.split('\t');
+
+            if (parts.length >= 3) {
+                const empKey = parseInt(parts[0].trim(), 10);
+                const timestamp = parts[1].trim();
+                const punchType = parseInt(parts[2].trim(), 10) || 0;
+
+                if (!isNaN(empKey)) {
+                    const query = `
+                        INSERT INTO public.fact_attendance_log (employee_key, punch_time, punch_type, source) 
+                        VALUES ($1, $2, $3, 'NGTeco Scanner')
+                    `;
+                    await client.query(query, [empKey, timestamp, punchType]);
+                }
+            }
+        }
+
+        await client.query('COMMIT'); // Save all rows safely
+        res.status(200).json({ success: true, message: "Dat file processed successfully." });
+    } catch (error) {
+        await client.query('ROLLBACK'); // If anything fails, undo all inserts
+        console.error('DAT Upload Error:', error);
+        res.status(500).json({ error: "Failed to process attendance file." });
     } finally {
         client.release();
     }
@@ -1815,6 +1940,8 @@ app.get('/api/database/metrics', async (req, res) => {
         res.status(500).json({ error: "Failed to fetch database metrics." });
     }
 });
+
+
 
 // ==========================================
 // API GATEWAY TRAFFIC LOGGER (Middleware)
