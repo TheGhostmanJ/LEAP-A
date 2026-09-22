@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import Header from '../../components/Header.jsx';
 import Sidebar from '../../components/sidebar.jsx';
-import { Briefcase, CheckCircle, AlertCircle, Clock, Building } from 'lucide-react';
+import Header from '../../components/Header.jsx';
+import { Briefcase, Clock, Building, CheckCircle2, AlertCircle } from 'lucide-react';
 import './OpenPositions.css';
 
 export default function OpenPositions({ user, onLogout }) {
@@ -10,7 +10,6 @@ export default function OpenPositions({ user, onLogout }) {
   const [applyingId, setApplyingId] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // Use the same base API URL as Hiring.jsx
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
   useEffect(() => {
@@ -20,12 +19,11 @@ export default function OpenPositions({ user, onLogout }) {
   const fetchOpenPositions = async () => {
     try {
       setLoading(true);
-      // Changed endpoint from '/api/succession/open-positions' to match Hiring.jsx ('/api/succession/vacancies')
       const res = await fetch(`${apiUrl}/api/succession/vacancies`);
 
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('API server returned HTML instead of JSON.');
+        throw new Error('API route returned non-JSON response.');
       }
 
       const data = await res.json();
@@ -35,7 +33,7 @@ export default function OpenPositions({ user, onLogout }) {
         setMessage({ type: 'error', text: data.error || 'Failed to load open positions.' });
       }
     } catch (err) {
-      console.warn('Error fetching vacancies:', err.message);
+      console.warn('Backend fetch issue:', err.message);
       setPositions([]);
     } finally {
       setLoading(false);
@@ -82,71 +80,74 @@ export default function OpenPositions({ user, onLogout }) {
   };
 
   return (
-    <div className="dashboard-layout">
+    <div className="open-positions-layout">
       <Sidebar user={user} />
-      <div className="dashboard-main-content">
-        <Header user={user} onLogout={onLogout} />
-        <main className="dashboard-page-body">
-          <div className="open-positions-container" style={{ padding: '24px' }}>
+
+      <div className="open-positions-main">
+        {Header && <Header user={user} onLogout={onLogout} />}
+
+        <main className="open-positions-body">
+          <div className="open-positions-container">
             
-            {/* Header Banner */}
-            <div className="open-positions-hero" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div className="hero-text">
-                <h2>Internal Career Opportunities</h2>
-                <p>Explore active department vacancies open for internal applications and progression.</p>
+            {/* Page Header */}
+            <header className="open-positions-header">
+              <div className="header-title-group">
+                <h1>Open Positions</h1>
+                <p>Explore active department vacancies open for internal applications and growth.</p>
               </div>
-              <Briefcase size={40} className="hero-icon" />
-            </div>
+              <Briefcase className="header-icon" size={32} />
+            </header>
 
             {/* Notification Alert */}
             {message.text && (
-              <div className={`alert-banner ${message.type}`} style={{ marginBottom: '20px', padding: '12px 16px', borderRadius: '6px' }}>
+              <div className={`open-positions-alert ${message.type}`}>
+                {message.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
                 <span>{message.text}</span>
               </div>
             )}
 
-            {/* Positions List */}
+            {/* Content States */}
             {loading ? (
-              <div className="loading-state" style={{ textAlign: 'center', padding: '40px' }}>
-                <Clock className="spinner-icon" size={24} />
+              <div className="open-positions-loading">
+                <Clock className="spinner" size={28} />
                 <p>Loading open vacancies...</p>
               </div>
             ) : positions.length === 0 ? (
-              <div className="empty-state" style={{ textAlign: 'center', padding: '48px', background: '#fff', borderRadius: '8px' }}>
-                <Briefcase size={48} className="empty-icon" style={{ color: '#888', marginBottom: '12px' }} />
-                <h3>No Open Vacancies</h3>
-                <p>There are currently no open department positions accepting applications.</p>
+              <div className="open-positions-empty">
+                <Briefcase size={48} className="empty-icon" />
+                <h3>No Vacancies Currently Available</h3>
+                <p>All department leadership roles are currently fully staffed.</p>
               </div>
             ) : (
-              <div className="positions-grid">
+              <div className="open-positions-grid">
                 {positions.map((pos) => (
-                  <div className="position-card" key={pos.department_id}>
-                    <div className="card-top">
-                      <div className="dept-badge">
-                        <Building size={16} />
-                        <span>{pos.department_name}</span>
+                  <article key={pos.department_id} className="position-card">
+                    <div className="card-header">
+                      <div className="dept-info">
+                        <Building size={18} />
+                        <span className="dept-name">{pos.department_name}</span>
                       </div>
-                      <span className="stage-pill">{pos.vacancy_stage || 'Vacant'}</span>
+                      <span className="badge-vacant">Vacant</span>
                     </div>
 
                     <div className="card-body">
-                      <h3 className="position-title">{pos.department_name} Department Head</h3>
-                      <p className="position-desc">
-                        Open for internal transfers, succession planning, and lateral growth opportunities.
+                      <h3 className="role-title">{pos.department_name} Department Head</h3>
+                      <p className="role-description">
+                        Open for internal transfers, succession planning, and lateral advancement.
                       </p>
                     </div>
 
                     <div className="card-footer">
                       <button
                         type="button"
-                        className="apply-btn"
+                        className="btn-apply"
                         disabled={applyingId === pos.department_id}
                         onClick={() => handleApply(pos.department_id)}
                       >
                         {applyingId === pos.department_id ? 'Submitting...' : 'Apply Now'}
                       </button>
                     </div>
-                  </div>
+                  </article>
                 ))}
               </div>
             )}
