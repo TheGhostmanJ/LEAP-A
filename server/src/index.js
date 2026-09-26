@@ -612,9 +612,10 @@ app.get('/api/leave-applications/department', async (req, res) => {
 
     try {
         // Mapped exactly to your fact_leave_application columns!
+        // FIX: f.id does not exist on fact_leave_application — the primary key is application_id.
         const query = `
             SELECT 
-                f.id AS application_id, 
+                f.application_id, 
                 f.start_date_key AS date_key, 
                 f.created_at AS date_filed,
                 f.leave_type, 
@@ -649,9 +650,10 @@ app.get('/api/leave-applications/:employee_key', async (req, res) => {
     const { employee_key } = req.params;
 
     try {
+        // FIX: f.id does not exist on fact_leave_application — the primary key is application_id.
         const historyQuery = `
             SELECT 
-                f.id AS application_id, 
+                f.application_id, 
                 f.start_date_key AS date_key, 
                 f.created_at AS date_filed,
                 f.leave_type, 
@@ -703,10 +705,11 @@ app.put('/api/leave-applications/leave-approvals/:id', async (req, res) => {
         await client.query('BEGIN');
 
         // Update the status and attach HOD remarks
+        // FIX: fact_leave_application has no "id" column — use application_id.
         const updateQuery = `
             UPDATE public.fact_leave_application 
             SET status = $1, hod_remarks = $2 
-            WHERE id = $3 
+            WHERE application_id = $3 
             RETURNING employee_key, leave_type, working_days;
         `;
         const result = await client.query(updateQuery, [action, remarks, id]);
@@ -1323,6 +1326,9 @@ app.post('/api/leave/apply', async (req, res) => {
         // Convert the attachments array to a JSON string so it safely stores in the DB
         const attachmentsJson = attachments && attachments.length > 0 ? JSON.stringify(attachments) : null;
 
+        // FIX: RETURNING id -> RETURNING application_id (fact_leave_application's actual primary key).
+        // With the old "RETURNING id", Postgres throws "column \"id\" does not exist", the whole
+        // INSERT rolls back, and nothing is ever saved — which is why nothing showed up anywhere.
         const queryText = `
             INSERT INTO public.fact_leave_application 
             (
@@ -1333,7 +1339,7 @@ app.post('/api/leave/apply', async (req, res) => {
                 others_purpose, commutation, pdf_document, attachment_data
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
-            RETURNING id;
+            RETURNING application_id;
         `;
         
         const values = [
@@ -1344,9 +1350,9 @@ app.post('/api/leave/apply', async (req, res) => {
             others_purpose, commutation, pdfBase64, attachmentsJson
         ];
 
-        await pool.query(queryText, values);
+        const result = await pool.query(queryText, values);
         
-        res.status(201).json({ success: true, message: 'Application submitted successfully!' });
+        res.status(201).json({ success: true, message: 'Application submitted successfully!', application_id: result.rows[0].application_id });
     } catch (error) {
         console.error("Database Insert Error:", error);
         res.status(500).json({ success: false, message: error.message || 'Failed to submit application.' });
@@ -2518,6 +2524,13 @@ app.post('/api/succession/respond/:offerId', async (req, res) => {
 // ==========================================
 // SUCCESSION & OPEN POSITIONS API ROUTES
 // ==========================================
+// NOTE: The four routes below reference "db.query" but "db" is never defined anywhere in this
+// file — only "pool" is. These would crash with "db is not defined" if ever called. Also,
+// app.post('/api/succession/respond/:offerId') is now defined TWICE (once above, once here) —
+// Express only ever runs the FIRST matching route, so this second copy is dead code and never
+// executes. Flagging both issues since they'll bite you later, but leaving the code as-is since
+// they're outside what you asked me to fix today.
+// ==========================================
 
 // 1. GET OPEN POSITIONS (Employee View)
 app.get('/api/succession/open-positions', async (req, res) => {
@@ -2632,6 +2645,7 @@ app.put('/api/succession/applicants/:applicationId/decision', async (req, res) =
 });
 
 // 5. UPDATE RESPOND TO OFFER (Modifies stage to 'Open - External' when internal list is exhausted)
+// NOTE: This duplicate app.post('/api/succession/respond/:offerId') is dead code — see note above.
 app.post('/api/succession/respond/:offerId', async (req, res) => {
   const { offerId } = req.params;
   const { response, department_id } = req.body; // response: 'Accepted' or 'Declined'
