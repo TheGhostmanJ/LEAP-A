@@ -612,10 +612,10 @@ app.get('/api/leave-applications/department', async (req, res) => {
 
     try {
         // Mapped exactly to your fact_leave_application columns!
-        // FIX: f.id does not exist on fact_leave_application — the primary key is application_id.
+        // CONFIRMED via live /api/debug/schema check: the real primary key is "id", not "application_id".
         const query = `
             SELECT 
-                f.application_id, 
+                f.id AS application_id, 
                 f.start_date_key AS date_key, 
                 f.created_at AS date_filed,
                 f.leave_type, 
@@ -650,10 +650,10 @@ app.get('/api/leave-applications/:employee_key', async (req, res) => {
     const { employee_key } = req.params;
 
     try {
-        // FIX: f.id does not exist on fact_leave_application — the primary key is application_id.
+        // CONFIRMED via live /api/debug/schema check: the real primary key is "id", not "application_id".
         const historyQuery = `
             SELECT 
-                f.application_id, 
+                f.id AS application_id, 
                 f.start_date_key AS date_key, 
                 f.created_at AS date_filed,
                 f.leave_type, 
@@ -705,11 +705,11 @@ app.put('/api/leave-applications/leave-approvals/:id', async (req, res) => {
         await client.query('BEGIN');
 
         // Update the status and attach HOD remarks
-        // FIX: fact_leave_application has no "id" column — use application_id.
+        // CONFIRMED via live /api/debug/schema check: the real primary key is "id", not "application_id".
         const updateQuery = `
             UPDATE public.fact_leave_application 
             SET status = $1, hod_remarks = $2 
-            WHERE application_id = $3 
+            WHERE id = $3 
             RETURNING employee_key, leave_type, working_days;
         `;
         const result = await client.query(updateQuery, [action, remarks, id]);
@@ -1306,52 +1306,6 @@ app.get('/api/credit-ledger/:employee_key', async (req, res) => {
 });
 
 // ==========================================
-// TEMPORARY DEBUG ROUTES — remove once the schema mismatch is resolved
-// ==========================================
-
-// Shows every column for a given table, across ALL schemas (not just "public"),
-// so we can tell if there are two tables with the same name in different schemas.
-app.get('/api/debug/schema/:table', async (req, res) => {
-    try {
-        const result = await pool.query(
-            `SELECT table_schema, column_name, data_type 
-             FROM information_schema.columns 
-             WHERE table_name = $1 
-             ORDER BY table_schema, ordinal_position`,
-            [req.params.table]
-        );
-        res.status(200).json(result.rows);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Runs a minimal INSERT against public.fact_leave_application with dummy data and
-// returns Postgres's full error object (schema/table/column/detail/hint) if it fails,
-// so we know EXACTLY which column or table Postgres is complaining about.
-app.get('/api/debug/test-insert', async (req, res) => {
-    try {
-        const result = await pool.query(`
-            INSERT INTO public.fact_leave_application 
-            (employee_key, start_date_key, leave_type, start_date, end_date, remarks, working_days, department, position, salary, status)
-            VALUES (11, 20260101, 'Test', '2026-01-01', '2026-01-02', 'debug test', 1, 'Test Dept', 'Test Position', 0, 'Pending')
-            RETURNING application_id;
-        `);
-        res.status(200).json({ success: true, id: result.rows[0].application_id });
-    } catch (error) {
-        res.status(500).json({
-            message: error.message,
-            detail: error.detail,
-            hint: error.hint,
-            schema: error.schema,
-            table: error.table,
-            column: error.column,
-            code: error.code
-        });
-    }
-});
-
-// ==========================================
 // LEAVE & ATTENDANCE ROUTES
 // ==========================================
 
@@ -1372,9 +1326,7 @@ app.post('/api/leave/apply', async (req, res) => {
         // Convert the attachments array to a JSON string so it safely stores in the DB
         const attachmentsJson = attachments && attachments.length > 0 ? JSON.stringify(attachments) : null;
 
-        // FIX: RETURNING id -> RETURNING application_id (fact_leave_application's actual primary key).
-        // With the old "RETURNING id", Postgres throws "column \"id\" does not exist", the whole
-        // INSERT rolls back, and nothing is ever saved — which is why nothing showed up anywhere.
+        // CONFIRMED via live /api/debug/schema check: the real primary key column is "id".
         const queryText = `
             INSERT INTO public.fact_leave_application 
             (
@@ -1385,7 +1337,7 @@ app.post('/api/leave/apply', async (req, res) => {
                 others_purpose, commutation, pdf_document, attachment_data
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
-            RETURNING application_id;
+            RETURNING id;
         `;
         
         const values = [
@@ -1398,7 +1350,7 @@ app.post('/api/leave/apply', async (req, res) => {
 
         const result = await pool.query(queryText, values);
         
-        res.status(201).json({ success: true, message: 'Application submitted successfully!', application_id: result.rows[0].application_id });
+        res.status(201).json({ success: true, message: 'Application submitted successfully!', application_id: result.rows[0].id });
     } catch (error) {
         console.error("Database Insert Error:", error);
         res.status(500).json({ success: false, message: error.message || 'Failed to submit application.' });
@@ -1456,9 +1408,10 @@ app.get('/api/attendance/summary/:employee_key', async (req, res) => {
 
 app.get('/api/leave-approvals', async (req, res) => {
     try {
+        // CONFIRMED via live /api/debug/schema check: the real primary key column is "id", not "application_id".
         const query = `
             SELECT 
-                l.application_id AS id,
+                l.id,
                 e.first_name || ' ' || e.last_name AS name,
                 e.department,
                 l.leave_type AS type,
@@ -1469,7 +1422,7 @@ app.get('/api/leave-approvals', async (req, res) => {
             JOIN public.dim_employee e ON l.employee_key = e.employee_key
             ORDER BY 
                 CASE WHEN l.status = 'Pending' THEN 1 ELSE 2 END,
-                l.application_id DESC;
+                l.id DESC;
         `;
         const result = await pool.query(query);
         res.status(200).json(result.rows);
@@ -1487,10 +1440,11 @@ app.put('/api/leave-approvals/:id', async (req, res) => {
     try {
         await client.query('BEGIN');
 
+        // CONFIRMED via live /api/debug/schema check: the real primary key column is "id", not "application_id".
         const updateQuery = `
             UPDATE public.fact_leave_application 
             SET status = $1 
-            WHERE application_id = $2 
+            WHERE id = $2 
             RETURNING employee_key, leave_type, working_days;
         `;
         const result = await client.query(updateQuery, [action, id]);
