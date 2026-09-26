@@ -1,38 +1,59 @@
 // src/services/leaveService.js
 
-// Initial fallback mock data matching your DB structure
-const INITIAL_CREDITS = {
-  vacation: 15.0,
-  sick: 10.0,
-  splUsed: 1,
-  soloParentUsed: 0
-};
+const getApiUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export const leaveService = {
-  // Fetch leave balances
+  // Fetch leave balances from the real backend (credit ledger endpoint)
   getUserCredits: async (employeeKey) => {
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    
-    const stored = localStorage.getItem(`leave_credits_${employeeKey}`);
-    return stored ? JSON.parse(stored) : INITIAL_CREDITS;
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/api/credit-ledger/${employeeKey}`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch leave credits (status ${response.status})`);
+    }
+
+    const data = await response.json();
+
+    // Map the balances array [{leave_type, remaining_credits}, ...] into the
+    // {vacation, sick, splUsed} shape that cscRules.js / LeaveApplication.jsx expect.
+    const credits = { vacation: 0, sick: 0, splUsed: 0 };
+    (data.balances || []).forEach((row) => {
+      if (row.leave_type === 'Vacation Leave') credits.vacation = parseFloat(row.remaining_credits) || 0;
+      if (row.leave_type === 'Sick Leave') credits.sick = parseFloat(row.remaining_credits) || 0;
+    });
+
+    // splUsed comes from how many Special Privilege Leave days have been used this year
+    (data.used || []).forEach((row) => {
+      if (row.leave_type === 'Special Privilege Leave') {
+        credits.splUsed = parseFloat(row.used_days) || 0;
+      }
+    });
+
+    return credits;
   },
 
-  // Save new leave application
+  // Save new leave application — actually POSTs to the backend now.
   submitApplication: async (payload) => {
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    const apiUrl = getApiUrl();
 
-    // Save to local applications history
-    const existing = JSON.parse(localStorage.getItem('recent_leave_applications') || '[]');
-    localStorage.setItem('recent_leave_applications', JSON.stringify([payload, ...existing]));
+    const response = await fetch(`${apiUrl}/api/leave/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
 
-    // Deduct mock credits temporarily to test frontend credit UI updates
-    const credits = JSON.parse(localStorage.getItem(`leave_credits_${payload.employee_key}`) || JSON.stringify(INITIAL_CREDITS));
-    if (payload.leave_type === 'Vacation Leave') credits.vacation -= payload.working_days;
-    if (payload.leave_type === 'Sick Leave') credits.sick -= payload.working_days;
-    if (payload.leave_type === 'Special Privilege Leave') credits.splUsed += payload.working_days;
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      // response body wasn't JSON — leave data as null, handled below
+    }
 
-    localStorage.setItem(`leave_credits_${payload.employee_key}`, JSON.stringify(credits));
-    return { success: true, message: 'Application submitted successfully' };
+    if (!response.ok) {
+      const message = (data && (data.message || data.error)) || `Request failed with status ${response.status}`;
+      throw new Error(message);
+    }
+
+    return data || { success: true };
   }
 };
