@@ -22,7 +22,7 @@ pool.connect((err, client, release) => {
 });
 
 app.use(cors());                  
-app.use(express.json({ limit: '15mb' }));
+app.use(express.json());
 app.use(express.text());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -1302,6 +1302,52 @@ app.get('/api/credit-ledger/:employee_key', async (req, res) => {
     } catch (error) {
         console.error("Error fetching credit ledger:", error);
         res.status(500).json({ error: "Failed to fetch credit ledger data." });
+    }
+});
+
+// ==========================================
+// TEMPORARY DEBUG ROUTES — remove once the schema mismatch is resolved
+// ==========================================
+
+// Shows every column for a given table, across ALL schemas (not just "public"),
+// so we can tell if there are two tables with the same name in different schemas.
+app.get('/api/debug/schema/:table', async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT table_schema, column_name, data_type 
+             FROM information_schema.columns 
+             WHERE table_name = $1 
+             ORDER BY table_schema, ordinal_position`,
+            [req.params.table]
+        );
+        res.status(200).json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Runs a minimal INSERT against public.fact_leave_application with dummy data and
+// returns Postgres's full error object (schema/table/column/detail/hint) if it fails,
+// so we know EXACTLY which column or table Postgres is complaining about.
+app.get('/api/debug/test-insert', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            INSERT INTO public.fact_leave_application 
+            (employee_key, start_date_key, leave_type, start_date, end_date, remarks, working_days, department, position, salary, status)
+            VALUES (11, 20260101, 'Test', '2026-01-01', '2026-01-02', 'debug test', 1, 'Test Dept', 'Test Position', 0, 'Pending')
+            RETURNING application_id;
+        `);
+        res.status(200).json({ success: true, id: result.rows[0].application_id });
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+            detail: error.detail,
+            hint: error.hint,
+            schema: error.schema,
+            table: error.table,
+            column: error.column,
+            code: error.code
+        });
     }
 });
 
