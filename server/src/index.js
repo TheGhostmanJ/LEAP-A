@@ -22,7 +22,7 @@ pool.connect((err, client, release) => {
 });
 
 app.use(cors());                  
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
 app.use(express.text());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
