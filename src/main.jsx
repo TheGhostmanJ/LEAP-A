@@ -7,6 +7,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import Login from "./features/auth/login.jsx";
 import ChangePasswordRequest from "./features/auth/ChangePasswordRequest.jsx";
 import AccessDenied from './features/auth/access-denied.jsx';
+import NotificationsPage from './components/NotificationsPage.jsx';
 
 // Shared / Employee Features
 import Dashboard from './features/dashboard/dashboard.jsx';
@@ -151,6 +152,11 @@ export default function Root() {
       <Route path="/dashboard" element={
         <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
           <Dashboard onLogout={handleLogout} user={currentUser} />
+        </ProtectedRoute>
+      } />
+      <Route path="/notifications" element={
+        <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
+          <NotificationsPage user={currentUser} onLogout={handleLogout} />
         </ProtectedRoute>
       } />
       <Route path="/attendance" element={
