@@ -1438,22 +1438,24 @@ app.get('/api/leave-approvals', async (req, res) => {
     }
 });
 
-app.put('/api/leave-approvals/:id', async (req, res) => {
+// PUT: Approve, Reject, or Require Revision for a leave request
+app.put('/api/leave-applications/leave-approvals/:id', async (req, res) => {
     const { id } = req.params;
-    const { action } = req.body; 
+    const { action, remarks } = req.body; 
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
 
-        // CONFIRMED via live /api/debug/schema check: the real primary key column is "id", not "application_id".
+        // Update the status and attach HOD remarks
+        // CONFIRMED via live /api/debug/schema check: the real primary key is "id", not "application_id".
         const updateQuery = `
             UPDATE public.fact_leave_application 
-            SET status = $1 
-            WHERE id = $2 
+            SET status = $1, hod_remarks = $2 
+            WHERE id = $3 
             RETURNING employee_key, leave_type, working_days;
         `;
-        const result = await client.query(updateQuery, [action, id]);
+        const result = await client.query(updateQuery, [action, remarks, id]);
 
         if (result.rows.length === 0) {
             await client.query('ROLLBACK');
@@ -1462,13 +1464,16 @@ app.put('/api/leave-approvals/:id', async (req, res) => {
 
         const { employee_key, leave_type, working_days } = result.rows[0];
 
+        // If Approved, correctly deduct the employee's leave balance in the ledger
         if (action === 'Approved') {
+            // Record the deduction in the ledger
             await client.query(`
                 INSERT INTO public.fact_leave_ledger 
                 (employee_key, leave_type, transaction_type, amount, reference_id, remarks)
                 VALUES ($1, $2, 'Deduction', $3, $4, 'Approved Leave Application')
             `, [employee_key, leave_type, -working_days, id]);
 
+            // Adjust the actual remaining credits balance
             await client.query(`
                 UPDATE public.leave_balances 
                 SET remaining_credits = remaining_credits - $1,
@@ -1477,9 +1482,15 @@ app.put('/api/leave-approvals/:id', async (req, res) => {
             `, [working_days, employee_key, leave_type]);
         }
 
-        // NEW: insert a notification for the employee, regardless of approve/reject
-        const notifTitle = action === 'Approved' ? 'Leave Approved' : `Leave ${action}`;
-        const notifMessage = `Your ${leave_type} request has been ${action.toLowerCase()}.`;
+        // NEW: insert a notification for the employee, covering all outcomes
+        const notifTitle =
+            action === 'Approved' ? 'Leave Approved' :
+            action === 'Needs Revision' ? 'Leave Needs Revision' :
+            `Leave ${action}`;
+
+        const notifMessage = remarks
+            ? `Your ${leave_type} request was marked "${action}". HOD note: ${remarks}`
+            : `Your ${leave_type} request has been ${action.toLowerCase()}.`;
 
         await client.query(`
             INSERT INTO public.notifications 
@@ -1488,7 +1499,7 @@ app.put('/api/leave-approvals/:id', async (req, res) => {
         `, [employee_key, notifTitle, notifMessage, id]);
 
         await client.query('COMMIT');
-        res.status(200).json({ success: true, message: `Leave firmly ${action}` });
+        res.status(200).json({ success: true, message: `Leave marked as ${action}` });
     } catch (error) {
         await client.query('ROLLBACK');
         console.error("Leave approval transaction failed:", error);
