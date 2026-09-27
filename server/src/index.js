@@ -432,6 +432,7 @@ app.post('/api/password-reset-requests', async (req, res) => {
 app.get('/api/notifications/:employee_key', async (req, res) => {
     const { employee_key } = req.params;
     try {
+        res.set('Cache-Control', 'no-store'); // ADD THIS LINE
         const query = `
             SELECT notification_id, title, message, type, related_id, is_read, created_at 
             FROM public.notifications 
