@@ -141,8 +141,10 @@ export default function LeaveApprovals({ onLogout, user }) {
 
       if (!response.ok) throw new Error('Failed to fetch department leave requests');
 
-      const data = await response.json();
-      const applicationsList = data.applications || [];
+const data = await response.json();
+// The backend's GET /api/leave-applications/department route returns a plain array
+// (result.rows) directly — not wrapped in { applications: [...] }.
+const applicationsList = Array.isArray(data) ? data : (data.applications || data.history || []);
 
       const formattedData = applicationsList.map((req) => {
         const rawFiling = extractFilingDate(req);
