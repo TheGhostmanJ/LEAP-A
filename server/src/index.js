@@ -244,6 +244,7 @@ app.get('/api/health', async (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Backend server is running smoothly.',
+    deploy_marker: 'v3-id-column-fix-2026-09-27',
   });
 });
 
