@@ -1446,7 +1446,6 @@ app.put('/api/leave-approvals/:id', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // CONFIRMED via live /api/debug/schema check: the real primary key column is "id", not "application_id".
         const updateQuery = `
             UPDATE public.fact_leave_application 
             SET status = $1 
@@ -1460,9 +1459,9 @@ app.put('/api/leave-approvals/:id', async (req, res) => {
             return res.status(404).json({ error: "Leave application not found." });
         }
 
-        if (action === 'Approved') {
-            const { employee_key, leave_type, working_days } = result.rows[0];
+        const { employee_key, leave_type, working_days } = result.rows[0];
 
+        if (action === 'Approved') {
             await client.query(`
                 INSERT INTO public.fact_leave_ledger 
                 (employee_key, leave_type, transaction_type, amount, reference_id, remarks)
@@ -1476,6 +1475,18 @@ app.put('/api/leave-approvals/:id', async (req, res) => {
                 WHERE employee_key = $2 AND leave_type = $3
             `, [working_days, employee_key, leave_type]);
         }
+
+        // NEW: notify the employee regardless of approve/reject
+        const notifTitle = action === 'Approved' ? 'Leave Approved' : `Leave ${action}`;
+        const notifMessage = action === 'Approved'
+            ? `Your ${leave_type} request has been approved.`
+            : `Your ${leave_type} request has been ${action.toLowerCase()}.`;
+
+        await client.query(`
+            INSERT INTO public.notifications 
+            (employee_key, title, message, type, related_id, is_read)
+            VALUES ($1, $2, $3, 'leave_status', $4, false)
+        `, [employee_key, notifTitle, notifMessage, id]);
 
         await client.query('COMMIT');
         res.status(200).json({ success: true, message: `Leave firmly ${action}` });
