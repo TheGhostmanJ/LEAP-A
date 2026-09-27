@@ -1440,6 +1440,7 @@ app.get('/api/leave-approvals', async (req, res) => {
 });
 
 // PUT: Approve, Reject, or Require Revision for a leave request
+// PUT: Approve, Reject, or Require Revision for a leave request
 app.put('/api/leave-applications/leave-approvals/:id', async (req, res) => {
     const { id } = req.params;
     const { action, remarks } = req.body; 
