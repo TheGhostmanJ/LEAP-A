@@ -105,28 +105,69 @@ export default function LeaveHistory({ onNavigate, onLogout, user }) {
               remarks: row.remarks || '',
               hodRemarks: fetchedHodRemark,
               attachments: (() => {
+                // Case 1: attachment_urls already came back as a real array of objects/strings
                 if (Array.isArray(row.attachment_urls) && row.attachment_urls.length > 0) {
                   return row.attachment_urls
                     .filter((att) => {
-                      const val = typeof att === 'string' ? att : (att.dataUrl || att.url || att.file_url || att.attachment_url || att.attachment_data);
+                      const val = typeof att === 'string'
+                        ? att
+                        : (att.dataUrl || att.url || att.file_url || att.attachment_url || att.base64Data);
                       return val && String(val).trim().length > 0;
                     })
-                    .map((att) => ({
-                      fileName: att.fileName || att.name || row.attachment_name || 'Attached Document.pdf',
-                      dataUrl: att.dataUrl || att.url || att.file_url || att.attachment_url || att.attachment_data || att,
-                      requirementLabel: att.requirementLabel || att.label || ''
-                    }));
+                    .map((att) => {
+                      if (typeof att === 'string') {
+                        return {
+                          fileName: row.attachment_name || 'Attached Document.pdf',
+                          dataUrl: att,
+                          requirementLabel: row.attachment_label || ''
+                        };
+                      }
+                      return {
+                        fileName: att.fileName || att.name || row.attachment_name || 'Attached Document.pdf',
+                        dataUrl:
+                          att.dataUrl ||
+                          att.url ||
+                          att.file_url ||
+                          att.attachment_url ||
+                          (att.base64Data ? `data:${att.fileType || 'application/pdf'};base64,${att.base64Data}` : ''),
+                        requirementLabel: att.requirementLabel || att.label || ''
+                      };
+                    })
+                    .filter((att) => att.dataUrl);
                 }
 
-                const attachSource = row.attachment_url || row.attachment_data;
-                const hasValidSource = attachSource && String(attachSource).trim().length > 0 && attachSource !== 'null' && attachSource !== 'undefined';
+                // Case 2: attachment_data is a JSON string (as saved by the leave application form)
+                const raw = row.attachment_data;
+                const hasRaw = raw && raw !== 'null' && raw !== 'undefined' && String(raw).trim().length > 0;
 
-                if (hasValidSource) {
-                  return [{
-                    fileName: row.attachment_name || 'Attached Document.pdf',
-                    dataUrl: attachSource,
-                    requirementLabel: row.attachment_label || ''
-                  }];
+                if (hasRaw) {
+                  let parsed = raw;
+
+                  if (typeof raw === 'string') {
+                    try {
+                      parsed = JSON.parse(raw);
+                    } catch {
+                      // Not JSON — treat it as a plain base64/url string
+                      return [{
+                        fileName: row.attachment_name || 'Attached Document.pdf',
+                        dataUrl: raw,
+                        requirementLabel: row.attachment_label || ''
+                      }];
+                    }
+                  }
+
+                  const items = Array.isArray(parsed) ? parsed : [parsed];
+
+                  return items
+                    .filter((item) => item && (item.base64Data || item.dataUrl || item.url))
+                    .map((item) => ({
+                      fileName: item.fileName || row.attachment_name || 'Attached Document.pdf',
+                      dataUrl:
+                        item.dataUrl ||
+                        item.url ||
+                        `data:${item.fileType || 'application/pdf'};base64,${item.base64Data}`,
+                      requirementLabel: item.requirementLabel || item.label || ''
+                    }));
                 }
 
                 return [];
