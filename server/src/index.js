@@ -616,6 +616,8 @@ app.get('/api/leave-applications/department', async (req, res) => {
     try {
         // Mapped exactly to your fact_leave_application columns!
         // CONFIRMED via live /api/debug/schema check: the real primary key is "id", not "application_id".
+        // FIX (Bug 2): added e.middle_name and f.salary so the HOD-side PDF has the same
+        // fields as the employee-side PDF.
         const query = `
             SELECT 
                 f.id AS application_id, 
@@ -628,12 +630,14 @@ app.get('/api/leave-applications/department', async (req, res) => {
                 f.hod_remarks,
                 f.working_days, 
                 f.status,
+                f.salary,
                 f.pdf_document,
                 f.attachment_data,
                 f.employee_key,
                 f.position,         -- Pulled from fact_leave_application
                 f.department,       -- Pulled from fact_leave_application
                 e.first_name,
+                e.middle_name,
                 e.last_name
             FROM public.fact_leave_application f
             JOIN public.dim_employee e ON f.employee_key = e.employee_key
@@ -1349,10 +1353,6 @@ app.get('/api/attendance/summary/:employee_key', async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to retrieve attendance metrics' });
   }
 });
-
-// ==========================================
-// HOD: LEAVE APPROVALS 
-// ==========================================
 
 // ==========================================
 // HOD: LEAVE APPROVALS 
