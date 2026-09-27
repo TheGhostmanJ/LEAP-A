@@ -1354,29 +1354,29 @@ app.get('/api/attendance/summary/:employee_key', async (req, res) => {
 // HOD: LEAVE APPROVALS 
 // ==========================================
 
-app.get('/api/leave-approvals', async (req, res) => {
-    try {
-        const query = `
-            SELECT 
-                l.id,
-                e.first_name,
-                e.middle_name,
-                e.last_name,
-                e.position_title,
-                e.department,
-                l.leave_type AS type,
-                l.status,
-                l.start_date AS date,
-                l.working_days,
-                (SELECT salary_amount FROM public.salary_history 
-                 WHERE employee_key = e.employee_key 
-                 ORDER BY effective_date DESC LIMIT 1) AS current_salary_amount
-            FROM public.fact_leave_application l
-            JOIN public.dim_employee e ON l.employee_key = e.employee_key
-            ORDER BY 
-                CASE WHEN l.status = 'Pending' THEN 1 ELSE 2 END,
-                l.id DESC;
-        `;
+const query = `
+    SELECT 
+        l.id,
+        e.first_name,
+        e.middle_name,
+        e.last_name,
+        e.position_title,
+        e.department,
+        l.leave_type AS type,
+        l.status,
+        l.start_date AS date,
+        l.working_days,
+        l.pdf_document,
+        l.attachment_data,
+        (SELECT salary_amount FROM public.salary_history 
+         WHERE employee_key = e.employee_key 
+         ORDER BY effective_date DESC LIMIT 1) AS current_salary_amount
+    FROM public.fact_leave_application l
+    JOIN public.dim_employee e ON l.employee_key = e.employee_key
+    ORDER BY 
+        CASE WHEN l.status = 'Pending' THEN 1 ELSE 2 END,
+        l.id DESC;
+`;
         const result = await pool.query(query);
         res.status(200).json(result.rows);
     } catch (error) {
