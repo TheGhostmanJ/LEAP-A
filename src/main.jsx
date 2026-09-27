@@ -7,7 +7,6 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import Login from "./features/auth/login.jsx";
 import ChangePasswordRequest from "./features/auth/ChangePasswordRequest.jsx";
 import AccessDenied from './features/auth/access-denied.jsx';
-import NotificationsPage from './components/NotificationsPage.jsx';
 
 // Shared / Employee Features
 import Dashboard from './features/dashboard/dashboard.jsx';
@@ -20,6 +19,7 @@ import CreditLedger from './features/ledger/creditledger.jsx';
 import TrainingRecords from './features/training/trainingrecords.jsx';
 import EmployeeEvents from './features/training/employee-events.jsx';
 import OpenPositions from './features/hiring/OpenPositions.jsx';
+import NotificationsPage from './components/NotificationsPage.jsx';
 
 // Management Features (HOD)
 import HodDashboard from './features/dashboard/hod-dashboard.jsx';
@@ -154,11 +154,6 @@ export default function Root() {
           <Dashboard onLogout={handleLogout} user={currentUser} />
         </ProtectedRoute>
       } />
-      <Route path="/notifications" element={
-        <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
-          <NotificationsPage user={currentUser} onLogout={handleLogout} />
-        </ProtectedRoute>
-      } />
       <Route path="/attendance" element={
         <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
           <Attendance onLogout={handleLogout} user={currentUser} />
@@ -177,6 +172,11 @@ export default function Root() {
       <Route path="/open-positions" element={
         <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
           <OpenPositions user={currentUser} onLogout={handleLogout} />
+        </ProtectedRoute>
+      } />
+      <Route path="/notifications" element={
+        <ProtectedRoute user={currentUser} allowedRoles={ALL_ACTIVE_ROLES}>
+          <NotificationsPage user={currentUser} onLogout={handleLogout} />
         </ProtectedRoute>
       } />
 
