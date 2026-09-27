@@ -432,6 +432,7 @@ export default function Dashboard({ onLogout, user }) {
                       <th>Date Filed</th>
                       <th>Leave Type</th>
                       <th>Status</th>
+                      <th>Feedback</th>
                       <th>Attachments</th>
                       <th style={{ textAlign: 'right' }}>Document</th>
                     </tr>
@@ -440,7 +441,8 @@ export default function Dashboard({ onLogout, user }) {
                     {filteredLeaves.length > 0 ? (
                       filteredLeaves.slice(0, 3).map((leave) => {
                         const attachments = Array.isArray(leave.attachment_urls) ? leave.attachment_urls : [];
-                        const hasFeedback = leave.remarks && leave.remarks !== 'Filed via System';
+                        const placeholderRemarks = ['Filed via System', 'Historical Seed'];
+                        const hasFeedback = leave.remarks && !placeholderRemarks.includes(leave.remarks);
                         const statusLower = leave.status ? leave.status.toLowerCase().replace(/\s+/g, '-') : '';
 
                         return (
@@ -455,7 +457,9 @@ export default function Dashboard({ onLogout, user }) {
                                 <span className="status-dot"></span>
                                 {leave.status}
                               </span>
-                              {hasFeedback && (
+                            </td>
+                            <td>
+                              {hasFeedback ? (
                                 <button
                                   type="button"
                                   onClick={() => setActiveFeedback(leave)}
@@ -464,6 +468,8 @@ export default function Dashboard({ onLogout, user }) {
                                 >
                                   View HOD feedback
                                 </button>
+                              ) : (
+                                <span className="dimmed-empty-cell">—</span>
                               )}
                             </td>
                             <td>
@@ -501,7 +507,7 @@ export default function Dashboard({ onLogout, user }) {
                       })
                     ) : (
                       <tr>
-                        <td colSpan="5" className="empty-table-cell">
+                        <td colSpan="6" className="empty-table-cell">
                           No recent filings found matching your search.
                         </td>
                       </tr>
