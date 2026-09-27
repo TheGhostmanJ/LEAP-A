@@ -22,8 +22,8 @@ pool.connect((err, client, release) => {
 });
 
 app.use(cors());                  
-app.use(express.json());
-app.use(express.text());
+app.use(express.json({ limit: '15mb' }));
+app.use(express.text({ limit: '15mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const multer = require('multer');
