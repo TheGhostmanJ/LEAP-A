@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, CheckCheck, Inbox, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import './NotificationBell.css';
 
@@ -19,12 +20,13 @@ function timeAgo(dateString) {
 }
 
 export default function NotificationBell({ employeeKey, onNavigate }) {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-const fetchNotifications = async () => {
+  const fetchNotifications = async () => {
     if (!employeeKey) return;
     try {
       const res = await fetch(`${BACKEND_URL}/${employeeKey}`, {
@@ -39,7 +41,7 @@ const fetchNotifications = async () => {
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
     }
-};
+  };
 
   useEffect(() => {
     fetchNotifications();
@@ -161,6 +163,19 @@ const fetchNotifications = async () => {
               })
             )}
           </div>
+
+          {notifications.length > 0 && (
+            <button
+              type="button"
+              className="notif-see-all-btn"
+              onClick={() => {
+                setIsOpen(false);
+                navigate('/notifications');
+              }}
+            >
+              See all notifications
+            </button>
+          )}
         </div>
       )}
     </div>
