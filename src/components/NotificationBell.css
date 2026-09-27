@@ -213,3 +213,20 @@
   background: #800000;
   margin-top: 6px;
 }
+
+.notif-see-all-btn {
+  width: 100%;
+  text-align: center;
+  padding: 10px;
+  background: none;
+  border: none;
+  border-top: 1px solid #f1f5f9;
+  color: #7a0000;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.notif-see-all-btn:hover {
+  background-color: rgba(122, 0, 0, 0.04);
+}
