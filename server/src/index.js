@@ -431,16 +431,17 @@ app.post('/api/password-reset-requests', async (req, res) => {
 // GET: Fetch all notifications for a specific employee
 app.get('/api/notifications/:employee_key', async (req, res) => {
     const { employee_key } = req.params;
+    const limit = parseInt(req.query.limit, 10) || 20;
     try {
-        res.set('Cache-Control', 'no-store'); // ADD THIS LINE
+        res.set('Cache-Control', 'no-store');
         const query = `
             SELECT notification_id, title, message, type, related_id, is_read, created_at 
             FROM public.notifications 
             WHERE employee_key = $1 
             ORDER BY created_at DESC 
-            LIMIT 20;
+            LIMIT $2;
         `;
-        const result = await pool.query(query, [employee_key]);
+        const result = await pool.query(query, [employee_key, limit]);
         res.status(200).json(result.rows);
     } catch (error) {
         console.error("Error fetching notifications:", error);
