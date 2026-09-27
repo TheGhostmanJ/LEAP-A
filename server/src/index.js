@@ -1446,6 +1446,7 @@ app.put('/api/leave-approvals/:id', async (req, res) => {
     try {
         await client.query('BEGIN');
 
+        // CONFIRMED via live /api/debug/schema check: the real primary key column is "id", not "application_id".
         const updateQuery = `
             UPDATE public.fact_leave_application 
             SET status = $1 
@@ -1476,11 +1477,9 @@ app.put('/api/leave-approvals/:id', async (req, res) => {
             `, [working_days, employee_key, leave_type]);
         }
 
-        // NEW: notify the employee regardless of approve/reject
+        // NEW: insert a notification for the employee, regardless of approve/reject
         const notifTitle = action === 'Approved' ? 'Leave Approved' : `Leave ${action}`;
-        const notifMessage = action === 'Approved'
-            ? `Your ${leave_type} request has been approved.`
-            : `Your ${leave_type} request has been ${action.toLowerCase()}.`;
+        const notifMessage = `Your ${leave_type} request has been ${action.toLowerCase()}.`;
 
         await client.query(`
             INSERT INTO public.notifications 
