@@ -24,10 +24,12 @@ export default function NotificationBell({ employeeKey, onNavigate }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  const fetchNotifications = async () => {
+const fetchNotifications = async () => {
     if (!employeeKey) return;
     try {
-      const res = await fetch(`${BACKEND_URL}/${employeeKey}`);
+      const res = await fetch(`${BACKEND_URL}/${employeeKey}`, {
+        cache: 'no-store'
+      });
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.notifications || []);
@@ -37,7 +39,7 @@ export default function NotificationBell({ employeeKey, onNavigate }) {
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
     }
-  };
+};
 
   useEffect(() => {
     fetchNotifications();
