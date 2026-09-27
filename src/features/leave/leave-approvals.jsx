@@ -334,9 +334,14 @@ const applicationsList = Array.isArray(data) ? data : (data.applications || data
         url = attachment.startsWith('/') ? `${apiUrl}${attachment}` : attachment;
       }
     } else if (typeof attachment === 'object' && attachment !== null) {
-      url = attachment.dataUrl || attachment.url || attachment.path || attachment.file_path;
-      title = attachment.requirementLabel || attachment.fileName || attachment.attachment_name || attachment.name || 'Supporting Document';
+    if (attachment.base64Data) {
+        const mime = attachment.fileType || 'application/octet-stream';
+        url = `data:${mime};base64,${attachment.base64Data}`;
+    } else {
+        url = attachment.dataUrl || attachment.url || attachment.path || attachment.file_path;
     }
+    title = attachment.requirementLabel || attachment.fileName || attachment.attachment_name || attachment.name || 'Supporting Document';
+}
 
     if (!url) {
       alert('Attachment URL or file data is missing.');
