@@ -59,10 +59,11 @@ export default function HodDashboard({ onLogout, user }) {
       
       // 1. Fetch Leaves
       const leaveRes = await fetch(`${apiUrl}/api/leave-applications/department?name=${encodedDept}`);
-      if (leaveRes.ok) {
-        const leaveData = await leaveRes.json();
-        setLeaveRequests(leaveData.applications || []);
-      }
+if (leaveRes.ok) {
+  const leaveData = await leaveRes.json();
+  // Backend returns a plain array (result.rows), not { applications: [...] }.
+  setLeaveRequests(Array.isArray(leaveData) ? leaveData : (leaveData.applications || []));
+}
 
       // 2. Fetch Dynamic Department Stats (You will need to link this to your backend)
       const statsRes = await fetch(`${apiUrl}/api/department/stats?name=${encodedDept}`);
