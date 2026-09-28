@@ -240,6 +240,75 @@ app.delete('/api/events/:id', async (req, res) => {
     }
 });
 
+// ==========================================
+// DASHBOARD CALENDAR
+// ==========================================
+
+// GET: Leaves + events for the employee's calendar
+// /api/calendar/:employee_key?from=YYYY-MM-DD&to=YYYY-MM-DD
+app.get('/api/calendar/:employee_key', async (req, res) => {
+    const employeeKey = parseInt(req.params.employee_key, 10);
+    const { from, to } = req.query;
+
+    if (!Number.isInteger(employeeKey) || !from || !to) {
+        return res.status(400).json({ error: "employee_key, from and to are required." });
+    }
+
+    try {
+        // 1. The employee's own leave applications (skip rejected ones)
+        const leaves = await pool.query(`
+            SELECT
+                f.id AS application_id,
+                f.leave_type,
+                f.status,
+                TO_CHAR(f.start_date::date, 'YYYY-MM-DD') AS start_date,
+                TO_CHAR(f.end_date::date,   'YYYY-MM-DD') AS end_date
+            FROM public.fact_leave_application f
+            WHERE f.employee_key = $1
+              AND f.status <> 'Rejected'
+              AND f.start_date::date <= $3::date
+              AND f.end_date::date   >= $2::date
+            ORDER BY f.start_date ASC;
+        `, [employeeKey, from, to]);
+
+        // 2. Events the employee can see (same rule as /api/events) or has joined
+        const events = await pool.query(`
+            SELECT
+                e.event_id,
+                e.title,
+                e.event_type,
+                e.venue,
+                TO_CHAR(e.start_date, 'YYYY-MM-DD') AS start_date,
+                TO_CHAR(e.end_date,   'YYYY-MM-DD') AS end_date,
+                TO_CHAR(e.start_date, 'HH12:MI AM') AS start_time,
+                (r.registration_id IS NOT NULL)     AS registered
+            FROM public.dim_event e
+            JOIN public.dim_employee emp
+                   ON emp.employee_key = $1
+            LEFT JOIN public.fact_event_registration r
+                   ON r.event_id = e.event_id
+                  AND r.employee_key = $1
+                  AND r.status = 'Registered'
+            WHERE e.start_date::date <= $3::date
+              AND e.end_date::date   >= $2::date
+              AND COALESCE(e.status, '') <> 'Cancelled'
+              AND (
+                    r.registration_id IS NOT NULL
+                 OR e.department = emp.department
+                 OR e.department = 'All Departments'
+                 OR e.department IS NULL
+                 OR e.department = ''
+              )
+            ORDER BY e.start_date ASC;
+        `, [employeeKey, from, to]);
+
+        res.status(200).json({ leaves: leaves.rows, events: events.rows });
+    } catch (error) {
+        console.error("Error fetching calendar data:", error);
+        res.status(500).json({ error: "Failed to load calendar data." });
+    }
+});
+
 app.get('/api/health', async (req, res) => {
   res.status(200).json({
     success: true,
