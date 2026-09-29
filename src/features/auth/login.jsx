@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Eye, EyeOff, AlertCircle, X, User, Smartphone, Download } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, X, User, Smartphone, Download, Briefcase } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { loginUser } from './services/authService';
 import AuthSplashScreen from '../../components/AuthSplashScreen';
+import OpenPositionsModal from './OpenPositionsModal';
 import './login.css';
 
 export default function Login({ onLoginSuccess }) {
@@ -17,6 +18,10 @@ export default function Login({ onLoginSuccess }) {
   const [activeModal, setActiveModal] = useState(null);
   const [captchaToken, setCaptchaToken] = useState(null);
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+
+  // Open Positions State
+  const [openings, setOpenings] = useState([]);
+  const [showOpenings, setShowOpenings] = useState(false);
 
   // Mobile App Download State
   const [showAppPrompt, setShowAppPrompt] = useState(false);
@@ -39,6 +44,21 @@ export default function Login({ onLoginSuccess }) {
       }
     };
     checkMaintenanceStatus();
+
+    // Fetch external openings (link only shows if there are any)
+    const fetchOpenings = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${apiUrl}/api/public/openings`);
+        if (response.ok) {
+          const data = await response.json();
+          setOpenings(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        console.error("Could not fetch open positions", err);
+      }
+    };
+    fetchOpenings();
 
     // 2. Mobile Detection
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -269,6 +289,20 @@ export default function Login({ onLoginSuccess }) {
                 </button>
               </div>
             </form>
+
+            {/* OPEN POSITIONS */}
+            {openings.length > 0 && (
+              <div className="open-positions-wrapper">
+                <span className="open-positions-text">Looking for a job?</span>
+                <button
+                  type="button"
+                  className="open-positions-link"
+                  onClick={() => setShowOpenings(true)}
+                >
+                  <Briefcase size={14} /> View open positions ({openings.length})
+                </button>
+              </div>
+            )}
           </div>
 
           {/* RIGHT PANEL: Logo only */}
@@ -280,6 +314,14 @@ export default function Login({ onLoginSuccess }) {
 
         </div>
 
+        {/* OPEN POSITIONS MODAL */}
+        {showOpenings && (
+          <OpenPositionsModal
+            openings={openings}
+            onClose={() => setShowOpenings(false)}
+          />
+        )}
+
         {/* TERMS OF SERVICE MODAL */}
         {activeModal === 'terms' && (
           <div className="modal-overlay" onClick={closeModal}>
@@ -290,6 +332,7 @@ export default function Login({ onLoginSuccess }) {
               </div>
               <div className="modal-body">
                 <p className="modal-updated">Last updated: September 2026</p>
+                
                 <h3>1. Purpose of This System</h3>
                 <p>LEAP-A (Labor Engagement and Analytics Platform for Administration) is an internal Human Resource Information System developed for the City Personnel Office of Lipa City Hall. It is intended solely for authorized personnel to manage employee records, attendance, leave applications, training records, and related HR functions.</p>
 
