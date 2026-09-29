@@ -549,6 +549,53 @@ app.patch('/api/notifications/:employee_key/read-all', async (req, res) => {
     }
 });
 
+// POST: Automated Sync from Local ZKTeco Bridge
+app.post('/api/attendance/auto-sync', async (req, res) => {
+    const { logs } = req.body; // Expecting an array of punch objects
+
+    if (!logs || !Array.isArray(logs) || logs.length === 0) {
+        return res.status(200).json({ success: true, message: "No new logs to sync." });
+    }
+
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        for (const log of logs) {
+            const empKey = parseInt(log.userId, 10); // ZKTeco refers to employee ID as userId
+            const timestamp = log.recordTime; 
+            const punchType = parseInt(log.punchState, 10) || 0;
+
+            if (!isNaN(empKey)) {
+                // Insert, but if it already exists (same employee, same exact second), skip it safely
+                const query = `
+                    INSERT INTO public.fact_attendance_log 
+                    (employee_key, punch_time, punch_type, source, uploaded_by) 
+                    VALUES ($1, $2, $3, 'ZKTeco Ethernet Bridge', NULL)
+                    ON CONFLICT (employee_key, punch_time) DO NOTHING
+                `;
+                await client.query(query, [empKey, timestamp, punchType]);
+            }
+        }
+
+        await client.query('COMMIT');
+        
+        // Trigger the ETL pipeline so the dashboard updates immediately
+        if (typeof processDailyAttendance === 'function') {
+            processDailyAttendance();
+        }
+
+        res.status(200).json({ success: true, synced: logs.length });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Auto-Sync Error:', error);
+        res.status(500).json({ error: "Failed to sync automated logs." });
+    } finally {
+        client.release();
+    }
+});
+
 // GET: Fetch detailed attendance records by month
 app.get('/api/attendance/:employee_key', async (req, res) => {
     const { employee_key } = req.params;
