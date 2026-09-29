@@ -702,3 +702,149 @@
     height: 60px;
   }
 }
+
+/* ============================================================
+   OPEN POSITIONS (external applicants)
+   ============================================================ */
+.open-positions-wrapper {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #eef1f2;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.open-positions-text {
+  font-size: 12.5px;
+  color: #6b7280;
+}
+
+.open-positions-link {
+  background: none;
+  border: 1px solid #b11212;
+  color: #b11212;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.open-positions-link:hover {
+  background-color: #b11212;
+  color: #ffffff;
+}
+
+.opening-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border: 1px solid #eef1f2;
+  border-radius: 12px;
+  background-color: #f7f9fa;
+}
+
+.opening-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #b11212;
+}
+
+.opening-title {
+  font-weight: 700;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.opening-dept {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.apply-primary-btn {
+  background: linear-gradient(180deg, #8a0000 0%, #5a0000 100%);
+  color: #ffffff;
+  border: none;
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.apply-primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.apply-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.plain-input {
+  padding: 12px 14px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.apply-back-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 12.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  align-self: flex-start;
+}
+
+.apply-back-btn:hover {
+  color: #b11212;
+}
+
+.apply-selected {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background-color: #fef2f2;
+  color: #991b1b;
+  font-size: 13px;
+}
+
+.apply-submit {
+  width: 100%;
+  padding: 13px;
+}
+
+.apply-success {
+  text-align: center;
+  color: #10b981;
+  padding: 12px 0;
+}
+
+.apply-success h3 {
+  color: #1f2937;
+  margin: 10px 0 6px 0;
+}
+
+.apply-success p {
+  color: #4b5563;
+  margin-bottom: 18px;
+}
