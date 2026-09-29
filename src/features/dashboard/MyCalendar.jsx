@@ -1,39 +1,47 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import './my-calendar.css';
 
-// ---- PH Holidays 2026 (Regular + Special Non-Working) ----
-// Standard PH proclaimed holidays; confirm final list against the actual Malacañang proclamation for 2026.
-const PH_HOLIDAYS_2026 = [
-  { date: '2026-01-01', name: "New Year's Day", type: 'regular' },
-  { date: '2026-02-17', name: 'Chinese New Year', type: 'special' },
-  { date: '2026-02-25', name: 'EDSA People Power Anniversary', type: 'special' },
-  { date: '2026-04-02', name: 'Maundy Thursday', type: 'regular' },
-  { date: '2026-04-03', name: 'Good Friday', type: 'regular' },
-  { date: '2026-04-04', name: 'Black Saturday', type: 'special' },
-  { date: '2026-04-09', name: 'Araw ng Kagitingan', type: 'regular' },
-  { date: '2026-05-01', name: 'Labor Day', type: 'regular' },
-  { date: '2026-06-12', name: 'Independence Day', type: 'regular' },
-  { date: '2026-08-21', name: 'Ninoy Aquino Day', type: 'special' },
-  { date: '2026-08-31', name: 'National Heroes Day', type: 'regular' },
-  { date: '2026-11-01', name: "All Saints' Day", type: 'special' },
-  { date: '2026-11-30', name: 'Bonifacio Day', type: 'regular' },
-  { date: '2026-12-08', name: 'Immaculate Conception', type: 'special' },
-  { date: '2026-12-25', name: 'Christmas Day', type: 'regular' },
-  { date: '2026-12-30', name: 'Rizal Day', type: 'regular' },
-  { date: '2026-12-31', name: "New Year's Eve", type: 'special' },
+// ---- PH Holidays (fixed-date ones repeat every year; moveable ones are listed per year) ----
+const HOLIDAYS_FIXED = [
+  ['01-01', "New Year's Day", 'regular'],
+  ['04-09', 'Araw ng Kagitingan', 'regular'],
+  ['05-01', 'Labor Day', 'regular'],
+  ['06-12', 'Independence Day', 'regular'],
+  ['08-21', 'Ninoy Aquino Day', 'special'],
+  ['11-01', "All Saints' Day", 'special'],
+  ['11-30', 'Bonifacio Day', 'regular'],
+  ['12-08', 'Immaculate Conception', 'special'],
+  ['12-25', 'Christmas Day', 'regular'],
+  ['12-30', 'Rizal Day', 'regular'],
+  ['12-31', "New Year's Eve", 'special'],
 ];
 
-// ---- Mock leave + event data ----
-const MOCK_LEAVE_EVENTS = [
-  { date: '2026-09-12', type: 'leave', label: 'Solo Parent Leave — Rejected', status: 'rejected' },
-  { date: '2026-09-25', type: 'leave', label: 'Vacation Leave — Pending', status: 'pending' },
-];
+// Moveable holidays change every year — add the next year's dates here once proclaimed.
+const HOLIDAYS_MOVEABLE = {
+  2026: [
+    ['02-17', 'Chinese New Year', 'special'],
+    ['02-25', 'EDSA People Power Anniversary', 'special'],
+    ['04-02', 'Maundy Thursday', 'regular'],
+    ['04-03', 'Good Friday', 'regular'],
+    ['04-04', 'Black Saturday', 'special'],
+    ['08-31', 'National Heroes Day', 'regular'],
+  ],
+};
 
-const MOCK_TRAINING_EVENTS = [
-  { date: '2026-09-22', type: 'training', label: 'Data Privacy Act Refresher' },
-  { date: '2026-09-30', type: 'training', label: 'Customer Service Workshop' },
-];
+function getHolidaysForYear(year) {
+  const fixed = HOLIDAYS_FIXED.map(([md, name, type]) => ({
+    date: `${year}-${md}`,
+    name,
+    type,
+  }));
+  const moveable = (HOLIDAYS_MOVEABLE[year] || []).map(([md, name, type]) => ({
+    date: `${year}-${md}`,
+    name,
+    type,
+  }));
+  return [...fixed, ...moveable];
+}
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -48,36 +56,106 @@ function toDateKey(year, month, day) {
   return `${year}-${mm}-${dd}`;
 }
 
-export default function MyCalendar({ leaveEvents = MOCK_LEAVE_EVENTS, trainingEvents = MOCK_TRAINING_EVENTS, holidays = PH_HOLIDAYS_2026 }) {
+function fromDateKey(key) {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// Expand a start/end range into individual date keys.
+// skipWeekends=true is used for leave filings, since leave doesn't cover Sat/Sun.
+function expandRange(startKey, endKey, skipWeekends = false) {
+  const out = [];
+  const cur = fromDateKey(startKey);
+  const end = fromDateKey(endKey);
+  let guard = 0;
+  while (cur <= end && guard++ < 366) {
+    const dow = cur.getDay();
+    if (!(skipWeekends && (dow === 0 || dow === 6))) {
+      out.push(toDateKey(cur.getFullYear(), cur.getMonth(), cur.getDate()));
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+  return out;
+}
+
+export default function MyCalendar({ employeeKey }) {
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState(null);
 
+  const [leaves, setLeaves] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+
+  // Fetch a wide window once (3 months back, 12 months ahead) so month nav
+  // doesn't need to re-fetch every time the user clicks the arrows.
+  useEffect(() => {
+    if (!employeeKey) {
+      setLoading(false);
+      return;
+    }
+
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const now = new Date();
+    const from = toDateKey(now.getFullYear(), now.getMonth() - 3, 1);
+    const toDateObj = new Date(now.getFullYear(), now.getMonth() + 13, 0);
+    const to = toDateKey(toDateObj.getFullYear(), toDateObj.getMonth(), toDateObj.getDate());
+
+    setLoading(true);
+    fetch(`${apiUrl}/api/calendar/${employeeKey}?from=${from}&to=${to}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Request failed');
+        return res.json();
+      })
+      .then((json) => {
+        setLeaves(Array.isArray(json.leaves) ? json.leaves : []);
+        setEvents(Array.isArray(json.events) ? json.events : []);
+        setLoadError('');
+      })
+      .catch(() => setLoadError('Could not load calendar data.'))
+      .finally(() => setLoading(false));
+  }, [employeeKey]);
+
   const eventsByDate = useMemo(() => {
     const map = {};
-    holidays.forEach((h) => {
-      if (!map[h.date]) map[h.date] = [];
-      map[h.date].push({ ...h, type: 'holiday' });
+    const add = (dateKey, item) => {
+      if (!map[dateKey]) map[dateKey] = [];
+      map[dateKey].push(item);
+    };
+
+    // Holidays for the visible year plus neighbors, so "Upcoming" spanning
+    // a year boundary still finds them.
+    [viewYear - 1, viewYear, viewYear + 1].forEach((y) => {
+      getHolidaysForYear(y).forEach((h) => add(h.date, { ...h, type: 'holiday' }));
     });
-    leaveEvents.forEach((e) => {
-      if (!map[e.date]) map[e.date] = [];
-      map[e.date].push(e);
+
+    leaves.forEach((l) => {
+      const label = `${l.leave_type} — ${l.status}`;
+      expandRange(l.start_date, l.end_date, true).forEach((dateKey) =>
+        add(dateKey, { type: 'leave', label, status: l.status })
+      );
     });
-    trainingEvents.forEach((e) => {
-      if (!map[e.date]) map[e.date] = [];
-      map[e.date].push(e);
+
+    events.forEach((e) => {
+      const label = e.registered ? `${e.title} (Registered)` : e.title;
+      expandRange(e.start_date, e.end_date, false).forEach((dateKey) =>
+        add(dateKey, { type: 'training', label, time: e.start_time, venue: e.venue })
+      );
     });
+
     return map;
-  }, [leaveEvents, trainingEvents, holidays]);
+  }, [leaves, events, viewYear]);
 
   const upcomingEvents = useMemo(() => {
     const todayKey = toDateKey(today.getFullYear(), today.getMonth(), today.getDate());
     const all = Object.entries(eventsByDate)
       .filter(([date]) => date >= todayKey)
-      .flatMap(([date, events]) => events.map((ev) => ({ ...ev, date })))
+      .flatMap(([date, evs]) => evs.map((ev) => ({ ...ev, date })))
       .sort((a, b) => a.date.localeCompare(b.date));
     return all.slice(0, 5);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventsByDate]);
 
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -109,7 +187,7 @@ export default function MyCalendar({ leaveEvents = MOCK_LEAVE_EVENTS, trainingEv
   };
 
   const formatNiceDate = (dateKey) =>
-    new Date(dateKey + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    fromDateKey(dateKey).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
   const selectedEvents = selectedDate ? (eventsByDate[selectedDate] || []) : [];
 
@@ -180,7 +258,7 @@ export default function MyCalendar({ leaveEvents = MOCK_LEAVE_EVENTS, trainingEv
           {selectedDate ? (
             <>
               <p className="mycal-side-heading">
-                {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                {fromDateKey(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
               {selectedEvents.length === 0 ? (
                 <p className="mycal-detail-empty">No events on this date.</p>
@@ -190,6 +268,7 @@ export default function MyCalendar({ leaveEvents = MOCK_LEAVE_EVENTS, trainingEv
                     <li key={i} className={`mycal-detail-item item-${ev.type}`}>
                       <span className="mycal-detail-dot" />
                       {ev.name || ev.label}
+                      {ev.time && ` · ${ev.time}`}
                     </li>
                   ))}
                 </ul>
@@ -201,9 +280,12 @@ export default function MyCalendar({ leaveEvents = MOCK_LEAVE_EVENTS, trainingEv
           ) : (
             <>
               <p className="mycal-side-heading">Upcoming</p>
-              {upcomingEvents.length === 0 ? (
-                <p className="mycal-detail-empty">Nothing coming up this month.</p>
-              ) : (
+              {loading && <p className="mycal-detail-empty">Loading…</p>}
+              {loadError && <p className="mycal-detail-empty">{loadError}</p>}
+              {!loading && !loadError && upcomingEvents.length === 0 && (
+                <p className="mycal-detail-empty">Nothing coming up.</p>
+              )}
+              {!loading && !loadError && upcomingEvents.length > 0 && (
                 <ul className="mycal-detail-list">
                   {upcomingEvents.map((ev, i) => (
                     <li key={i} className={`mycal-detail-item item-${ev.type}`}>
