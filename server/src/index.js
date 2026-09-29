@@ -2767,6 +2767,169 @@ app.post('/api/succession/respond/:offerId', async (req, res) => {
   }
 });
 
+// ==========================================
+// PUBLIC: EXTERNAL APPLICANTS (LOGIN PAGE)
+// ==========================================
+
+// A department is "Open - External" when: head is missing/inactive, HR already started
+// offers, no offer is still pending/accepted, and every active employee was already offered.
+const OPEN_EXTERNAL_SQL = `
+    SELECT d.department_id,
+           d.department_name,
+           'Department Head' AS position_title
+    FROM public.dim_department d
+    LEFT JOIN public.dim_employee h ON h.employee_key = d.department_head_key
+    WHERE (d.department_head_key IS NULL OR h.is_active = false)
+      AND EXISTS (
+          SELECT 1 FROM public.succession_offer so
+          WHERE so.department_id = d.department_id
+      )
+      AND NOT EXISTS (
+          SELECT 1 FROM public.succession_offer so
+          WHERE so.department_id = d.department_id
+            AND so.status IN ('Offered', 'Accepted')
+      )
+      AND NOT EXISTS (
+          SELECT 1 FROM public.dim_employee e
+          WHERE e.department = d.department_name
+            AND e.is_active = true
+            AND NOT EXISTS (
+                SELECT 1 FROM public.succession_offer so2
+                WHERE so2.department_id = d.department_id
+                  AND so2.employee_key = e.employee_key
+            )
+      )
+`;
+
+const verifyRecaptcha = async (token) => {
+    const secret = process.env.RECAPTCHA_SECRET_KEY;
+    if (!secret) {
+        console.warn('RECAPTCHA_SECRET_KEY is not set - skipping reCAPTCHA verification.');
+        return true;
+    }
+    if (!token) return false;
+    try {
+        const params = new URLSearchParams({ secret, response: token });
+        const { data } = await axios.post(
+            'https://www.google.com/recaptcha/api/siteverify',
+            params.toString(),
+            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+        );
+        return data.success === true;
+    } catch (err) {
+        console.error('reCAPTCHA verification error:', err.message);
+        return false;
+    }
+};
+
+// GET: Positions open to external applicants (public, no login needed)
+app.get('/api/public/openings', async (req, res) => {
+    try {
+        res.set('Cache-Control', 'no-store');
+        const result = await pool.query(`${OPEN_EXTERNAL_SQL} ORDER BY d.department_name ASC`);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error('Error fetching public openings:', error);
+        res.status(500).json({ error: 'Failed to fetch open positions.' });
+    }
+});
+
+// POST: External applicant submits an application (public, no login needed)
+app.post('/api/public/applications', async (req, res) => {
+    const { department_id, full_name, email, contact_number, message, captchaToken } = req.body;
+
+    const name = (full_name || '').trim();
+    const mail = (email || '').trim();
+    const phone = (contact_number || '').trim();
+    const note = (message || '').trim();
+
+    if (!department_id || !name || !mail || !phone) {
+        return res.status(400).json({ success: false, message: 'Please fill in all required fields.' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
+        return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
+    }
+    if (name.length > 150 || mail.length > 150 || phone.length > 30 || note.length > 1000) {
+        return res.status(400).json({ success: false, message: 'One of your entries is too long.' });
+    }
+
+    try {
+        const captchaOk = await verifyRecaptcha(captchaToken);
+        if (!captchaOk) {
+            return res.status(400).json({ success: false, message: 'reCAPTCHA verification failed. Please try again.' });
+        }
+
+        // Make sure this department is REALLY open to external applicants right now
+        const openCheck = await pool.query(
+            `SELECT * FROM (${OPEN_EXTERNAL_SQL}) open_positions WHERE department_id = $1`,
+            [department_id]
+        );
+        if (openCheck.rows.length === 0) {
+            return res.status(400).json({ success: false, message: 'This position is no longer open for applications.' });
+        }
+        const position = openCheck.rows[0];
+
+        const applicantIp =
+            req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress || null;
+
+        await pool.query(`
+            INSERT INTO public.external_application
+            (department_id, position_title, full_name, email, contact_number, message, applicant_ip)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `, [position.department_id, position.position_title, name, mail, phone, note || null, applicantIp]);
+
+        res.status(201).json({ success: true, message: 'Application submitted successfully.' });
+    } catch (error) {
+        if (error.code === '23505') {
+            return res.status(409).json({ success: false, message: 'You have already applied for this position with this email.' });
+        }
+        console.error('Error saving external application:', error);
+        res.status(500).json({ success: false, message: 'Failed to submit your application. Please try again.' });
+    }
+});
+
+// GET: HR view - external applicants for a department
+app.get('/api/hiring/external-applicants/:departmentId', async (req, res) => {
+    const { departmentId } = req.params;
+    try {
+        const result = await pool.query(`
+            SELECT application_id, department_id, position_title, full_name, email,
+                   contact_number, message, status, applied_date
+            FROM public.external_application
+            WHERE department_id = $1
+            ORDER BY applied_date ASC
+        `, [departmentId]);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error('Error fetching external applicants:', error);
+        res.status(500).json({ error: 'Failed to fetch external applicants.' });
+    }
+});
+
+// PUT: HR view - update an external applicant's status
+app.put('/api/hiring/external-applicants/:applicationId/status', async (req, res) => {
+    const { applicationId } = req.params;
+    const { status } = req.body;
+
+    if (!['Pending', 'Shortlisted', 'Rejected', 'Hired'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status value.' });
+    }
+
+    try {
+        const result = await pool.query(
+            `UPDATE public.external_application SET status = $1 WHERE application_id = $2 RETURNING *`,
+            [status, applicationId]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Applicant not found.' });
+        }
+        res.status(200).json({ success: true, applicant: result.rows[0] });
+    } catch (error) {
+        console.error('Error updating applicant status:', error);
+        res.status(500).json({ error: 'Failed to update applicant status.' });
+    }
+});
+
 // Start listening for API calls
 app.listen(PORT, () => {
   console.log(`Node.js server executing on http://localhost:${PORT}`);
