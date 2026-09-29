@@ -239,7 +239,6 @@ app.delete('/api/events/:id', async (req, res) => {
         res.status(500).json({ error: "Failed to cancel event." });
     }
 });
-
 // ==========================================
 // DASHBOARD CALENDAR
 // ==========================================
