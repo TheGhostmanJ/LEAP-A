@@ -386,7 +386,7 @@ export default function Dashboard({ onLogout, user }) {
             </div>
           </div>
 
-          {!isRestricted && <MyCalendar />}
+          {!isRestricted && <MyCalendar employeeKey={user?.employee_key} />}
         </section>
 
         {!isRestricted && (
