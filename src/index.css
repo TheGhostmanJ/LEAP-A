@@ -275,3 +275,24 @@ button:active,
 .sys-main-content {
   background-color: var(--app-bg) !important;
 }
+
+/* Make the scrolling column sit flush against the window edges */
+.app-layout-wrapper,
+.dashboard-container,
+.cl-dashboard-container {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.app-layout-wrapper > main,
+.dashboard-main-content,
+.hr-dash-main-content,
+.cl-main-content,
+.app-main-content {
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  height: 100dvh !important;
+}
