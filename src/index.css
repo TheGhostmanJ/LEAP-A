@@ -96,7 +96,10 @@ button:active,
   overflow: hidden;    /* wrapper never scrolls, only the main column does */
 }
 
-/* Main column: the ONLY scrollbar on each page */
+/* Main column: the ONLY scrollbar on each page.
+   NOTE: do NOT set scrollbar-width / scrollbar-color here.
+   In Chrome/Edge they disable the ::-webkit-scrollbar rules below
+   and cause the floating, inset scrollbar. */
 .dashboard-main-content,
 .hr-dash-main-content,
 .cl-main-content,
@@ -108,23 +111,30 @@ button:active,
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
-
-  /* slim, quiet scrollbar */
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
 }
 
+/* Slim scrollbar, flush against the window edge */
 .dashboard-main-content::-webkit-scrollbar,
 .hr-dash-main-content::-webkit-scrollbar,
 .cl-main-content::-webkit-scrollbar,
-.app-main-content::-webkit-scrollbar {
+.app-main-content::-webkit-scrollbar,
+.app-layout-wrapper > main::-webkit-scrollbar {
   width: 8px;
+}
+
+.dashboard-main-content::-webkit-scrollbar-track,
+.hr-dash-main-content::-webkit-scrollbar-track,
+.cl-main-content::-webkit-scrollbar-track,
+.app-main-content::-webkit-scrollbar-track,
+.app-layout-wrapper > main::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .dashboard-main-content::-webkit-scrollbar-thumb,
 .hr-dash-main-content::-webkit-scrollbar-thumb,
 .cl-main-content::-webkit-scrollbar-thumb,
-.app-main-content::-webkit-scrollbar-thumb {
+.app-main-content::-webkit-scrollbar-thumb,
+.app-layout-wrapper > main::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 8px;
 }
