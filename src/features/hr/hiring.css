@@ -1,44 +1,38 @@
-/* =========================================================
-   HIRING (SUCCESSION) - COMPONENT SPECIFIC STYLES
-   ========================================================= */
-
-.hiring-status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
+/* ============================================================
+   EXTERNAL APPLICANTS
+   ============================================================ */
+.hiring-status-badge.external {
+  background-color: #fef3c7;
+  color: #92400e;
 }
 
-.hiring-status-badge.vacant {
-  background-color: rgba(220, 38, 38, 0.1);
-  color: var(--color-danger);
+.hiring-status-badge.applicant-pending {
+  background-color: #f3f4f6;
+  color: #4b5563;
 }
 
-.hiring-status-badge.offered {
-  background-color: rgba(202, 138, 4, 0.12);
-  color: #ca8a04;
+.hiring-status-badge.applicant-shortlisted {
+  background-color: #dbeafe;
+  color: #1e40af;
 }
 
-.hiring-status-badge.accepted {
-  background-color: rgba(22, 163, 74, 0.12);
-  color: #16a34a;
+.hiring-status-badge.applicant-rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
 }
 
-.hiring-status-badge.declined {
-  background-color: var(--color-border-light);
-  color: var(--color-text-muted);
+.hiring-status-badge.applicant-hired {
+  background-color: #dcfce7;
+  color: #166534;
 }
 
-.hiring-candidate-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid var(--color-border-light);
-  border-radius: 10px;
-  background-color: #fff;
+.hiring-applicant-message {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background-color: #f7f9fa;
+  color: #4b5563;
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
