@@ -161,6 +161,9 @@
   height: 42px;
 }
 
+/* Icon-only square button (e.g. the Sliders/Advanced-Filters toggle).
+   Fixed 42x42 on purpose — do NOT reuse this for buttons that contain text,
+   that's what squished "Print" / "Export as Excel" into 3 wrapped lines. */
 .dr-filter-btn {
   background-color: #ffffff;
   border: 1px solid #cbd5e1;
@@ -198,6 +201,35 @@
 
 .dr-btn-primary:hover {
   background-color: #4a0000;
+}
+
+/* NEW: text-bearing secondary button (Print, Export as Excel). Auto-widths to its
+   label instead of clipping to a fixed square, and never wraps its text. */
+.dr-btn-secondary {
+  background-color: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  padding: 0 18px;
+  height: 42px;
+  border-radius: 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.dr-btn-secondary:hover {
+  border-color: #680000;
+  color: #680000;
+  background-color: #fff5f5;
+}
+
+.dr-btn-secondary:disabled,
+.dr-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* 2x2 CHART MATRIX */
@@ -407,7 +439,10 @@
 .dr-export-row {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .dr-export-btn {
