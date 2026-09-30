@@ -8,8 +8,13 @@ import {
   Download,
   Loader2,
   TrendingDown,
-  ShieldAlert
+  ShieldAlert,
+  FileSpreadsheet,
+  Printer
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 /* SIDEBAR & HEADER COMPONENTS */
 import HrSidebar from '../../components/hr-sidebar';
@@ -25,6 +30,7 @@ export default function DepartmentReports({ onLogout, user }) {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false); // NEW: disables export buttons mid-export
 
   // 1. Role-Based Security & Filtering
   const isGlobal = user?.role === 'HR Admin' || user?.role === 'Super Admin';
@@ -71,8 +77,8 @@ export default function DepartmentReports({ onLogout, user }) {
     }, 1200); // Simulate processing time for UX
   };
 
-  const handleExport = () => {
-    window.print(); // Simple browser print/PDF export
+  const handlePrint = () => {
+    window.print(); // Simple browser print fallback (kept for quick on-screen printing)
   };
 
   const renderSidebar = () => {
@@ -107,10 +113,272 @@ export default function DepartmentReports({ onLogout, user }) {
     return points.join(' '); 
   };
 
-  const maxMonthlyLeaves = reportData?.monthlyData ? 
-    Math.max(...Object.values(reportData.monthlyData).map(m => 
-      Object.values(m).reduce((a, b) => a + b, 0)
-    )) : 10;
+  // FIX: Math.max(...[]) returns -Infinity when monthlyData is empty, which rendered as
+  // "NaN" on the Y-axis labels even though the bar area correctly said "Insufficient
+  // timeline data". Guard against the empty-object case explicitly.
+  const monthKeys = reportData?.monthlyData ? Object.keys(reportData.monthlyData) : [];
+  const maxMonthlyLeaves = monthKeys.length > 0
+    ? Math.max(...Object.values(reportData.monthlyData).map(m => 
+        Object.values(m).reduce((a, b) => a + b, 0)
+      ))
+    : 10;
+
+  // ==========================================
+  // EXPORT: shared metadata block used by both PDF and Excel exports
+  // ==========================================
+  const buildReportMeta = () => ({
+    title: 'Department Report',
+    subtitle: displayDepartment,
+    period: 'YTD 2026',
+    generatedAt: new Date().toLocaleString('en-PH', { dateStyle: 'long', timeStyle: 'short' }),
+    generatedBy: user
+      ? (`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Unknown')
+      : 'Unknown',
+    filenameSafeDept: (displayDepartment || 'Department').replace(/[^a-z0-9]+/gi, '_')
+  });
+
+  // ==========================================
+  // EXPORT: PDF (jsPDF + jspdf-autotable)
+  // Run: npm install jspdf jspdf-autotable
+  // ==========================================
+  const handleExportPDF = () => {
+    if (!reportData) return;
+    setIsExporting(true);
+
+    try {
+      const meta = buildReportMeta();
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // --- Header block. Swap in the actual city seal via doc.addImage() before deployment. ---
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('City Government of Lipa', pageWidth / 2, 40, { align: 'center' });
+
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text('Human Resource Management Office', pageWidth / 2, 56, { align: 'center' });
+
+      doc.setDrawColor(128, 0, 0);
+      doc.setLineWidth(1);
+      doc.line(40, 66, pageWidth - 40, 66);
+
+      doc.setFontSize(13);
+      doc.setFont(undefined, 'bold');
+      doc.text(`${meta.title} \u2014 ${meta.subtitle}`, pageWidth / 2, 86, { align: 'center' });
+
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Period: ${meta.period}`, 40, 106);
+      doc.text(`Generated: ${meta.generatedAt}`, 40, 120);
+      doc.text(`Prepared by: ${meta.generatedBy}`, 40, 134);
+
+      let cursorY = 156;
+      const tableTheme = {
+        headStyles: { fillColor: [128, 0, 0], textColor: 255 },
+        styles: { fontSize: 9, cellPadding: 5 },
+        margin: { left: 40, right: 40 }
+      };
+
+      // --- Table 1: Leave Distribution ---
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text('Leave Distribution (YTD)', 40, cursorY);
+      autoTable(doc, {
+        startY: cursorY + 8,
+        head: [['Leave Type', 'Share of Total']],
+        body: reportData.distribution.length
+          ? reportData.distribution.map(d => [d.type, `${d.percentage}%`])
+          : [['No leave data recorded', '\u2014']],
+        ...tableTheme
+      });
+      cursorY = doc.lastAutoTable.finalY + 24;
+
+      // --- Table 2: Monthly Trend (pivoted: one column per leave type) ---
+      const leaveTypes = Array.from(
+        monthKeys.reduce((set, m) => {
+          Object.keys(reportData.monthlyData[m]).forEach(t => set.add(t));
+          return set;
+        }, new Set())
+      );
+
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text('Monthly Leave Trend', 40, cursorY);
+      autoTable(doc, {
+        startY: cursorY + 8,
+        head: [['Month', ...leaveTypes, 'Total']],
+        body: monthKeys.length
+          ? monthKeys.map(m => {
+              const row = leaveTypes.map(t => reportData.monthlyData[m][t] || 0);
+              const total = row.reduce((a, b) => a + b, 0);
+              return [m, ...row, total];
+            })
+          : [['No monthly data recorded', ...leaveTypes.map(() => '\u2014'), '\u2014']],
+        ...tableTheme
+      });
+      cursorY = doc.lastAutoTable.finalY + 24;
+
+      // --- Table 3: Workforce Forecast summary ---
+      if (wfData) {
+        if (cursorY > pageHeight - 160) { doc.addPage(); cursorY = 40; }
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.text('Workforce Forecast (30-Day Snapshot)', 40, cursorY);
+        autoTable(doc, {
+          startY: cursorY + 8,
+          head: [['Metric', 'Value']],
+          body: [
+            ['Total Active Staff', wfData.totalStaff ?? '\u2014'],
+            ['Available Today', wfData.availableToday ?? '\u2014'],
+            ['On Leave Today', wfData.onLeaveToday ?? '\u2014'],
+            ['Pending Leave Requests', wfData.pendingLeaves ?? '\u2014']
+          ],
+          ...tableTheme
+        });
+        cursorY = doc.lastAutoTable.finalY + 24;
+      }
+
+      // --- Table 4: Anomaly Alerts ---
+      if (anData) {
+        if (cursorY > pageHeight - 160) { doc.addPage(); cursorY = 40; }
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.text('Anomaly Intelligence Report', 40, cursorY);
+        autoTable(doc, {
+          startY: cursorY + 8,
+          head: [['Employee', 'Pattern', 'Risk Score', 'Status', 'Flagged']],
+          body: anData.alerts?.length
+            ? anData.alerts.map(a => [
+                a.employee_name,
+                a.anomaly_pattern,
+                a.risk_score,
+                a.status,
+                a.flagged_at ? new Date(a.flagged_at).toLocaleDateString('en-PH') : '\u2014'
+              ])
+            : [['No active anomaly alerts', '\u2014', '\u2014', '\u2014', '\u2014']],
+          ...tableTheme,
+          styles: { ...tableTheme.styles, fontSize: 8 }
+        });
+      }
+
+      // --- Footer on every page: confidentiality line + page numbers ---
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        doc.setTextColor(120);
+        doc.text(
+          'For official use only \u2014 City Government of Lipa HR Management System',
+          40,
+          pageHeight - 20
+        );
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth - 40, pageHeight - 20, { align: 'right' });
+      }
+
+      doc.save(`Department_Report_${meta.filenameSafeDept}_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      alert('Failed to generate the PDF. Check the browser console for details.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // ==========================================
+  // EXPORT: Excel (SheetJS / xlsx)
+  // Run: npm install xlsx
+  // ==========================================
+  const handleExportExcel = () => {
+    if (!reportData) return;
+    setIsExporting(true);
+
+    try {
+      const meta = buildReportMeta();
+      const wb = XLSX.utils.book_new();
+
+      // Sheet 0: Cover / metadata (kept first so it's the sheet that opens by default)
+      const wsCover = XLSX.utils.aoa_to_sheet([
+        ['City Government of Lipa \u2014 Department Report'],
+        ['Human Resource Management Office'],
+        [],
+        ['Department', meta.subtitle],
+        ['Period', meta.period],
+        ['Generated', meta.generatedAt],
+        ['Prepared by', meta.generatedBy]
+      ]);
+      wsCover['!cols'] = [{ wch: 18 }, { wch: 40 }];
+      XLSX.utils.book_append_sheet(wb, wsCover, 'Cover');
+
+      // Sheet 1: Leave Distribution
+      const wsDist = XLSX.utils.aoa_to_sheet([
+        ['Leave Type', 'Share of Total (%)'],
+        ...(reportData.distribution.length
+          ? reportData.distribution.map(d => [d.type, d.percentage])
+          : [['No leave data recorded', '']])
+      ]);
+      XLSX.utils.book_append_sheet(wb, wsDist, 'Leave Distribution');
+
+      // Sheet 2: Monthly Trend
+      const leaveTypes = Array.from(
+        monthKeys.reduce((set, m) => {
+          Object.keys(reportData.monthlyData[m]).forEach(t => set.add(t));
+          return set;
+        }, new Set())
+      );
+      const wsTrend = XLSX.utils.aoa_to_sheet([
+        ['Month', ...leaveTypes, 'Total'],
+        ...monthKeys.map(m => {
+          const row = leaveTypes.map(t => reportData.monthlyData[m][t] || 0);
+          const total = row.reduce((a, b) => a + b, 0);
+          return [m, ...row, total];
+        })
+      ]);
+      XLSX.utils.book_append_sheet(wb, wsTrend, 'Monthly Trend');
+
+      // Sheet 3: Workforce Forecast (summary + full 30-day series)
+      if (wfData) {
+        const wfRows = [
+          ['Metric', 'Value'],
+          ['Total Active Staff', wfData.totalStaff ?? ''],
+          ['Available Today', wfData.availableToday ?? ''],
+          ['On Leave Today', wfData.onLeaveToday ?? ''],
+          ['Pending Leave Requests', wfData.pendingLeaves ?? ''],
+          [],
+          ['Date', 'Available %', 'Absences']
+        ];
+        (wfData.forecast || []).forEach(f => {
+          wfRows.push([f.dateStr, f.availablePercentage?.toFixed(1), f.absences]);
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wfRows), 'Workforce Forecast');
+      }
+
+      // Sheet 4: Anomaly Alerts
+      if (anData) {
+        const anRows = [
+          ['Employee', 'Pattern', 'Risk Score', 'Status', 'Flagged At'],
+          ...(anData.alerts?.length
+            ? anData.alerts.map(a => [
+                a.employee_name,
+                a.anomaly_pattern,
+                a.risk_score,
+                a.status,
+                a.flagged_at ? new Date(a.flagged_at).toLocaleDateString('en-PH') : ''
+              ])
+            : [['No active anomaly alerts', '', '', '', '']])
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(anRows), 'Anomaly Alerts');
+      }
+
+      XLSX.writeFile(wb, `Department_Report_${meta.filenameSafeDept}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (error) {
+      console.error('Excel export failed:', error);
+      alert('Failed to generate the Excel file. Check the browser console for details.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="dr-dashboard-container">
@@ -330,9 +598,35 @@ export default function DepartmentReports({ onLogout, user }) {
 
         {/* BOTTOM EXPORT ACTIONS FOOTER */}
         <div className="dr-export-row">
-          <button type="button" className="dr-btn-primary dr-export-btn" onClick={handleExport}>
-            <Download size={16} />
-            <span>Export As PDF</span>
+          <button
+            type="button"
+            className="dr-filter-btn dr-export-btn"
+            onClick={handlePrint}
+            disabled={!reportData}
+            title="Quick browser print"
+          >
+            <Printer size={16} />
+            <span>Print</span>
+          </button>
+
+          <button
+            type="button"
+            className="dr-filter-btn dr-export-btn"
+            onClick={handleExportExcel}
+            disabled={!reportData || isExporting}
+          >
+            {isExporting ? <Loader2 size={16} className="spin" /> : <FileSpreadsheet size={16} />}
+            <span>Export as Excel</span>
+          </button>
+
+          <button
+            type="button"
+            className="dr-btn-primary dr-export-btn"
+            onClick={handleExportPDF}
+            disabled={!reportData || isExporting}
+          >
+            {isExporting ? <Loader2 size={16} className="spin" /> : <Download size={16} />}
+            <span>{isExporting ? 'Exporting...' : 'Export as PDF'}</span>
           </button>
         </div>
 
