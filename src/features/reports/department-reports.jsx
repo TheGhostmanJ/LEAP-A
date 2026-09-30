@@ -600,7 +600,7 @@ export default function DepartmentReports({ onLogout, user }) {
         <div className="dr-export-row">
           <button
             type="button"
-            className="dr-filter-btn dr-export-btn"
+            className="dr-btn-secondary dr-export-btn"
             onClick={handlePrint}
             disabled={!reportData}
             title="Quick browser print"
@@ -611,7 +611,7 @@ export default function DepartmentReports({ onLogout, user }) {
 
           <button
             type="button"
-            className="dr-filter-btn dr-export-btn"
+            className="dr-btn-secondary dr-export-btn"
             onClick={handleExportExcel}
             disabled={!reportData || isExporting}
           >
