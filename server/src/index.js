@@ -2930,6 +2930,23 @@ app.put('/api/hiring/external-applicants/:applicationId/status', async (req, res
     }
 });
 
+// GET: HR view - departments currently Open - External, with applicant counts
+app.get('/api/hiring/external-openings', async (req, res) => {
+    try {
+        res.set('Cache-Control', 'no-store');
+        const result = await pool.query(`
+            SELECT o.department_id,
+                   (SELECT COUNT(*) FROM public.external_application a
+                    WHERE a.department_id = o.department_id)::int AS applicant_count
+            FROM (${OPEN_EXTERNAL_SQL}) o
+        `);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error('Error fetching external openings:', error);
+        res.status(500).json({ error: 'Failed to fetch external openings.' });
+    }
+});
+
 // Start listening for API calls
 app.listen(PORT, () => {
   console.log(`Node.js server executing on http://localhost:${PORT}`);
