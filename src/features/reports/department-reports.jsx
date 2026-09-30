@@ -32,6 +32,11 @@ export default function DepartmentReports({ onLogout, user }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false); // NEW: disables export buttons mid-export
 
+  // NEW: actual filter state — the dropdown and search box were rendered before but
+  // weren't controlled or wired to anything, so nothing happened when you used them.
+  const [reportType, setReportType] = useState('comprehensive');
+  const [searchQuery, setSearchQuery] = useState('');
+
   // 1. Role-Based Security & Filtering
   const isGlobal = user?.role === 'HR Admin' || user?.role === 'Super Admin';
   const displayDepartment = isGlobal ? 'All Departments (Global)' : user?.department || 'Unassigned';
@@ -124,10 +129,40 @@ export default function DepartmentReports({ onLogout, user }) {
     : 10;
 
   // ==========================================
+  // FILTERING: which sections are visible/exported, and search-narrowed data
+  // ==========================================
+  const showLeave = reportType === 'comprehensive' || reportType === 'leave';
+  const showWorkforce = reportType === 'comprehensive' || reportType === 'workforce';
+  const showAnomaly = reportType === 'comprehensive' || reportType === 'anomaly';
+
+  const reportTypeLabels = {
+    comprehensive: 'Comprehensive Dashboard',
+    leave: 'Leave & Attendance Report',
+    workforce: 'Workforce Forecast Report',
+    anomaly: 'Anomaly Alerts Report'
+  };
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
+  // Search narrows the Leave Distribution legend by leave type...
+  const filteredDistribution = reportData
+    ? reportData.distribution.filter(d =>
+        !normalizedQuery || d.type.toLowerCase().includes(normalizedQuery)
+      )
+    : [];
+
+  // ...and narrows the Anomaly list by employee name.
+  const filteredAnomalyAlerts = anData?.alerts
+    ? anData.alerts.filter(a =>
+        !normalizedQuery || a.employee_name?.toLowerCase().includes(normalizedQuery)
+      )
+    : [];
+
+  // ==========================================
   // EXPORT: shared metadata block used by both PDF and Excel exports
   // ==========================================
   const buildReportMeta = () => ({
-    title: 'Department Report',
+    title: reportTypeLabels[reportType] || 'Department Report',
     subtitle: displayDepartment,
     period: 'YTD 2026',
     generatedAt: new Date().toLocaleString('en-PH', { dateStyle: 'long', timeStyle: 'short' }),
@@ -181,47 +216,49 @@ export default function DepartmentReports({ onLogout, user }) {
         margin: { left: 40, right: 40 }
       };
 
-      // --- Table 1: Leave Distribution ---
-      doc.setFontSize(11);
-      doc.setFont(undefined, 'bold');
-      doc.text('Leave Distribution (YTD)', 40, cursorY);
-      autoTable(doc, {
-        startY: cursorY + 8,
-        head: [['Leave Type', 'Share of Total']],
-        body: reportData.distribution.length
-          ? reportData.distribution.map(d => [d.type, `${d.percentage}%`])
-          : [['No leave data recorded', '\u2014']],
-        ...tableTheme
-      });
-      cursorY = doc.lastAutoTable.finalY + 24;
+      // --- Table 1: Leave Distribution (skipped unless the Report Type filter includes Leave) ---
+      if (showLeave) {
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.text('Leave Distribution (YTD)', 40, cursorY);
+        autoTable(doc, {
+          startY: cursorY + 8,
+          head: [['Leave Type', 'Share of Total']],
+          body: filteredDistribution.length
+            ? filteredDistribution.map(d => [d.type, `${d.percentage}%`])
+            : [['No leave data matches the current filter', '\u2014']],
+          ...tableTheme
+        });
+        cursorY = doc.lastAutoTable.finalY + 24;
 
-      // --- Table 2: Monthly Trend (pivoted: one column per leave type) ---
-      const leaveTypes = Array.from(
-        monthKeys.reduce((set, m) => {
-          Object.keys(reportData.monthlyData[m]).forEach(t => set.add(t));
-          return set;
-        }, new Set())
-      );
+        // --- Table 2: Monthly Trend (pivoted: one column per leave type) ---
+        const leaveTypes = Array.from(
+          monthKeys.reduce((set, m) => {
+            Object.keys(reportData.monthlyData[m]).forEach(t => set.add(t));
+            return set;
+          }, new Set())
+        ).filter(t => !normalizedQuery || t.toLowerCase().includes(normalizedQuery));
 
-      doc.setFontSize(11);
-      doc.setFont(undefined, 'bold');
-      doc.text('Monthly Leave Trend', 40, cursorY);
-      autoTable(doc, {
-        startY: cursorY + 8,
-        head: [['Month', ...leaveTypes, 'Total']],
-        body: monthKeys.length
-          ? monthKeys.map(m => {
-              const row = leaveTypes.map(t => reportData.monthlyData[m][t] || 0);
-              const total = row.reduce((a, b) => a + b, 0);
-              return [m, ...row, total];
-            })
-          : [['No monthly data recorded', ...leaveTypes.map(() => '\u2014'), '\u2014']],
-        ...tableTheme
-      });
-      cursorY = doc.lastAutoTable.finalY + 24;
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.text('Monthly Leave Trend', 40, cursorY);
+        autoTable(doc, {
+          startY: cursorY + 8,
+          head: [['Month', ...leaveTypes, 'Total']],
+          body: monthKeys.length && leaveTypes.length
+            ? monthKeys.map(m => {
+                const row = leaveTypes.map(t => reportData.monthlyData[m][t] || 0);
+                const total = row.reduce((a, b) => a + b, 0);
+                return [m, ...row, total];
+              })
+            : [['No monthly data matches the current filter', ...leaveTypes.map(() => '\u2014'), '\u2014']],
+          ...tableTheme
+        });
+        cursorY = doc.lastAutoTable.finalY + 24;
+      }
 
-      // --- Table 3: Workforce Forecast summary ---
-      if (wfData) {
+      // --- Table 3: Workforce Forecast summary (skipped unless filter includes Workforce) ---
+      if (showWorkforce && wfData) {
         if (cursorY > pageHeight - 160) { doc.addPage(); cursorY = 40; }
         doc.setFontSize(11);
         doc.setFont(undefined, 'bold');
@@ -240,8 +277,8 @@ export default function DepartmentReports({ onLogout, user }) {
         cursorY = doc.lastAutoTable.finalY + 24;
       }
 
-      // --- Table 4: Anomaly Alerts ---
-      if (anData) {
+      // --- Table 4: Anomaly Alerts (skipped unless filter includes Anomaly) ---
+      if (showAnomaly && anData) {
         if (cursorY > pageHeight - 160) { doc.addPage(); cursorY = 40; }
         doc.setFontSize(11);
         doc.setFont(undefined, 'bold');
@@ -249,15 +286,15 @@ export default function DepartmentReports({ onLogout, user }) {
         autoTable(doc, {
           startY: cursorY + 8,
           head: [['Employee', 'Pattern', 'Risk Score', 'Status', 'Flagged']],
-          body: anData.alerts?.length
-            ? anData.alerts.map(a => [
+          body: filteredAnomalyAlerts.length
+            ? filteredAnomalyAlerts.map(a => [
                 a.employee_name,
                 a.anomaly_pattern,
                 a.risk_score,
                 a.status,
                 a.flagged_at ? new Date(a.flagged_at).toLocaleDateString('en-PH') : '\u2014'
               ])
-            : [['No active anomaly alerts', '\u2014', '\u2014', '\u2014', '\u2014']],
+            : [['No anomaly alerts match the current filter', '\u2014', '\u2014', '\u2014', '\u2014']],
           ...tableTheme,
           styles: { ...tableTheme.styles, fontSize: 8 }
         });
@@ -311,34 +348,38 @@ export default function DepartmentReports({ onLogout, user }) {
       wsCover['!cols'] = [{ wch: 18 }, { wch: 40 }];
       XLSX.utils.book_append_sheet(wb, wsCover, 'Cover');
 
-      // Sheet 1: Leave Distribution
-      const wsDist = XLSX.utils.aoa_to_sheet([
-        ['Leave Type', 'Share of Total (%)'],
-        ...(reportData.distribution.length
-          ? reportData.distribution.map(d => [d.type, d.percentage])
-          : [['No leave data recorded', '']])
-      ]);
-      XLSX.utils.book_append_sheet(wb, wsDist, 'Leave Distribution');
+      // Sheets 1-2: Leave Distribution + Monthly Trend (skipped unless filter includes Leave)
+      if (showLeave) {
+        const wsDist = XLSX.utils.aoa_to_sheet([
+          ['Leave Type', 'Share of Total (%)'],
+          ...(filteredDistribution.length
+            ? filteredDistribution.map(d => [d.type, d.percentage])
+            : [['No leave data matches the current filter', '']])
+        ]);
+        XLSX.utils.book_append_sheet(wb, wsDist, 'Leave Distribution');
 
-      // Sheet 2: Monthly Trend
-      const leaveTypes = Array.from(
-        monthKeys.reduce((set, m) => {
-          Object.keys(reportData.monthlyData[m]).forEach(t => set.add(t));
-          return set;
-        }, new Set())
-      );
-      const wsTrend = XLSX.utils.aoa_to_sheet([
-        ['Month', ...leaveTypes, 'Total'],
-        ...monthKeys.map(m => {
-          const row = leaveTypes.map(t => reportData.monthlyData[m][t] || 0);
-          const total = row.reduce((a, b) => a + b, 0);
-          return [m, ...row, total];
-        })
-      ]);
-      XLSX.utils.book_append_sheet(wb, wsTrend, 'Monthly Trend');
+        const leaveTypes = Array.from(
+          monthKeys.reduce((set, m) => {
+            Object.keys(reportData.monthlyData[m]).forEach(t => set.add(t));
+            return set;
+          }, new Set())
+        ).filter(t => !normalizedQuery || t.toLowerCase().includes(normalizedQuery));
 
-      // Sheet 3: Workforce Forecast (summary + full 30-day series)
-      if (wfData) {
+        const wsTrend = XLSX.utils.aoa_to_sheet([
+          ['Month', ...leaveTypes, 'Total'],
+          ...(monthKeys.length && leaveTypes.length
+            ? monthKeys.map(m => {
+                const row = leaveTypes.map(t => reportData.monthlyData[m][t] || 0);
+                const total = row.reduce((a, b) => a + b, 0);
+                return [m, ...row, total];
+              })
+            : [['No monthly data matches the current filter', ...leaveTypes.map(() => ''), '']])
+        ]);
+        XLSX.utils.book_append_sheet(wb, wsTrend, 'Monthly Trend');
+      }
+
+      // Sheet 3: Workforce Forecast (summary + full 30-day series, skipped unless filter includes Workforce)
+      if (showWorkforce && wfData) {
         const wfRows = [
           ['Metric', 'Value'],
           ['Total Active Staff', wfData.totalStaff ?? ''],
@@ -354,19 +395,19 @@ export default function DepartmentReports({ onLogout, user }) {
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wfRows), 'Workforce Forecast');
       }
 
-      // Sheet 4: Anomaly Alerts
-      if (anData) {
+      // Sheet 4: Anomaly Alerts (skipped unless filter includes Anomaly)
+      if (showAnomaly && anData) {
         const anRows = [
           ['Employee', 'Pattern', 'Risk Score', 'Status', 'Flagged At'],
-          ...(anData.alerts?.length
-            ? anData.alerts.map(a => [
+          ...(filteredAnomalyAlerts.length
+            ? filteredAnomalyAlerts.map(a => [
                 a.employee_name,
                 a.anomaly_pattern,
                 a.risk_score,
                 a.status,
                 a.flagged_at ? new Date(a.flagged_at).toLocaleDateString('en-PH') : ''
               ])
-            : [['No active anomaly alerts', '', '', '', '']])
+            : [['No anomaly alerts match the current filter', '', '', '', '']])
         ];
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(anRows), 'Anomaly Alerts');
       }
@@ -407,7 +448,11 @@ export default function DepartmentReports({ onLogout, user }) {
             <div className="dr-field-group">
               <label htmlFor="report-type-select">Report Type</label>
               <div className="dr-input-wrapper">
-                <select id="report-type-select" defaultValue="comprehensive">
+                <select
+                  id="report-type-select"
+                  value={reportType}
+                  onChange={(e) => setReportType(e.target.value)}
+                >
                   <option value="comprehensive">Comprehensive Dashboard</option>
                   <option value="leave">Leave & Attendance Only</option>
                   <option value="workforce">Workforce Forecast Only</option>
@@ -421,7 +466,14 @@ export default function DepartmentReports({ onLogout, user }) {
               <label htmlFor="report-search-input">Search Bar</label>
               <div className="dr-input-wrapper">
                 <Search size={18} className="dr-input-icon left-icon" />
-                <input id="report-search-input" type="text" placeholder="Search parameters..." className="padded-left" />
+                <input
+                  id="report-search-input"
+                  type="text"
+                  placeholder="Search leave type or employee name..."
+                  className="padded-left"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
             </div>
 
@@ -456,6 +508,8 @@ export default function DepartmentReports({ onLogout, user }) {
         ) : (
           <div className="dr-quad-grid">
             
+            {showLeave && (
+            <>
             {/* Card 1: Leave Distribution Type */}
             <div className="dr-chart-card">
               <div className="dr-card-header">Leave Distribution Type (YTD)</div>
@@ -463,10 +517,10 @@ export default function DepartmentReports({ onLogout, user }) {
                 <div className="dr-pie-wrapper">
                   <div className="dr-pie-circle"></div>
                   <div className="dr-pie-legend">
-                    {reportData.distribution.length === 0 ? (
-                      <span>No leave data recorded.</span>
+                    {filteredDistribution.length === 0 ? (
+                      <span>{normalizedQuery ? 'No leave types match your search.' : 'No leave data recorded.'}</span>
                     ) : (
-                      reportData.distribution.map(dist => (
+                      filteredDistribution.map(dist => (
                         <span key={dist.type}>
                           <span className={`legend-dot color-${getColorClass(dist.type)}`}></span> 
                           {dist.type} <strong>{dist.percentage}%</strong>
@@ -495,13 +549,19 @@ export default function DepartmentReports({ onLogout, user }) {
                       <div style={{ alignSelf: 'center', color: '#94a3b8', width: '100%', textAlign: 'center' }}>Insufficient timeline data</div>
                     ) : (
                       Object.entries(reportData.monthlyData).map(([month, types]) => {
-                        const totalForMonth = Object.values(types).reduce((a, b) => a + b, 0);
+                        // Search narrows which leave types contribute to each bar's stack/total.
+                        const filteredTypes = Object.fromEntries(
+                          Object.entries(types).filter(([type]) =>
+                            !normalizedQuery || type.toLowerCase().includes(normalizedQuery)
+                          )
+                        );
+                        const totalForMonth = Object.values(filteredTypes).reduce((a, b) => a + b, 0);
                         const heightMultiplier = 100 / (maxMonthlyLeaves || 1);
 
                         return (
                           <div className="dr-bar-column" key={month}>
                             <div className="dr-stacked-pillar" style={{ height: `${totalForMonth * heightMultiplier}%` }}>
-                              {Object.entries(types).map(([type, count]) => {
+                              {Object.entries(filteredTypes).map(([type, count]) => {
                                 const percentOfStack = (count / totalForMonth) * 100;
                                 return (
                                   <div 
@@ -522,7 +582,11 @@ export default function DepartmentReports({ onLogout, user }) {
                 </div>
               </div>
             </div>
+            </>
+            )}
 
+            {showWorkforce && (
+            <>
             {/* Card 3: Workforce Report (Now connected to Python ML Prophet) */}
             <div className="dr-chart-card">
               <div className="dr-card-header">Workforce Forecast (30 Days)</div>
@@ -558,7 +622,11 @@ export default function DepartmentReports({ onLogout, user }) {
                 )}
               </div>
             </div>
+            </>
+            )}
 
+            {showAnomaly && (
+            <>
             {/* Card 4: Anomaly Report (Now connected to Python ML Isolation Forest) */}
             <div className="dr-chart-card">
               <div className="dr-card-header">Anomaly Intelligence Report</div>
@@ -567,9 +635,9 @@ export default function DepartmentReports({ onLogout, user }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                   <div style={{ padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', textAlign: 'center' }}>
                     <span style={{ display: 'block', fontSize: '24px', fontWeight: '700', color: '#800000' }}>
-                      {anData?.stats?.totalFlagged || 0}
+                      {normalizedQuery ? filteredAnomalyAlerts.length : (anData?.stats?.totalFlagged || 0)}
                     </span>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}>Active Alerts</span>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>{normalizedQuery ? 'Matching Alerts' : 'Active Alerts'}</span>
                   </div>
                   <div style={{ padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', textAlign: 'center' }}>
                     <span style={{ display: 'block', fontSize: '24px', fontWeight: '700', color: '#059669' }}>
@@ -579,7 +647,11 @@ export default function DepartmentReports({ onLogout, user }) {
                   </div>
                 </div>
 
-                {anData?.stats?.highRisk > 0 ? (
+                {normalizedQuery && filteredAnomalyAlerts.length === 0 ? (
+                  <div style={{ padding: '10px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', color: '#475569', textAlign: 'center' }}>
+                    No employees match "{searchQuery}".
+                  </div>
+                ) : anData?.stats?.highRisk > 0 ? (
                   <div style={{ padding: '10px', backgroundColor: '#fff1f2', border: '1px solid #ffe4e6', borderRadius: '6px', fontSize: '13px', color: '#be123c', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <ShieldAlert size={16} />
                     <span><strong>Action Required:</strong> {anData.stats.highRisk} employees marked as High-Risk behavioral anomalies.</span>
@@ -592,6 +664,8 @@ export default function DepartmentReports({ onLogout, user }) {
 
               </div>
             </div>
+            </>
+            )}
 
           </div>
         )}
