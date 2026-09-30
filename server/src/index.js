@@ -2659,11 +2659,11 @@ app.post('/api/succession/apply', async (req, res) => {
 
   try {
     const insertQuery = `
-      INSERT INTO succession_application (department_id, employee_key, status)
+      INSERT INTO public.succession_application (department_id, employee_key, status)
       VALUES ($1, $2, 'Applied')
       RETURNING *;
     `;
-    const result = await db.query(insertQuery, [department_id, employee_key]);
+    const result = await pool.query(insertQuery, [department_id, employee_key]);
     res.status(201).json({ message: "Application submitted successfully!", application: result.rows[0] });
   } catch (err) {
     if (err.code === '23505') { // Unique constraint violation (already applied)
