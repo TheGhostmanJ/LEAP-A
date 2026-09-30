@@ -37,6 +37,15 @@ export default function DepartmentReports({ onLogout, user }) {
   const [reportType, setReportType] = useState('comprehensive');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // NEW: Date Range was a readOnly text field with a decorative (non-clickable) calendar
+  // icon next to it — there was no button there to "not work" because nothing was wired
+  // to it at all. Replaced with a real preset dropdown + an Advanced Filters panel that
+  // the sliders icon now actually toggles.
+  const [dateRangePreset, setDateRangePreset] = useState('ytd2026');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+
   // 1. Role-Based Security & Filtering
   const isGlobal = user?.role === 'HR Admin' || user?.role === 'Super Admin';
   const displayDepartment = isGlobal ? 'All Departments (Global)' : user?.department || 'Unassigned';
@@ -144,6 +153,19 @@ export default function DepartmentReports({ onLogout, user }) {
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
+  // Human-readable label for whichever date range is active — presets, or the two
+  // custom dates once both are picked.
+  const dateRangeLabels = {
+    ytd2026: 'YTD 2026',
+    last30: 'Last 30 Days',
+    quarter: 'This Quarter',
+    custom: 'Custom Range'
+  };
+  const activeDateRangeLabel =
+    dateRangePreset === 'custom' && customFrom && customTo
+      ? `${customFrom} to ${customTo}`
+      : dateRangeLabels[dateRangePreset];
+
   // Search narrows the Leave Distribution legend by leave type...
   const filteredDistribution = reportData
     ? reportData.distribution.filter(d =>
@@ -164,7 +186,7 @@ export default function DepartmentReports({ onLogout, user }) {
   const buildReportMeta = () => ({
     title: reportTypeLabels[reportType] || 'Department Report',
     subtitle: displayDepartment,
-    period: 'YTD 2026',
+    period: activeDateRangeLabel,
     generatedAt: new Date().toLocaleString('en-PH', { dateStyle: 'long', timeStyle: 'short' }),
     generatedBy: user
       ? (`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Unknown')
@@ -193,7 +215,7 @@ export default function DepartmentReports({ onLogout, user }) {
 
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
-      doc.text('City Personnel Office', pageWidth / 2, 56, { align: 'center' });
+      doc.text('Human Resource Management Office', pageWidth / 2, 56, { align: 'center' });
 
       doc.setDrawColor(128, 0, 0);
       doc.setLineWidth(1);
@@ -438,10 +460,21 @@ export default function DepartmentReports({ onLogout, user }) {
           <div className="dr-filter-grid">
             
             <div className="dr-field-group">
-              <label htmlFor="date-range-input">Date Range</label>
+              <label htmlFor="date-range-select">Date Range</label>
               <div className="dr-input-wrapper">
-                <input id="date-range-input" type="text" placeholder="Select date range..." readOnly value="YTD 2026" />
-                <Calendar size={18} className="dr-input-icon right-icon" />
+                <Calendar size={18} className="dr-input-icon left-icon" />
+                <select
+                  id="date-range-select"
+                  className="padded-left"
+                  value={dateRangePreset}
+                  onChange={(e) => setDateRangePreset(e.target.value)}
+                >
+                  <option value="ytd2026">YTD 2026</option>
+                  <option value="last30">Last 30 Days</option>
+                  <option value="quarter">This Quarter</option>
+                  <option value="custom">Custom Range</option>
+                </select>
+                <ChevronDown size={18} className="dr-input-icon right-icon pointer-none" />
               </div>
             </div>
 
@@ -478,7 +511,13 @@ export default function DepartmentReports({ onLogout, user }) {
             </div>
 
             <div className="dr-filter-actions">
-              <button type="button" className="dr-filter-btn" aria-label="Toggle Advanced Filters">
+              <button
+                type="button"
+                className={`dr-filter-btn ${showAdvancedFilters ? 'dr-filter-btn-active' : ''}`}
+                aria-label="Toggle Advanced Filters"
+                aria-pressed={showAdvancedFilters}
+                onClick={() => setShowAdvancedFilters(v => !v)}
+              >
                 <SlidersHorizontal size={20} />
               </button>
               <button 
@@ -493,6 +532,36 @@ export default function DepartmentReports({ onLogout, user }) {
             </div>
 
           </div>
+
+          {showAdvancedFilters && (
+            <div className="dr-advanced-filters-row">
+              <div className="dr-field-group">
+                <label htmlFor="custom-from">From</label>
+                <div className="dr-input-wrapper">
+                  <input
+                    id="custom-from"
+                    type="date"
+                    value={customFrom}
+                    onChange={(e) => { setCustomFrom(e.target.value); setDateRangePreset('custom'); }}
+                  />
+                </div>
+              </div>
+              <div className="dr-field-group">
+                <label htmlFor="custom-to">To</label>
+                <div className="dr-input-wrapper">
+                  <input
+                    id="custom-to"
+                    type="date"
+                    value={customTo}
+                    onChange={(e) => { setCustomTo(e.target.value); setDateRangePreset('custom'); }}
+                  />
+                </div>
+              </div>
+              <p className="dr-advanced-filters-note">
+                This sets the date range label shown on-screen and in exports. It doesn't narrow the underlying data yet — that needs the backend report queries to accept a date range, which they don't yet.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* 2x2 DATA VISUALIZATIONS GRID LAYOUT */}
