@@ -193,7 +193,7 @@ export default function DepartmentReports({ onLogout, user }) {
 
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
-      doc.text('Human Resource Management Office', pageWidth / 2, 56, { align: 'center' });
+      doc.text('City Personnel Office', pageWidth / 2, 56, { align: 'center' });
 
       doc.setDrawColor(128, 0, 0);
       doc.setLineWidth(1);
