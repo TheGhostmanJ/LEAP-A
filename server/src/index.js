@@ -24,26 +24,45 @@ pool.connect((err, client, release) => {
 app.use(cors());                  
 app.use(express.json({ limit: '15mb' }));
 app.use(express.text({ limit: '15mb' }));
+
+// Legacy: serves any old disk-based images that still exist. New cover images
+// are stored in the database and served from /api/events/:id/cover instead.
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const multer = require('multer');
-const fs = require('fs');
 
-// 1. Setup Local Storage for Images
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
-}
-
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadDir)
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname)
+// ==========================================
+// FILE UPLOADS (EVENT COVER IMAGES)
+// ==========================================
+// CHANGED: images are kept in memory and saved straight into the database,
+// so they survive Railway redeploys (its disk is wiped on every deploy).
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (req, file, cb) => {
+        if (['image/png', 'image/jpeg'].includes(file.mimetype)) return cb(null, true);
+        cb(new Error('Only PNG or JPG images are allowed.'));
     }
 });
-const upload = multer({ storage: storage });
+
+// Wrapper so upload errors come back as JSON (the form shows errData.error)
+const uploadCover = (req, res, next) => {
+    upload.single('cover_image')(req, res, (err) => {
+        if (err) {
+            const msg = err.code === 'LIMIT_FILE_SIZE' ? 'Image must be 5MB or smaller.' : err.message;
+            return res.status(400).json({ error: msg });
+        }
+        next();
+    });
+};
+
+// Auto-add the image columns to dim_event (safe to run on every startup)
+pool.query(`
+    ALTER TABLE public.dim_event
+        ADD COLUMN IF NOT EXISTS image_data BYTEA,
+        ADD COLUMN IF NOT EXISTS image_mime VARCHAR(50)
+`).then(() => console.log('dim_event image columns ready.'))
+  .catch(err => console.error('Could not add dim_event image columns:', err.message));
 
 const logAuditAction = async (action, targetRecord, details, performedBy) => {
     try {
@@ -59,9 +78,6 @@ const logAuditAction = async (action, targetRecord, details, performedBy) => {
         console.error("Failed to write audit log:", error);
     }
 };
-
-// 2. Expose the /uploads folder to the internet so React can render the images
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ==========================================
 // EMPLOYEE EVENT REGISTRATIONS
@@ -81,7 +97,10 @@ app.get('/api/events/employee/:employee_key/registered', async (req, res) => {
                 e.start_date, 
                 e.end_date, 
                 e.venue,
-                e.image_url,
+                CASE WHEN e.image_data IS NOT NULL
+                     THEN '/api/events/' || e.event_id || '/cover'
+                     ELSE e.image_url
+                END AS image_url,
                 NULL AS pdf_url -- Placeholder for future certificates
             FROM public.fact_event_registration r
             JOIN public.dim_event e ON r.event_id = e.event_id
@@ -137,6 +156,18 @@ app.delete('/api/events/:id/register/:employee_key', async (req, res) => {
 // EVENT MANAGEMENT
 // ==========================================
 
+// Columns returned to the frontend. Listed explicitly so the heavy
+// image_data bytes are never sent inside the event list.
+const EVENT_COLUMNS = `
+    e.event_id, e.title, e.event_type, e.venue, e.start_date, e.end_date,
+    e.description, e.capacity, e.status, e.created_at, e.objectives,
+    e.department, e.created_by,
+    CASE WHEN e.image_data IS NOT NULL
+         THEN '/api/events/' || e.event_id || '/cover'
+         ELSE e.image_url
+    END AS image_url
+`;
+
 // GET: Fetch all active events (with optional department filtering)
 app.get('/api/events', async (req, res) => {
     const { department } = req.query;
@@ -151,11 +182,11 @@ app.get('/api/events', async (req, res) => {
         }
 
         const query = `
-            SELECT e.*, 
+            SELECT ${EVENT_COLUMNS},
                    (SELECT COUNT(*) FROM public.fact_event_registration WHERE event_id = e.event_id) as registered_count
             FROM public.dim_event e
             ${deptFilter}
-            ORDER BY start_date ASC;
+            ORDER BY e.start_date ASC;
         `;
         const result = await pool.query(query, params);
         res.status(200).json(result.rows);
@@ -165,24 +196,47 @@ app.get('/api/events', async (req, res) => {
     }
 });
 
+// GET: Serve an event's cover image from the database
+app.get('/api/events/:id/cover', async (req, res) => {
+    const eventId = parseInt(req.params.id, 10);
+    if (!Number.isInteger(eventId)) return res.status(400).end();
+
+    try {
+        const result = await pool.query(
+            'SELECT image_data, image_mime FROM public.dim_event WHERE event_id = $1',
+            [eventId]
+        );
+        const row = result.rows[0];
+        if (!row || !row.image_data) return res.status(404).end();
+
+        res.set('Content-Type', row.image_mime || 'image/jpeg');
+        res.set('Cache-Control', 'no-cache'); // always revalidate, so a re-uploaded banner shows up
+        res.send(row.image_data);
+    } catch (error) {
+        console.error("Error serving event cover:", error);
+        res.status(500).end();
+    }
+});
+
 // POST: Create a new event
-app.post('/api/events', upload.single('cover_image'), async (req, res) => {
+app.post('/api/events', uploadCover, async (req, res) => {
     const { title, description, objectives, event_type, venue, capacity, department, start_date, end_date, created_by } = req.body;
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+    const imageData = req.file ? req.file.buffer : null;
+    const imageMime = req.file ? req.file.mimetype : null;
     
     try {
         const query = `
             INSERT INTO public.dim_event 
-            (title, description, objectives, event_type, venue, capacity, department, start_date, end_date, created_by, image_url) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-            RETURNING *;
+            (title, description, objectives, event_type, venue, capacity, department, start_date, end_date, created_by, image_data, image_mime) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            RETURNING event_id, title;
         `;
         const values = [
             title, description, objectives, event_type, venue, 
             capacity ? parseInt(capacity) : null, 
             department, start_date, end_date, 
             created_by ? parseInt(created_by) : null, 
-            imageUrl
+            imageData, imageMime
         ];
         
         const result = await pool.query(query, values);
@@ -194,33 +248,37 @@ app.post('/api/events', upload.single('cover_image'), async (req, res) => {
 });
 
 // PUT: Update existing event
-app.put('/api/events/:id', upload.single('cover_image'), async (req, res) => {
+app.put('/api/events/:id', uploadCover, async (req, res) => {
     const { id } = req.params;
     const { title, description, objectives, event_type, venue, capacity, department, start_date, end_date } = req.body;
     
     try {
-        // If a new file was uploaded, update the image_url, otherwise keep the existing one
         let query;
         let values;
 
         if (req.file) {
-            const imageUrl = `/uploads/${req.file.filename}`;
+            // New banner uploaded: replace the stored image
             query = `
                 UPDATE public.dim_event 
-                SET title=$1, description=$2, objectives=$3, event_type=$4, venue=$5, capacity=$6, department=$7, start_date=$8, end_date=$9, image_url=$10
-                WHERE event_id=$11 RETURNING *;
+                SET title=$1, description=$2, objectives=$3, event_type=$4, venue=$5, capacity=$6, department=$7, start_date=$8, end_date=$9,
+                    image_data=$10, image_mime=$11, image_url=NULL
+                WHERE event_id=$12 RETURNING event_id, title;
             `;
-            values = [title, description, objectives, event_type, venue, capacity ? parseInt(capacity) : null, department, start_date, end_date, imageUrl, id];
+            values = [title, description, objectives, event_type, venue, capacity ? parseInt(capacity) : null, department, start_date, end_date, req.file.buffer, req.file.mimetype, id];
         } else {
+            // No new banner: keep the existing one
             query = `
                 UPDATE public.dim_event 
                 SET title=$1, description=$2, objectives=$3, event_type=$4, venue=$5, capacity=$6, department=$7, start_date=$8, end_date=$9
-                WHERE event_id=$10 RETURNING *;
+                WHERE event_id=$10 RETURNING event_id, title;
             `;
             values = [title, description, objectives, event_type, venue, capacity ? parseInt(capacity) : null, department, start_date, end_date, id];
         }
 
         const result = await pool.query(query, values);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Event not found." });
+        }
         res.status(200).json(result.rows[0]);
     } catch (error) {
         console.error("Error updating event:", error);
@@ -312,7 +370,7 @@ app.get('/api/health', async (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Backend server is running smoothly.',
-    deploy_marker: 'v3-id-column-fix-2026-09-27',
+    deploy_marker: 'v4-event-cover-in-db-2026-09-30',
   });
 });
 
@@ -2619,12 +2677,12 @@ app.post('/api/succession/respond/:offerId', async (req, res) => {
 // ==========================================
 // SUCCESSION & OPEN POSITIONS API ROUTES
 // ==========================================
-// NOTE: The four routes below reference "db.query" but "db" is never defined anywhere in this
-// file — only "pool" is. These would crash with "db is not defined" if ever called. Also,
-// app.post('/api/succession/respond/:offerId') is now defined TWICE (once above, once here) —
-// Express only ever runs the FIRST matching route, so this second copy is dead code and never
-// executes. Flagging both issues since they'll bite you later, but leaving the code as-is since
-// they're outside what you asked me to fix today.
+// CHANGED: these routes used "db.query", but "db" was never defined (only "pool" exists),
+// so they crashed with "db is not defined". They now use "pool".
+// CHANGED: removed the duplicate app.post('/api/succession/respond/:offerId') that used to be
+// here. Express only ever ran the first copy above, so the duplicate was dead code.
+// NOTE: these routes expect the tables succession_vacancy_status and succession_application
+// to exist in the database.
 // ==========================================
 
 // 1. GET OPEN POSITIONS (Employee View)
@@ -2636,12 +2694,12 @@ app.get('/api/succession/open-positions', async (req, res) => {
         d.department_name,
         svs.status AS vacancy_stage,
         svs.updated_at
-      FROM succession_vacancy_status svs
-      JOIN dim_department d ON svs.department_id = d.department_id
+      FROM public.succession_vacancy_status svs
+      JOIN public.dim_department d ON svs.department_id = d.department_id
       WHERE svs.status = 'Open - External' OR svs.status = 'Open - Internal'
       ORDER BY svs.updated_at DESC;
     `;
-    const result = await db.query(query); // Replace db with your pg pool or client
+    const result = await pool.query(query);
     res.json(result.rows);
   } catch (err) {
     console.error("Error fetching open positions:", err);
@@ -2675,6 +2733,8 @@ app.post('/api/succession/apply', async (req, res) => {
 });
 
 // 3. GET APPLICANTS FOR A DEPARTMENT (HR View - hiring.jsx)
+// CHANGED: dim_employee has no "email" or "department_id" columns (department is stored as a
+// name string, email lives in user_accounts), so the query now joins the right tables.
 app.get('/api/succession/applicants/:departmentId', async (req, res) => {
   const { departmentId } = req.params;
 
@@ -2688,15 +2748,15 @@ app.get('/api/succession/applicants/:departmentId', async (req, res) => {
         sa.applied_date,
         e.first_name,
         e.last_name,
-        e.email,
-        d.department_name AS current_department
-      FROM succession_application sa
-      JOIN dim_employee e ON sa.employee_key = e.employee_key
-      LEFT JOIN dim_department d ON e.department_id = d.department_id
+        a.email,
+        e.department AS current_department
+      FROM public.succession_application sa
+      JOIN public.dim_employee e ON sa.employee_key = e.employee_key
+      LEFT JOIN public.user_accounts a ON a.employee_key = e.employee_key
       WHERE sa.department_id = $1
       ORDER BY sa.applied_date ASC;
     `;
-    const result = await db.query(query, [departmentId]);
+    const result = await pool.query(query, [departmentId]);
     res.json(result.rows);
   } catch (err) {
     console.error("Error fetching applicants:", err);
@@ -2716,17 +2776,17 @@ app.put('/api/succession/applicants/:applicationId/decision', async (req, res) =
   try {
     // Update candidate application status
     const updateAppQuery = `
-      UPDATE succession_application 
+      UPDATE public.succession_application 
       SET status = $1 
       WHERE application_id = $2 
       RETURNING *;
     `;
-    const appResult = await db.query(updateAppQuery, [decision, applicationId]);
+    const appResult = await pool.query(updateAppQuery, [decision, applicationId]);
 
     // If appointed, close the vacancy stage in succession_vacancy_status
     if (decision === 'Appointed' && department_id) {
-      await db.query(`
-        UPDATE succession_vacancy_status 
+      await pool.query(`
+        UPDATE public.succession_vacancy_status 
         SET status = 'Filled', updated_at = NOW() 
         WHERE department_id = $1;
       `, [department_id]);
@@ -2736,34 +2796,6 @@ app.put('/api/succession/applicants/:applicationId/decision', async (req, res) =
   } catch (err) {
     console.error("Error updating applicant status:", err);
     res.status(500).json({ error: "Failed to update decision." });
-  }
-});
-
-// 5. UPDATE RESPOND TO OFFER (Modifies stage to 'Open - External' when internal list is exhausted)
-// NOTE: This duplicate app.post('/api/succession/respond/:offerId') is dead code — see note above.
-app.post('/api/succession/respond/:offerId', async (req, res) => {
-  const { offerId } = req.params;
-  const { response, department_id } = req.body; // response: 'Accepted' or 'Declined'
-
-  try {
-    if (response === 'Accepted') {
-      // Mark offer as accepted and vacancy filled
-      await db.query(`UPDATE succession_vacancy_status SET status = 'Filled', updated_at = NOW() WHERE department_id = $1;`, [department_id]);
-      return res.json({ message: "Offer accepted. Position filled." });
-    } else {
-      // Check if more internal candidates remain; if exhausted, set to 'Open - External'
-      await db.query(`
-        INSERT INTO succession_vacancy_status (department_id, status, updated_at)
-        VALUES ($1, 'Open - External', NOW())
-        ON CONFLICT (department_id) 
-        DO UPDATE SET status = 'Open - External', updated_at = NOW();
-      `, [department_id]);
-
-      return res.json({ message: "Offer declined. Position status set to Open - External." });
-    }
-  } catch (err) {
-    console.error("Error processing response:", err);
-    res.status(500).json({ error: "Failed to process offer response." });
   }
 });
 
