@@ -135,6 +135,15 @@
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+/* Kill the browser's own dropdown arrow on <select> — without this, our custom
+   ChevronDown icon rendered ON TOP of the native one, showing two arrows. */
+.dr-input-wrapper select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 36px;
+}
+
 .dr-input-wrapper input:focus,
 .dr-input-wrapper select:focus {
   border-color: #680000;
@@ -182,6 +191,36 @@
   border-color: #680000;
   color: #680000;
   background-color: #fff5f5;
+}
+
+/* Pressed/active state for the sliders (Advanced Filters) toggle */
+.dr-filter-btn-active {
+  background-color: #680000;
+  border-color: #680000;
+  color: #ffffff;
+}
+
+.dr-filter-btn-active:hover {
+  background-color: #4a0000;
+  color: #ffffff;
+}
+
+/* Advanced Filters panel (custom From/To dates), shown when the sliders toggle is active */
+.dr-advanced-filters-row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.dr-advanced-filters-note {
+  flex-basis: 100%;
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: #94a3b8;
 }
 
 .dr-btn-primary {
