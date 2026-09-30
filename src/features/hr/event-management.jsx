@@ -33,6 +33,7 @@ export default function EventManagement({ currentUserEmployeeKey, user, onLogout
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [deptError, setDeptError] = useState('');
   const [loading, setLoading] = useState(true);
   
   // Modal States
@@ -65,11 +66,22 @@ export default function EventManagement({ currentUserEmployeeKey, user, onLogout
 
   const fetchDepartments = async () => {
     try {
+      setDeptError('');
       const res = await fetch(`${API_BASE}/departments`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setDepartments(Array.isArray(data) ? data : []);
+      console.log('[EventManagement] /departments response:', data); // check this in the browser console
+
+      // Accept a plain array or a wrapped response
+      const rows = Array.isArray(data)
+        ? data
+        : data.departments || data.data || data.rows || [];
+
+      setDepartments(rows);
+      if (rows.length === 0) setDeptError('No departments returned by the server');
     } catch (err) {
       console.error('Failed to load departments', err);
+      setDeptError('Could not load departments');
     }
   };
 
@@ -213,7 +225,6 @@ export default function EventManagement({ currentUserEmployeeKey, user, onLogout
     <div className="app-layout-wrapper">
       <HrSidebar user={user} />
 
-      {/* FIXED: Included app-main-content class and overflowY scrolling */}
       <main 
         className="app-main-container app-main-content fade-in-up" 
         style={{ padding: '32px', overflowY: 'auto', flex: 1 }}
@@ -319,121 +330,133 @@ export default function EventManagement({ currentUserEmployeeKey, user, onLogout
       {/* Modal View */}
       {showModal && (
         <div className="app-modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="app-modal-card" onClick={(e) => e.stopPropagation()} style={{ padding: 0, maxWidth: '520px', overflow: 'hidden' }}>
-            
-            {/* Interactive Image Dropzone Header */}
-            <div
-              className="modal-dropzone"
-              style={{ backgroundImage: imagePreview ? `url(${imagePreview})` : 'none' }}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {!imagePreview && (
-                <div className="modal-dropzone-empty">
-                  <Upload size={32} style={{ marginBottom: '8px', color: 'var(--color-text-muted)' }} />
-                  <span style={{ fontWeight: '600', color: 'var(--color-text-primary)' }}>Click to upload cover image</span>
-                  <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>PNG or JPG, up to 5MB</span>
-                </div>
-              )}
-              {imagePreview && (
-                <div className="modal-dropzone-overlay">Click to change cover image</div>
-              )}
-            </div>
-            
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageSelect}
-              style={{ display: 'none' }}
-            />
+          <div className="app-modal-card event-modal-card" onClick={(e) => e.stopPropagation()}>
+            <form className="event-modal-form" onSubmit={handleSubmit}>
 
-            <div style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: 'var(--color-maroon)' }}>
-                  {editingEvent ? 'Edit Event Details' : 'Assign New Event'}
-                </h2>
-                <button
-                  onClick={() => setShowModal(false)}
-                  style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}
+              {/* Scrollable area */}
+              <div className="event-modal-scroll">
+
+                {/* Interactive Image Dropzone Header */}
+                <div
+                  className="modal-dropzone"
+                  style={{ backgroundImage: imagePreview ? `url(${imagePreview})` : 'none' }}
+                  onClick={() => fileInputRef.current?.click()}
                 >
-                  <X size={20} />
+                  {!imagePreview && (
+                    <div className="modal-dropzone-empty">
+                      <Upload size={28} style={{ color: 'var(--color-text-muted)' }} />
+                      <span style={{ fontWeight: '600', color: 'var(--color-text-primary)' }}>Click to upload cover image</span>
+                      <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>PNG or JPG, up to 5MB</span>
+                    </div>
+                  )}
+                  {imagePreview && (
+                    <div className="modal-dropzone-overlay">Click to change cover image</div>
+                  )}
+                </div>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  style={{ display: 'none' }}
+                />
+
+                <div className="event-modal-body">
+                  <div className="event-modal-title-row">
+                    <h2 className="event-modal-title">
+                      {editingEvent ? 'Edit Event Details' : 'Assign New Event'}
+                    </h2>
+                    <button
+                      type="button"
+                      className="event-modal-close"
+                      onClick={() => setShowModal(false)}
+                      aria-label="Close"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+
+                  {error && <div className="event-modal-error">{error}</div>}
+
+                  <div className="event-form-grid">
+
+                    <div className="form-field-wrapper span-6">
+                      <label>Event Title <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                      <input className="event-form-input" name="title" value={form.title} onChange={handleChange} placeholder="e.g. Q3 Cybersecurity Awareness Training" />
+                    </div>
+
+                    <div className="form-field-wrapper span-3">
+                      <label>Event Type</label>
+                      <select className="event-form-input" name="event_type" value={form.event_type} onChange={handleChange}>
+                        {EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+
+                    <div className="form-field-wrapper span-3">
+                      <label>Target Department</label>
+                      <select className="event-form-input" name="department" value={form.department} onChange={handleChange}>
+                        <option value="">All Departments</option>
+                        {departments.map(d => {
+                          const label = d.name || d.department_name;
+                          return (
+                            <option key={d.id || d.department_id || label} value={label}>{label}</option>
+                          );
+                        })}
+                      </select>
+                      {deptError && <span className="event-field-hint">{deptError}</span>}
+                    </div>
+
+                    <div className="form-field-wrapper span-6">
+                      <label>Description</label>
+                      <textarea className="event-form-input" name="description" value={form.description} onChange={handleChange} rows={2} placeholder="Brief description of the event..." />
+                    </div>
+
+                    <div className="form-field-wrapper span-6">
+                      <label>Objectives</label>
+                      <textarea className="event-form-input" name="objectives" value={form.objectives} onChange={handleChange} rows={2} placeholder="Key takeaways for attendees..." />
+                    </div>
+
+                    <div className="form-field-wrapper span-2">
+                      <label>Date <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                      <input className="event-form-input" type="date" name="event_date" value={form.event_date} onChange={handleChange} />
+                    </div>
+
+                    <div className="form-field-wrapper span-2">
+                      <label>Start Time</label>
+                      <input className="event-form-input" type="time" name="start_time" value={form.start_time} onChange={handleChange} />
+                    </div>
+
+                    <div className="form-field-wrapper span-2">
+                      <label>End Time</label>
+                      <input className="event-form-input" type="time" name="end_time" value={form.end_time} onChange={handleChange} />
+                    </div>
+
+                    <div className="form-field-wrapper span-4">
+                      <label>Venue</label>
+                      <input className="event-form-input" name="venue" value={form.venue} onChange={handleChange} placeholder="e.g. City Hall Function Room" />
+                    </div>
+
+                    <div className="form-field-wrapper span-2">
+                      <label>Max Capacity</label>
+                      <input className="event-form-input" type="number" min="1" name="capacity" value={form.capacity} onChange={handleChange} placeholder="Unlimited" />
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+              {/* Pinned footer, always visible */}
+              <div className="event-modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={isSubmitting} className="btn-primary">
+                  {isSubmitting ? 'Saving...' : (editingEvent ? 'Save Changes' : 'Publish Event')}
                 </button>
               </div>
 
-              {error && <div style={{ backgroundColor: 'var(--color-danger-bg)', color: 'var(--color-danger)', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', fontWeight: '500' }}>{error}</div>}
-
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                
-                <div className="form-field-wrapper">
-                  <label>Event Title <span style={{ color: 'var(--color-danger)' }}>*</span></label>
-                  <input className="event-form-input" name="title" value={form.title} onChange={handleChange} placeholder="e.g. Q3 Cybersecurity Awareness Training" />
-                </div>
-
-                <div style={{ display: 'flex', gap: '14px' }}>
-                  <div className="form-field-wrapper" style={{ flex: 1 }}>
-                    <label>Event Type</label>
-                    <select className="event-form-input" name="event_type" value={form.event_type} onChange={handleChange}>
-                      {EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-field-wrapper" style={{ flex: 1 }}>
-                    <label>Target Department</label>
-                    <select className="event-form-input" name="department" value={form.department} onChange={handleChange}>
-                      <option value="">All Departments</option>
-                      {Array.isArray(departments) && departments.map(d => (
-                        <option key={d.id || d.name} value={d.name}>{d.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="form-field-wrapper">
-                  <label>Description</label>
-                  <textarea className="event-form-input" name="description" value={form.description} onChange={handleChange} rows={2} placeholder="Brief description of the event..." />
-                </div>
-
-                <div className="form-field-wrapper">
-                  <label>Objectives</label>
-                  <textarea className="event-form-input" name="objectives" value={form.objectives} onChange={handleChange} rows={2} placeholder="Key takeaways for attendees..." />
-                </div>
-
-                <div style={{ display: 'flex', gap: '14px' }}>
-                  <div className="form-field-wrapper" style={{ flex: 1 }}>
-                    <label>Date <span style={{ color: 'var(--color-danger)' }}>*</span></label>
-                    <input className="event-form-input" type="date" name="event_date" value={form.event_date} onChange={handleChange} />
-                  </div>
-                  <div className="form-field-wrapper" style={{ flex: 1 }}>
-                    <label>Start Time</label>
-                    <input className="event-form-input" type="time" name="start_time" value={form.start_time} onChange={handleChange} />
-                  </div>
-                  <div className="form-field-wrapper" style={{ flex: 1 }}>
-                    <label>End Time</label>
-                    <input className="event-form-input" type="time" name="end_time" value={form.end_time} onChange={handleChange} />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '14px' }}>
-                  <div className="form-field-wrapper" style={{ flex: 2 }}>
-                    <label>Venue</label>
-                    <input className="event-form-input" name="venue" value={form.venue} onChange={handleChange} placeholder="e.g. City Hall Function Room" />
-                  </div>
-                  <div className="form-field-wrapper" style={{ flex: 1 }}>
-                    <label>Max Capacity</label>
-                    <input className="event-form-input" type="number" name="capacity" value={form.capacity} onChange={handleChange} placeholder="Unlimited" />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '12px' }}>
-                  <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>
-                    Cancel
-                  </button>
-                  <button type="submit" disabled={isSubmitting} className="btn-primary">
-                    {isSubmitting ? 'Saving...' : (editingEvent ? 'Save Changes' : 'Publish Event')}
-                  </button>
-                </div>
-
-              </form>
-            </div>
+            </form>
           </div>
         </div>
       )}
