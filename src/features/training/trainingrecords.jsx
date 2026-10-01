@@ -6,10 +6,6 @@ import {
   Calendar,
   CheckCircle2,
   AlertCircle,
-  Clock,
-  Briefcase,
-  MapPin,
-  Users,
   Filter,
   ExternalLink,
   Info,
@@ -22,9 +18,18 @@ import RoleSidebar from '../../components/RoleSidebar.jsx';
 import Header from '../../components/Header.jsx';
 import './trainingrecords.css';
 
-const API_BASE = import.meta.env.VITE_API_URL 
-  ? `${import.meta.env.VITE_API_URL}/api` 
+const API_BASE = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
   : 'http://localhost:3001/api';
+
+// Origin of the backend (no /api), used to resolve relative image paths like "/uploads/pic.jpg"
+const API_ORIGIN = API_BASE.replace(/\/api$/, '');
+
+function resolveImageUrl(url) {
+  if (!url) return null;
+  if (/^(https?:|data:|blob:)/i.test(url)) return url;
+  return `${API_ORIGIN}${url.startsWith('/') ? '' : '/'}${url}`;
+}
 
 function formatTime(dateStr) {
   if (!dateStr) return '';
@@ -62,11 +67,37 @@ function normalizeEvent(ev) {
     sponsor: ev.department || 'All Departments',
     location: ev.venue || 'TBD',
     slotsLeft,
-    imageUrl: ev.image_url || null,
+    imageUrl: resolveImageUrl(ev.image_url),
     summary: ev.description || '',
     objectives: ev.objectives ? ev.objectives.split('\n').filter(Boolean) : [],
     status: ev.status
   };
+}
+
+// Shows the event image, or the maroon placeholder if there's no image or it fails to load
+function EventCover({ src, alt, imgClassName, placeholderClassName, iconSize = 32 }) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  if (!src || failed) {
+    return (
+      <div className={placeholderClassName}>
+        <GraduationCap size={iconSize} color="#ffffff" opacity={0.8} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={imgClassName}
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 export default function TrainingRecords({ onLogout, user }) {
@@ -139,9 +170,6 @@ export default function TrainingRecords({ onLogout, user }) {
     setLoading(true);
     Promise.all([fetchEvents(), fetchRegistrations(), fetchDepartments()]).finally(() => setLoading(false));
   }, [fetchEvents, fetchRegistrations, fetchDepartments]);
-
-  const heroEvent = events[0] || null;
-  const otherEvents = events.slice(1);
 
   const isRegisteredFor = (eventKey) =>
     registrations.some(r => r.event_id === eventKey && r.registration_status !== 'Cancelled');
@@ -281,8 +309,6 @@ export default function TrainingRecords({ onLogout, user }) {
     }
   };
 
-  const heroRegistered = heroEvent ? isRegisteredFor(heroEvent.id) : false;
-
   return (
     <div className="tr-dashboard-container">
       <RoleSidebar user={user} />
@@ -340,82 +366,27 @@ export default function TrainingRecords({ onLogout, user }) {
           </div>
         </section>
 
-        {/* HERO BANNER */}
-        {loading ? (
-          <section className="tr-hero-banner tr-hero-empty"><p>Loading events...</p></section>
-        ) : heroEvent ? (
-          <section className="tr-hero-banner">
-            <div className="tr-hero-left">
-              <div className="tr-hero-image-container">
-                {heroEvent.imageUrl ? (
-                  <img src={heroEvent.imageUrl} alt={heroEvent.name} className="tr-hero-cover-img" />
-                ) : (
-                  <div className="tr-hero-placeholder">
-                    <GraduationCap size={36} color="#ffffff" opacity={0.85} />
-                  </div>
-                )}
-                <span className="tr-event-badge-live">FEATURED</span>
-              </div>
+        {/* UPCOMING EVENTS GRID */}
+        <section className="tr-grid-wrapper">
+          <h4 className="tr-grid-heading">Upcoming Events</h4>
 
-              <div className="tr-hero-details">
-                <span className="tr-event-category">FEATURED PROGRAM</span>
-                <h3 className="tr-hero-title">{heroEvent.name}</h3>
-                <div className="tr-hero-metadata">
-                  <span><Calendar size={13} /> {heroEvent.date}</span>
-                  <span><Clock size={13} /> {heroEvent.duration}</span>
-                  <span><Briefcase size={13} /> {heroEvent.sponsor}</span>
-                  <span><MapPin size={13} /> {heroEvent.location}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="tr-hero-right">
-              <div className="tr-slots-row">
-                <Users size={14} />
-                <span>{heroEvent.slotsLeft === null ? 'Unlimited slots' : `${heroEvent.slotsLeft} Slots remaining`}</span>
-              </div>
-
-              <div className="tr-hero-action-btns">
-                <button className="tr-secondary-btn" onClick={() => setSelectedEventForModal(heroEvent)}>
-                  <Info size={14} /> View Details
-                </button>
-
-                {heroRegistered ? (
-                  <button className="tr-joined-btn" onClick={() => handleCancelRegistration(heroEvent.id)}>
-                    ✓ Joined — Cancel
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleJoinEvent(heroEvent.id)}
-                    disabled={heroEvent.slotsLeft === 0}
-                    className="tr-primary-btn"
-                  >
-                    {heroEvent.slotsLeft === 0 ? 'Fully Booked' : 'Join Event'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </section>
-        ) : (
-          <section className="tr-hero-banner tr-hero-empty"><p>No upcoming events posted yet.</p></section>
-        )}
-
-        {/* OTHER UPCOMING EVENTS GRID */}
-        {otherEvents.length > 0 && (
-          <section className="tr-grid-wrapper">
-            <h4 className="tr-grid-heading">More Upcoming Events</h4>
+          {loading ? (
+            <section className="tr-hero-banner tr-hero-empty"><p>Loading events...</p></section>
+          ) : events.length === 0 ? (
+            <section className="tr-hero-banner tr-hero-empty"><p>No upcoming events posted yet.</p></section>
+          ) : (
             <div className="tr-grid-container">
-              {otherEvents.map((ev) => {
+              {events.map((ev) => {
                 const registered = isRegisteredFor(ev.id);
                 return (
                   <div key={ev.id} className="tr-grid-card">
-                    {ev.imageUrl ? (
-                      <div className="tr-card-image" style={{ backgroundImage: `url(${ev.imageUrl})` }} />
-                    ) : (
-                      <div className="tr-card-placeholder">
-                        <GraduationCap size={32} color="#ffffff" opacity={0.8} />
-                      </div>
-                    )}
+                    <EventCover
+                      src={ev.imageUrl}
+                      alt={ev.name}
+                      imgClassName="tr-card-image"
+                      placeholderClassName="tr-card-placeholder"
+                      iconSize={32}
+                    />
                     <div className="tr-card-body">
                       <span className="tr-card-category">{ev.sponsor}</span>
                       <strong className="tr-card-title">{ev.name}</strong>
@@ -446,8 +417,8 @@ export default function TrainingRecords({ onLogout, user }) {
                 );
               })}
             </div>
-          </section>
-        )}
+          )}
+        </section>
 
         {/* SEARCH & CONTROLS ROW */}
         <section className="tr-controls-row">
@@ -641,13 +612,13 @@ export default function TrainingRecords({ onLogout, user }) {
             </div>
 
             <div className="tr-modal-body">
-              {selectedEventForModal.imageUrl ? (
-                <img src={selectedEventForModal.imageUrl} alt={selectedEventForModal.name} className="tr-modal-banner-img" />
-              ) : (
-                <div className="tr-modal-placeholder">
-                  <GraduationCap size={44} color="#ffffff" opacity={0.8} />
-                </div>
-              )}
+              <EventCover
+                src={selectedEventForModal.imageUrl}
+                alt={selectedEventForModal.name}
+                imgClassName="tr-modal-banner-img"
+                placeholderClassName="tr-modal-placeholder"
+                iconSize={44}
+              />
 
               <div className="tr-modal-info-grid">
                 <div><strong>Date:</strong> {selectedEventForModal.date}</div>
