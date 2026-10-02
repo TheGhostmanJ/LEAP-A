@@ -588,7 +588,7 @@ export default function TrainingRecords({ onLogout, user }) {
                         ? window.open(cert.certUrl, '_blank')
                         : alert('Certificate not yet issued for this training.')}
                     >
-                      <Download size={13} /> View / PDF
+                      <Download size={13} /> View
                     </button>
                   </div>
                 ))
