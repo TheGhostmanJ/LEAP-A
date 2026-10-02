@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap');
-
 /* ============================================================
    BASE CONTAINER LAYOUT (Replaces 'body' styling)
    ============================================================ */
@@ -62,7 +60,7 @@
 
 .login-subtext {
   font-size: 13px;
-  color: #6b7280;
+  color: #4b5563;
   font-style: italic;
   font-weight: 400;
   max-width: 260px;
@@ -108,7 +106,7 @@
 .input-icon {
   position: absolute;
   left: 14px;
-  color: #9ca3af;
+  color: #6b7280;
   display: flex;
   align-items: center;
 }
@@ -134,8 +132,13 @@
   box-sizing: border-box;
 }
 
+.text-input::placeholder {
+  color: #6b7280;
+  opacity: 1;
+}
+
 .text-input-password {
-  padding-right: 44px;
+  padding-right: 48px;
 }
 
 .text-input:focus {
@@ -159,11 +162,12 @@
   color: #4b5563;
   cursor: pointer;
   flex: 1;
+  min-height: 24px;
 }
 
 .checkbox-input {
-  width: 15px;
-  height: 15px;
+  width: 18px;
+  height: 18px;
   accent-color: #b11212;
   cursor: pointer;
 }
@@ -171,8 +175,9 @@
 .forgot-password-link {
   background: none;
   border: none;
-  padding: 0;
+  padding: 4px 6px;
   margin: 0;
+  min-height: 28px;
   font: inherit;
   font-weight: 500;
   color: #b11212;
@@ -186,26 +191,30 @@
 
 .password-toggle-btn {
   position: absolute;
-  right: 14px;
+  right: 6px;
+  width: 36px;
+  height: 36px;
   background: none;
   border: none;
+  border-radius: 8px;
   cursor: pointer;
-  color: #9ca3af;
+  color: #6b7280;
   display: flex;
   align-items: center;
+  justify-content: center;
   padding: 0;
   z-index: 5;
   transition: color 0.2s ease;
 }
 
 .password-toggle-btn:hover {
-  color: #4b5563;
+  color: #1f2937;
 }
 
 .legal-footnote {
   text-align: center;
   font-size: 12px;
-  color: #6b7280;
+  color: #4b5563;
   line-height: 1.5;
   margin: 14px 0 0 0;
 }
@@ -214,6 +223,7 @@
   background: none;
   border: none;
   font-family: inherit;
+  font-size: inherit;
   cursor: pointer;
   padding: 0;
   font-weight: 600;
@@ -261,7 +271,7 @@
 .divider-text {
   margin: 24px 0 16px 0;
   text-align: center;
-  color: #a0aec0;
+  color: #6b7280;
   font-size: 13.5px;
   font-weight: 500;
 }
@@ -273,7 +283,9 @@
 }
 
 /* ============================================================
-   RIGHT PANEL & CAROUSEL (Animated background)
+   RIGHT PANEL & CAROUSEL
+   (gradient is now static: animating background-position
+    forces a repaint every frame and hurts performance)
    ============================================================ */
 .right-panel {
   position: relative;
@@ -283,8 +295,6 @@
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #7a0000 0%, #520000 50%, #2d0000 100%);
-  background-size: 200% 200%;
-  animation: gradientShift 10s ease infinite;
   padding: 32px;
   color: #ffffff;
   margin: 0;
@@ -325,11 +335,13 @@
   margin-top: 20px;
 }
 
+/* Static shadow + transform-only float (GPU friendly) */
 .logo-image {
   height: 115px;
   width: auto;
   object-fit: contain;
   animation: logoFloat 4s ease-in-out infinite;
+  will-change: transform;
   filter: drop-shadow(0px 12px 18px rgba(0, 0, 0, 0.45)) drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.25));
 }
 
@@ -395,7 +407,7 @@
 }
 
 .carousel-title {
-  font-family: 'Oswald', sans-serif;
+  font-family: sans-serif;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -521,9 +533,12 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #9ca3af;
+  color: #6b7280;
   display: flex;
   align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
   padding: 4px;
   border-radius: 8px;
   transition: all 0.2s ease;
@@ -544,7 +559,7 @@
 
 .modal-updated {
   font-size: 12px;
-  color: #9ca3af;
+  color: #6b7280;
   font-style: italic;
   margin: 0 0 16px 0;
 }
@@ -568,25 +583,10 @@
 /* ============================================================
    ANIMATION KEYFRAMES
    ============================================================ */
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
 @keyframes logoFloat {
-  0% {
-    transform: translateY(0px) scale(1);
-    filter: drop-shadow(0px 12px 18px rgba(0, 0, 0, 0.45)) drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.25));
-  }
-  50% {
-    transform: translateY(-10px) scale(1.02);
-    filter: drop-shadow(0px 22px 28px rgba(0, 0, 0, 0.55)) drop-shadow(0px 8px 12px rgba(0, 0, 0, 0.3));
-  }
-  100% {
-    transform: translateY(0px) scale(1);
-    filter: drop-shadow(0px 12px 18px rgba(0, 0, 0, 0.45)) drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.25));
-  }
+  0%   { transform: translateY(0px) scale(1); }
+  50%  { transform: translateY(-10px) scale(1.02); }
+  100% { transform: translateY(0px) scale(1); }
 }
 
 @keyframes fadeIn {
@@ -719,7 +719,7 @@
 
 .open-positions-text {
   font-size: 12.5px;
-  color: #6b7280;
+  color: #4b5563;
 }
 
 .open-positions-link {
@@ -727,124 +727,8 @@
   border: 1px solid #b11212;
   color: #b11212;
   padding: 8px 16px;
+  min-height: 32px;
   border-radius: 999px;
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s ease;
-}
-
-.open-positions-link:hover {
-  background-color: #b11212;
-  color: #ffffff;
-}
-
-.opening-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  margin-bottom: 10px;
-  border: 1px solid #eef1f2;
-  border-radius: 12px;
-  background-color: #f7f9fa;
-}
-
-.opening-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: #b11212;
-}
-
-.opening-title {
-  font-weight: 700;
-  color: #1f2937;
-  font-size: 14px;
-}
-
-.opening-dept {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.apply-primary-btn {
-  background: linear-gradient(180deg, #8a0000 0%, #5a0000 100%);
-  color: #ffffff;
-  border: none;
-  padding: 9px 18px;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 12.5px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.apply-primary-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.apply-form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.plain-input {
-  padding: 12px 14px;
-  font-family: inherit;
-  resize: vertical;
-}
-
-.apply-back-btn {
-  background: none;
-  border: none;
-  color: #6b7280;
-  font-size: 12.5px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0;
-  align-self: flex-start;
-}
-
-.apply-back-btn:hover {
-  color: #b11212;
-}
-
-.apply-selected {
-  display: flex;
-  flex-direction: column;
-  padding: 12px 14px;
-  border-radius: 10px;
-  background-color: #fef2f2;
-  color: #991b1b;
-  font-size: 13px;
-}
-
-.apply-submit {
-  width: 100%;
-  padding: 13px;
-}
-
-.apply-success {
-  text-align: center;
-  color: #10b981;
-  padding: 12px 0;
-}
-
-.apply-success h3 {
-  color: #1f2937;
-  margin: 10px 0 6px 0;
-}
-
-.apply-success p {
-  color: #4b5563;
-  margin-bottom: 18px;
-}
