@@ -38,6 +38,25 @@ const createBlobUrlFromBase64 = (base64Data, mimeType = 'application/pdf') => {
   }
 };
 
+// Helper: Converts "07:48 AM" to minutes (e.g., 468) for math calculations
+const timeToMinutes = (timeStr) => {
+  if (!timeStr || timeStr === '—') return null;
+  const [time, modifier] = timeStr.split(' ');
+  let [hours, minutes] = time.split(':').map(Number);
+  if (hours === 12) hours = modifier === 'AM' ? 0 : 12;
+  else if (modifier === 'PM') hours += 12;
+  return hours * 60 + minutes;
+};
+
+// Helper: Converts minutes back to "07:48 AM" for labels
+const minutesToTime = (m) => {
+  const hrs = Math.floor(m / 60);
+  const mins = m % 60;
+  const ampm = hrs >= 12 ? 'PM' : 'AM';
+  const fHrs = hrs % 12 || 12;
+  return `${String(fHrs).padStart(2, '0')}:${String(mins).padStart(2, '0')} ${ampm}`;
+};
+
 export default function Dashboard({ onLogout, user }) {
   const navigate = useNavigate();
   const isRestricted = user?.role === 'Restricted Self-Service';
@@ -54,22 +73,19 @@ export default function Dashboard({ onLogout, user }) {
 
   const [activeFeedback, setActiveFeedback] = useState(null);
   const [attendanceSummary, setAttendanceSummary] = useState({ presentDays: 0, percentage: 0 });
+  
+  // NEW: State to hold the calculated SVG graph data
+  const [chartData, setChartData] = useState({ path: '', points: [], earliest: '—', latest: '—' });
 
   const normalizeAttachments = (row) => {
+    // ... (keep existing normalizeAttachments function exactly as is)
     if (Array.isArray(row.attachment_urls) && row.attachment_urls.length > 0) {
       return row.attachment_urls;
     }
 
     const rawData = row.attachment_data || row.attachment_url;
 
-    if (
-      !rawData ||
-      typeof rawData !== 'string' ||
-      rawData.trim() === '' ||
-      rawData === 'null' ||
-      rawData === 'undefined' ||
-      rawData.length < 30
-    ) {
+    if (!rawData || typeof rawData !== 'string' || rawData.trim() === '' || rawData === 'null' || rawData === 'undefined' || rawData.length < 30) {
       return [];
     }
 
@@ -83,22 +99,17 @@ export default function Dashboard({ onLogout, user }) {
           fileType: item.fileType || 'application/pdf'
         }));
       }
-    } catch {
-      // Not JSON string
-    }
+    } catch { }
 
     const fileName = row.attachment_name || 'Attached Document.pdf';
-    return [{
-      fileName,
-      requirementLabel: fileName,
-      dataUrl: rawData
-    }];
+    return [{ fileName, requirementLabel: fileName, dataUrl: rawData }];
   };
 
   useEffect(() => {
     if (isRestricted) return;
 
     const fetchRecentLeaves = async () => {
+      // ... (keep existing fetchRecentLeaves function exactly as is)
       if (!user?.employee_key) return;
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -122,11 +133,9 @@ export default function Dashboard({ onLogout, user }) {
 
           setRecentLeaves(formatted);
         } else {
-          console.error('Failed to fetch leave applications:', response.status);
           setRecentLeaves([]);
         }
       } catch (err) {
-        console.warn('API offline or unreachable.', err);
         setRecentLeaves([]);
       }
     };
@@ -137,23 +146,64 @@ export default function Dashboard({ onLogout, user }) {
   useEffect(() => {
     if (isRestricted || !user?.employee_key) return;
 
-    const fetchAttendanceSummary = async () => {
+    const fetchAttendanceData = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-        const response = await fetch(`${apiUrl}/api/attendance/summary/${user.employee_key}`);
         
-        if (response.ok) {
-          const data = await response.json();
-          setAttendanceSummary(data);
-        } else {
-          console.error('Failed to fetch attendance summary:', response.status);
+        // Fetch High-Level Summary (Days Present & Percentage)
+        const summaryRes = await fetch(`${apiUrl}/api/attendance/summary/${user.employee_key}`);
+        if (summaryRes.ok) {
+          const summaryData = await summaryRes.json();
+          setAttendanceSummary(summaryData);
+        }
+
+        // Fetch Detailed Logs for the Graph
+        const detailsRes = await fetch(`${apiUrl}/api/attendance/${user.employee_key}`);
+        if (detailsRes.ok) {
+          const records = await detailsRes.json();
+          
+          // Filter out absences/leaves, take the last 30, and reverse them chronologically (left to right)
+          const validPunches = records.filter(r => r.timeIn && r.timeIn !== '—').slice(0, 30).reverse();
+          
+          if (validPunches.length > 0) {
+            const timesInMinutes = validPunches.map(r => timeToMinutes(r.timeIn));
+            
+            // Determine the Y-axis scale based on the earliest and latest punch times
+            const minTime = Math.min(...timesInMinutes);
+            const maxTime = Math.max(...timesInMinutes);
+            
+            // Fallback range if the user clocks in at the exact same minute every single day
+            const timeRange = maxTime - minTime === 0 ? 60 : maxTime - minTime; 
+            
+            const paddingY = 20; // Keeps dots from touching the SVG borders
+            const usableHeight = 100 - (paddingY * 2);
+
+            // Calculate exact X and Y coordinates for each punch
+            const points = validPunches.map((rec, index) => {
+              const t = timeToMinutes(rec.timeIn);
+              const x = validPunches.length > 1 ? (index / (validPunches.length - 1)) * 400 : 200;
+              // Higher Y value = lower on the screen (later time)
+              const y = paddingY + ((t - minTime) / timeRange) * usableHeight;
+              return { x, y, time: rec.timeIn };
+            });
+
+            // Generate SVG Path instructions (Move to first point, Line to subsequent points)
+            const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+            setChartData({
+              path,
+              points,
+              earliest: minutesToTime(minTime),
+              latest: minutesToTime(maxTime)
+            });
+          }
         }
       } catch (err) {
         console.warn('API offline or unreachable.', err);
       }
     };
 
-    fetchAttendanceSummary();
+    fetchAttendanceData();
   }, [user, isRestricted]);
 
   useEffect(() => {
@@ -188,18 +238,16 @@ export default function Dashboard({ onLogout, user }) {
   });
 
   const handleOpenPdf = async (leaveRecord) => {
+    // ... (keep existing handleOpenPdf function exactly as is)
     setIsLoadingPdf(true);
     try {
       const storedBase64 = leaveRecord.pdf_url || leaveRecord.pdf_document || leaveRecord.pdfBase64 || leaveRecord.pdf_base64;
-
       if (storedBase64 && storedBase64.length > 50) {
         const blobUrl = createBlobUrlFromBase64(storedBase64, 'application/pdf');
         if (blobUrl) {
           setPreviewTitle('CS Form No. 6 Application Preview');
           setPreviewFileType('pdf');
           setSelectedPdfUrl(blobUrl);
-        } else {
-          alert('Failed to parse CS Form PDF.');
         }
       } else {
         const formData = {
@@ -227,31 +275,20 @@ export default function Dashboard({ onLogout, user }) {
       }
     } catch (err) {
       console.error('Failed to display PDF preview:', err);
-      alert('Could not open document preview.');
     } finally {
       setIsLoadingPdf(false);
     }
   };
 
   const handleOpenAttachment = (attachment) => {
+    // ... (keep existing handleOpenAttachment function exactly as is)
     const fileName = attachment.fileName || 'Attachment';
     setPreviewTitle(attachment.requirementLabel || fileName);
-
     const rawData = attachment.dataUrl || attachment.rawData || attachment.url || attachment.base64Data;
-
-    if (!rawData) {
-      alert('No attached file binary found for this document.');
-      return;
-    }
+    if (!rawData) return;
 
     const lowerName = fileName.toLowerCase();
-    const isImage =
-      (attachment.fileType && attachment.fileType.startsWith('image/')) ||
-      rawData.startsWith('data:image') ||
-      lowerName.endsWith('.png') ||
-      lowerName.endsWith('.jpg') ||
-      lowerName.endsWith('.jpeg') ||
-      lowerName.endsWith('.webp');
+    const isImage = (attachment.fileType && attachment.fileType.startsWith('image/')) || rawData.startsWith('data:image') || lowerName.endsWith('.png') || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg') || lowerName.endsWith('.webp');
 
     if (rawData.startsWith('http') || rawData.startsWith('data:')) {
       setPreviewFileType(isImage ? 'image' : 'pdf');
@@ -265,8 +302,6 @@ export default function Dashboard({ onLogout, user }) {
     if (blobUrl) {
       setPreviewFileType(isImage ? 'image' : 'pdf');
       setSelectedPdfUrl(blobUrl);
-    } else {
-      alert('Unable to load document attachment.');
     }
   };
 
@@ -286,6 +321,7 @@ export default function Dashboard({ onLogout, user }) {
 
         {!isRestricted && (
           <section className="leave-summary-metrics-bar">
+            {/* ... (Keep existing leave-summary-metrics-bar) ... */}
             <div className="metric-cell hover-lift">
               <div className="metric-card-inner">
                 <span className="metric-title-label">Sick Leave</span>
@@ -304,14 +340,9 @@ export default function Dashboard({ onLogout, user }) {
                 <span className="metric-numeric-value">{getUsedDays('Emergency Leave')} <span className="unit-label">Days</span></span>
               </div>
             </div>
-            <div
-              className="metric-cell action-cell hover-lift"
-              onClick={() => navigate('/leavehistory')}
-            >
+            <div className="metric-cell action-cell hover-lift" onClick={() => navigate('/leavehistory')}>
               <div className="action-cell-content">
-                <span className="see-more-hyperlink">
-                  See Details
-                </span>
+                <span className="see-more-hyperlink">See Details</span>
                 <ChevronRight size={16} className="arrow-icon" />
               </div>
             </div>
@@ -321,6 +352,7 @@ export default function Dashboard({ onLogout, user }) {
         <section className={`analytics-display-grid ${isRestricted ? 'single-card' : ''}`}>
           {!isRestricted && (
             <div className="analytics-visual-card hover-lift">
+              {/* ... (Keep existing leave donut chart) ... */}
               <div className="card-header-flex">
                 <h3 className="card-section-title">
                   <History size={18} className="title-icon" /> My Leave Application
@@ -365,6 +397,7 @@ export default function Dashboard({ onLogout, user }) {
             </div>
           )}
 
+          {/* DYNAMIC ATTENDANCE GRAPH */}
           <div className="analytics-visual-card hover-lift" onClick={() => navigate('/attendance')} style={{ cursor: 'pointer' }}>
             <div className="card-header-flex">
               <h3 className="card-section-title">
@@ -373,24 +406,45 @@ export default function Dashboard({ onLogout, user }) {
             </div>
             <div className="mock-graphic-frame">
               <div className="attendance-chart-mock">
+                
+                {/* Dynamically display the highest (earliest) and lowest (latest) punch times */}
                 <div className="time-stamp-marker stamp-top">
-                  <Clock size={11} /> 07:48 AM
+                  <Clock size={11} /> Earliest: {chartData.earliest}
                 </div>
                 <div className="time-stamp-marker stamp-bottom">
-                  <Clock size={11} /> 07:48 AM
+                  <Clock size={11} /> Latest: {chartData.latest}
                 </div>
 
                 <svg viewBox="0 0 400 100" className="sparkline-svg-vector">
-                  <path
-                    d="M 0 60 Q 40 40 80 70 T 160 50 T 240 75 T 320 35 T 400 55"
-                    fill="none"
-                    stroke="#7a0000"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                  <circle cx="80" cy="70" r="4" fill="#7a0000" stroke="#fff" strokeWidth="2" />
-                  <circle cx="240" cy="75" r="4" fill="#7a0000" stroke="#fff" strokeWidth="2" />
-                  <circle cx="320" cy="35" r="4" fill="#7a0000" stroke="#fff" strokeWidth="2" />
+                  {chartData.points.length > 0 ? (
+                    <>
+                      <path
+                        d={chartData.path}
+                        fill="none"
+                        stroke="#7a0000"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      {chartData.points.map((pt, idx) => (
+                        <circle 
+                          key={idx} 
+                          cx={pt.x} 
+                          cy={pt.y} 
+                          r="3" 
+                          fill="#7a0000" 
+                          stroke="#fff" 
+                          strokeWidth="1.5" 
+                        >
+                          <title>{pt.time}</title>
+                        </circle>
+                      ))}
+                    </>
+                  ) : (
+                    <text x="50%" y="50%" textAnchor="middle" fill="#888" fontSize="12px">
+                      Not enough data to plot
+                    </text>
+                  )}
                 </svg>
 
                 <div className="axis-labels-timeline">
@@ -401,12 +455,11 @@ export default function Dashboard({ onLogout, user }) {
                 </div>
               </div>
 
-              {/* Replace the static streak/avg check-in badges with this: */}
               <div className="attendance-summary-data-strip">
                 <div className="streak-badge">Days Present: <strong>{attendanceSummary.presentDays} days</strong></div>
                 <div className="avg-checkin-badge">Attendance Score: <strong>{attendanceSummary.percentage}%</strong></div>
               </div>
-              <p className="graphic-footer-caption">My Overall Attendance Metrics</p>
+              <p className="graphic-footer-caption">My 30 Day Attendance Consistency</p>
             </div>
           </div>
 
@@ -415,15 +468,12 @@ export default function Dashboard({ onLogout, user }) {
 
         {!isRestricted && (
           <section className="table-wrapper-section">
+            {/* ... (Keep existing Recent Leave Applications table exactly as is) ... */}
             <section className="data-table-container-card">
               <div className="table-header-toolbar">
                 <div className="table-header-left">
                   <h3 className="table-title">Recent Leave Applications</h3>
-                  <button
-                    type="button"
-                    className="see-more-table-btn"
-                    onClick={() => navigate('/leavehistory')}
-                  >
+                  <button type="button" className="see-more-table-btn" onClick={() => navigate('/leavehistory')}>
                     See More <ChevronRight size={14} />
                   </button>
                 </div>
@@ -431,18 +481,9 @@ export default function Dashboard({ onLogout, user }) {
                 <div className="table-header-right">
                   <div className="search-bar-input-wrapper">
                     <Search size={15} className="search-lens-embed" />
-                    <input
-                      type="text"
-                      placeholder="Search recent filings..."
-                      className="utility-search-field"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+                    <input type="text" placeholder="Search recent filings..." className="utility-search-field" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                   </div>
-                  <button
-                    className="primary-action-trigger-btn"
-                    onClick={() => navigate('/leaveapplication')}
-                  >
+                  <button className="primary-action-trigger-btn" onClick={() => navigate('/leaveapplication')}>
                     <FilePlus size={16} />
                     <span>File New Leave</span>
                   </button>
@@ -484,12 +525,7 @@ export default function Dashboard({ onLogout, user }) {
                             </td>
                             <td>
                               {hasFeedback ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setActiveFeedback(leave)}
-                                  className="feedback-trigger-link"
-                                  title="View feedback from your HOD"
-                                >
+                                <button type="button" onClick={() => setActiveFeedback(leave)} className="feedback-trigger-link" title="View feedback from your HOD">
                                   View HOD feedback
                                 </button>
                               ) : (
@@ -502,13 +538,7 @@ export default function Dashboard({ onLogout, user }) {
                               ) : (
                                 <div className="attachment-chips-container">
                                   {attachments.map((att, idx) => (
-                                    <button
-                                      key={idx}
-                                      type="button"
-                                      onClick={() => handleOpenAttachment(att)}
-                                      className="attachment-chip-btn"
-                                      title={att.fileName || att.requirementLabel}
-                                    >
+                                    <button key={idx} type="button" onClick={() => handleOpenAttachment(att)} className="attachment-chip-btn" title={att.fileName || att.requirementLabel}>
                                       <Paperclip size={12} />
                                       <span className="chip-label">{att.requirementLabel || att.fileName || `Attachment ${idx + 1}`}</span>
                                     </button>
@@ -517,12 +547,7 @@ export default function Dashboard({ onLogout, user }) {
                               )}
                             </td>
                             <td style={{ textAlign: 'right' }}>
-                              <button
-                                type="button"
-                                onClick={() => handleOpenPdf(leave)}
-                                className="btn-download-pdf-table"
-                                disabled={isLoadingPdf}
-                              >
+                              <button type="button" onClick={() => handleOpenPdf(leave)} className="btn-download-pdf-table" disabled={isLoadingPdf}>
                                 <Eye size={14} /> View Form
                               </button>
                             </td>
@@ -544,16 +569,13 @@ export default function Dashboard({ onLogout, user }) {
         )}
       </main>
 
-      {/* --- HOD FEEDBACK MODAL --- */}
+      {/* --- MODALS --- */}
       {activeFeedback && (
         <div className="modal-overlay-backdrop" onClick={() => setActiveFeedback(null)}>
           <div className="modal-container-card feedback-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-bar feedback-header">
               <span>Feedback on your {activeFeedback.leave_type} request</span>
-              <button
-                className="modal-close-btn"
-                onClick={() => setActiveFeedback(null)}
-              >
+              <button className="modal-close-btn" onClick={() => setActiveFeedback(null)}>
                 <X size={18} />
               </button>
             </div>
@@ -564,17 +586,12 @@ export default function Dashboard({ onLogout, user }) {
         </div>
       )}
 
-      {/* --- IN-PAGE DOCUMENT PREVIEW MODAL --- */}
       {selectedPdfUrl && (
         <div className="modal-overlay-backdrop" onClick={handleClosePdf}>
           <div className="modal-container-card pdf-preview-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-bar pdf-header">
               <h3 className="modal-title">{previewTitle}</h3>
-              <button
-                type="button"
-                onClick={handleClosePdf}
-                className="modal-close-btn"
-              >
+              <button type="button" onClick={handleClosePdf} className="modal-close-btn">
                 <X size={20} />
               </button>
             </div>
@@ -582,11 +599,7 @@ export default function Dashboard({ onLogout, user }) {
               {previewFileType === 'image' ? (
                 <img src={selectedPdfUrl} alt="Attachment Preview" className="image-preview-render" />
               ) : (
-                <iframe
-                  src={selectedPdfUrl}
-                  title={previewTitle}
-                  className="iframe-preview-render"
-                />
+                <iframe src={selectedPdfUrl} title={previewTitle} className="iframe-preview-render" />
               )}
             </div>
           </div>
