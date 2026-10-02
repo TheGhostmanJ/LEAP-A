@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Briefcase, Users, X, ArrowRight, CheckCircle2, XCircle, Clock, UserPlus, Mail, Phone } from 'lucide-react';
+import { Search, Briefcase, Users, X, ArrowRight, CheckCircle2, XCircle, Clock, UserPlus, Mail, Phone, Globe, Lock } from 'lucide-react';
 import HrSidebar from '../../components/hr-sidebar.jsx';
 import Header from '../../components/Header.jsx';
 import './hiring.css';
@@ -26,6 +26,7 @@ export default function Hiring({ onLogout, user }) {
   const [applicants, setApplicants] = useState([]);
   const [isApplicantsLoading, setIsApplicantsLoading] = useState(false);
   const [updatingApplicantId, setUpdatingApplicantId] = useState(null);
+  const [togglingDeptId, setTogglingDeptId] = useState(null);
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -131,6 +132,31 @@ export default function Hiring({ onLogout, user }) {
       alert("Error: " + err.message);
     } finally {
       setIsActionSubmitting(false);
+    }
+  };
+
+  // ---------- Open / close to external applicants ----------
+  const handleToggleExternal = async (vacancy, open) => {
+    const message = open
+      ? `Open ${vacancy.department_name} to external applicants? It will appear on the public login page.`
+      : `Close ${vacancy.department_name} to external applicants? It will be removed from the login page.`;
+    if (!window.confirm(message)) return;
+
+    setTogglingDeptId(vacancy.department_id);
+    try {
+      const response = await fetch(`${apiUrl}/api/hiring/open-to-external/${vacancy.department_id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ open })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to update department');
+
+      await fetchExternalStatus();
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      setTogglingDeptId(null);
     }
   };
 
@@ -243,11 +269,11 @@ export default function Hiring({ onLogout, user }) {
             <table className="record-grid-system" style={{ width: '100%' }}>
               <thead>
                 <tr>
-                  <th style={{ width: '12%' }}>Dept Code</th>
-                  <th style={{ width: '26%' }}>Department</th>
-                  <th style={{ width: '24%' }}>Last Department Head</th>
-                  <th style={{ width: '18%' }}>Status</th>
-                  <th style={{ width: '20%', textAlign: 'center' }}>Action</th>
+                  <th style={{ width: '10%' }}>Dept Code</th>
+                  <th style={{ width: '24%' }}>Department</th>
+                  <th style={{ width: '20%' }}>Last Department Head</th>
+                  <th style={{ width: '16%' }}>Status</th>
+                  <th style={{ width: '30%', textAlign: 'center' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -268,6 +294,7 @@ export default function Hiring({ onLogout, user }) {
                     const headName = v.first_name ? `${v.first_name} ${v.last_name}` : 'Unassigned';
                     const isExternal = Object.prototype.hasOwnProperty.call(externalMap, v.department_id);
                     const applicantCount = externalMap[v.department_id] || 0;
+                    const isToggling = togglingDeptId === v.department_id;
                     return (
                       <tr key={v.department_id}>
                         <td style={{ fontFamily: 'monospace', fontWeight: '700', color: 'var(--color-text-secondary)' }}>{v.department_id}</td>
@@ -293,13 +320,32 @@ export default function Hiring({ onLogout, user }) {
                             >
                               <Users size={14} /> Shortlist
                             </button>
-                            {isExternal && (
+                            {isExternal ? (
+                              <>
+                                <button
+                                  className="btn-primary"
+                                  onClick={() => handleViewApplicants(v)}
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                                >
+                                  <UserPlus size={14} /> Applicants ({applicantCount})
+                                </button>
+                                <button
+                                  className="btn-secondary"
+                                  disabled={isToggling}
+                                  onClick={() => handleToggleExternal(v, false)}
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                                >
+                                  <Lock size={14} /> {isToggling ? 'Closing...' : 'Close External'}
+                                </button>
+                              </>
+                            ) : (
                               <button
-                                className="btn-primary"
-                                onClick={() => handleViewApplicants(v)}
+                                className="btn-secondary"
+                                disabled={isToggling}
+                                onClick={() => handleToggleExternal(v, true)}
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                               >
-                                <UserPlus size={14} /> Applicants ({applicantCount})
+                                <Globe size={14} /> {isToggling ? 'Opening...' : 'Open to External'}
                               </button>
                             )}
                           </div>
