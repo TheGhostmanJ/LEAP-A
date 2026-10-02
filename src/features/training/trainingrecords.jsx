@@ -22,10 +22,11 @@ const API_BASE = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api`
   : 'http://localhost:3001/api';
 
-// Origin of the backend (no /api), used to resolve relative image paths like "/uploads/pic.jpg"
+// Origin of the backend (no /api). Your API returns relative paths like
+// "/api/events/5/cover", which must point at the backend, not the frontend.
 const API_ORIGIN = API_BASE.replace(/\/api$/, '');
 
-function resolveImageUrl(url) {
+function resolveApiUrl(url) {
   if (!url) return null;
   if (/^(https?:|data:|blob:)/i.test(url)) return url;
   return `${API_ORIGIN}${url.startsWith('/') ? '' : '/'}${url}`;
@@ -62,12 +63,13 @@ function normalizeEvent(ev) {
     id: ev.event_id,
     name: ev.title,
     rawDate: ev.start_date,
+    rawEnd: ev.end_date || ev.start_date,
     date: formatDate(ev.start_date),
     duration: computeDuration(ev.start_date, ev.end_date),
     sponsor: ev.department || 'All Departments',
     location: ev.venue || 'TBD',
     slotsLeft,
-    imageUrl: resolveImageUrl(ev.image_url),
+    imageUrl: resolveApiUrl(ev.image_url),
     summary: ev.description || '',
     objectives: ev.objectives ? ev.objectives.split('\n').filter(Boolean) : [],
     status: ev.status
@@ -135,9 +137,13 @@ export default function TrainingRecords({ onLogout, user }) {
       if (employeeDepartment) params.set('department', employeeDepartment);
       const res = await fetch(`${API_BASE}/events?${params.toString()}`);
       const data = await res.json();
-      const normalized = data.map(normalizeEvent).sort(
-        (a, b) => new Date(a.rawDate) - new Date(b.rawDate)
-      );
+      // The API returns every event, so hide cancelled and already-finished ones here
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const normalized = data
+        .map(normalizeEvent)
+        .filter((ev) => ev.status !== 'Cancelled' && new Date(ev.rawEnd) >= startOfToday)
+        .sort((a, b) => new Date(a.rawDate) - new Date(b.rawDate));
       setEvents(normalized);
     } catch (err) {
       console.error('Failed to load events', err);
@@ -203,7 +209,7 @@ export default function TrainingRecords({ onLogout, user }) {
           return mins > 0 ? (mins / 60).toFixed(1).replace(/\.0$/, '') : '—';
         })(),
         sponsor: r.department || 'All Departments',
-        certUrl: r.pdf_url || null
+        certUrl: resolveApiUrl(r.pdf_url)
       }));
   }, [registrations]);
 
