@@ -47,8 +47,8 @@ export default function EventCertificates({ event, apiBase, onClose }) {
   const handleUpload = async (employeeKey, file) => {
     if (!file) return;
     setError('');
-    if (file.type !== 'application/pdf') {
-      setError('Only PDF files are allowed.');
+    if (!['application/pdf', 'image/png', 'image/jpeg'].includes(file.type)) {
+      setError('Only PDF, PNG or JPG files are allowed.');
       return;
     }
     if (file.size > MAX_SIZE) {
@@ -159,10 +159,10 @@ export default function EventCertificates({ event, apiBase, onClose }) {
                       ? 'Uploading...'
                       : r.has_certificate
                       ? 'Replace'
-                      : 'Upload PDF'}
+                      : 'Upload file'}
                     <input
                       type="file"
-                      accept="application/pdf"
+                      accept="application/pdf,image/png,image/jpeg"
                       hidden
                       disabled={busyKey === r.employee_key}
                       onChange={(e) => {
