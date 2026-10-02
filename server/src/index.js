@@ -2909,7 +2909,7 @@ app.post('/api/succession/respond/:offerId', async (req, res) => {
 
         if (status === 'Accepted') {
             await client.query(
-                `UPDATE public.dim_department SET department_head_key = $1 WHERE department_id = $2`,
+                                `UPDATE public.dim_department SET department_head_key = $1, open_to_external = false WHERE department_id = $2`,
                 [offer.employee_key, offer.department_id]
             );
             await client.query('COMMIT');
@@ -3301,6 +3301,36 @@ app.get('/api/hiring/external-openings', async (req, res) => {
     } catch (error) {
         console.error('Error fetching external openings:', error);
         res.status(500).json({ error: 'Failed to fetch external openings.' });
+    }
+});
+
+// PUT: HR opens (or closes) a vacant department to external applicants
+app.put('/api/hiring/open-to-external/:departmentId', async (req, res) => {
+    const { departmentId } = req.params;
+    const open = req.body.open === true;
+
+    try {
+        const result = await pool.query(`
+            UPDATE public.dim_department d
+            SET open_to_external = $1
+            WHERE d.department_id = $2
+              AND (
+                  d.department_head_key IS NULL
+                  OR EXISTS (
+                      SELECT 1 FROM public.dim_employee h
+                      WHERE h.employee_key = d.department_head_key AND h.is_active = false
+                  )
+              )
+            RETURNING d.department_id, d.open_to_external
+        `, [open, departmentId]);
+
+        if (result.rows.length === 0) {
+            return res.status(400).json({ error: 'Only vacant departments can be opened to external applicants.' });
+        }
+        res.status(200).json({ success: true, department: result.rows[0] });
+    } catch (error) {
+        console.error('Error toggling external opening:', error);
+        res.status(500).json({ error: 'Failed to update the department.' });
     }
 });
 
