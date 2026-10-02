@@ -1,15 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Eye, EyeOff, AlertCircle, X, User, Smartphone, Download, Briefcase } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { loginUser } from './services/authService';
 import AuthSplashScreen from '../../components/AuthSplashScreen';
-import OpenPositionsModal from './OpenPositionsModal';
 import './login.css';
+
+// Only loaded when someone clicks "View open positions"
+const OpenPositionsModal = lazy(() => import('./OpenPositionsModal'));
 
 export default function Login({ onLoginSuccess }) {
   const navigate = useNavigate();
-  
+
   // Auth & UI State
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -63,7 +65,7 @@ export default function Login({ onLoginSuccess }) {
     // 2. Mobile Detection
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const hasDismissedAppPrompt = sessionStorage.getItem('dismissedAppPrompt');
-    
+
     if (isMobileDevice && !hasDismissedAppPrompt) {
       setShowAppPrompt(true);
     }
@@ -96,7 +98,7 @@ export default function Login({ onLoginSuccess }) {
 
     try {
       const data = await loginUser(username, password, captchaToken);
-      
+
       if (data.success) {
         sessionStorage.removeItem('splash_shown');
         setShowSplash(true);
@@ -116,7 +118,7 @@ export default function Login({ onLoginSuccess }) {
       console.error("Login endpoint error details:", err);
       const serverErrorMsg = err?.response?.data?.message || err?.message;
       setErrorMessage(serverErrorMsg || "Bad Request (400). Please verify your inputs or reCAPTCHA configuration.");
-      
+
       setIsSubmitting(false);
       recaptchaRef.current?.reset();
       setCaptchaToken(null);
@@ -132,7 +134,7 @@ export default function Login({ onLoginSuccess }) {
 
   const handleDownloadApp = () => {
     // Triggers the download of the APK located in your React public folder
-    window.location.href = '/leap-a-app.apk'; 
+    window.location.href = '/leap-a-app.apk';
     handleDismissAppPrompt();
   };
 
@@ -144,7 +146,13 @@ export default function Login({ onLoginSuccess }) {
       {/* MOBILE APP DOWNLOAD PROMPT */}
       {showAppPrompt && (
         <div className="modal-overlay" style={{ zIndex: 9999 }}>
-          <div className="modal-box" style={{ maxWidth: '380px', padding: '0', textAlign: 'center' }}>
+          <div
+            className="modal-box"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile app available"
+            style={{ maxWidth: '380px', padding: '0', textAlign: 'center' }}
+          >
             <div style={{ backgroundColor: '#7a0000', padding: '24px', color: 'white', borderTopLeftRadius: '20px', borderTopRightRadius: '20px' }}>
               <Smartphone size={48} style={{ margin: '0 auto 12px auto', opacity: 0.9 }} />
               <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '700', fontFamily: 'var(--font-family-heading)' }}>Mobile App Available!</h2>
@@ -154,15 +162,15 @@ export default function Login({ onLoginSuccess }) {
                 It looks like you're on a mobile device. Download the official LEAP-A mobile app for a faster and smoother experience.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button 
+                <button
                   onClick={handleDownloadApp}
-                  style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  style={{ backgroundColor: '#047857', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                 >
                   <Download size={18} /> Download APK
                 </button>
-                <button 
+                <button
                   onClick={handleDismissAppPrompt}
-                  style={{ backgroundColor: 'transparent', color: '#6b7280', border: '1px solid #e5e7eb', padding: '12px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}
+                  style={{ backgroundColor: 'transparent', color: '#4b5563', border: '1px solid #d1d5db', padding: '12px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}
                 >
                   Continue to Website
                 </button>
@@ -192,7 +200,7 @@ export default function Login({ onLoginSuccess }) {
             )}
 
             {errorMessage && (
-              <div className="error-banner">
+              <div className="error-banner" role="alert">
                 <AlertCircle size={18} />
                 <span>{errorMessage}</span>
               </div>
@@ -201,15 +209,17 @@ export default function Login({ onLoginSuccess }) {
             <form onSubmit={handleSubmit} className="form-element">
               {/* Username Field */}
               <div>
-                <label className="input-label">Employee Username</label>
+                <label className="input-label" htmlFor="username">Employee Username</label>
                 <div className="relative-input-wrapper">
                   <span className="input-icon">
                     <User size={16} />
                   </span>
                   <input
+                    id="username"
                     name="username"
                     type="text"
                     required
+                    autoComplete="username"
                     placeholder="Enter Username"
                     className="text-input"
                     disabled={isSubmitting}
@@ -219,18 +229,20 @@ export default function Login({ onLoginSuccess }) {
 
               {/* Password Field */}
               <div>
-                <label className="input-label">Password</label>
+                <label className="input-label" htmlFor="password">Password</label>
                 <div className="relative-input-wrapper password-input-wrapper">
                   <span className="input-icon">
-                    <svg className="icon-svg" viewBox="0 0 24 24">
+                    <svg className="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0V10.5m6 4.5v2.25m-6-6.75h10.5a2.25 2.25 0 0 1 2.25 2.25v6.75a2.25 2.25 0 0 1-2.25 2.25H6.75a2.25 2.25 0 0 1-2.25-2.25v-6.75a2.25 2.25 0 0 1 2.25-2.25z" />
                     </svg>
                   </span>
 
                   <input
+                    id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
                     required
+                    autoComplete="current-password"
                     placeholder="Enter Password"
                     className="text-input text-input-password"
                     disabled={isSubmitting}
@@ -240,16 +252,17 @@ export default function Login({ onLoginSuccess }) {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="password-toggle-btn"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
                   </button>
                 </div>
               </div>
 
               {/* Options Row */}
               <div className="options-row">
-                <label className="checkbox-label">
-                  <input type="checkbox" className="checkbox-input" name="rememberMe" />
+                <label className="checkbox-label" htmlFor="rememberMe">
+                  <input type="checkbox" id="rememberMe" className="checkbox-input" name="rememberMe" />
                   <span>Remember me</span>
                 </label>
                 <button
@@ -299,7 +312,7 @@ export default function Login({ onLoginSuccess }) {
                   className="open-positions-link"
                   onClick={() => setShowOpenings(true)}
                 >
-                  <Briefcase size={14} /> View open positions ({openings.length})
+                  <Briefcase size={14} aria-hidden="true" /> View open positions ({openings.length})
                 </button>
               </div>
             )}
@@ -308,31 +321,47 @@ export default function Login({ onLoginSuccess }) {
           {/* RIGHT PANEL: Logo only */}
           <div className="right-panel">
             <div className="logo-wrapper">
-              <img src="/leaplogo.png" alt="LEAP-A Logo" className="logo-image" />
+              <img
+                src="/leaplogo.png"
+                alt="LEAP-A Logo"
+                className="logo-image"
+                fetchPriority="high"
+                decoding="async"
+              />
             </div>
           </div>
 
         </div>
 
-        {/* OPEN POSITIONS MODAL */}
+        {/* OPEN POSITIONS MODAL (lazy-loaded) */}
         {showOpenings && (
-          <OpenPositionsModal
-            openings={openings}
-            onClose={() => setShowOpenings(false)}
-          />
+          <Suspense fallback={null}>
+            <OpenPositionsModal
+              openings={openings}
+              onClose={() => setShowOpenings(false)}
+            />
+          </Suspense>
         )}
 
         {/* TERMS OF SERVICE MODAL */}
         {activeModal === 'terms' && (
           <div className="modal-overlay" onClick={closeModal}>
-            <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="modal-box"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Terms of Service"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="modal-header">
                 <h2>Terms of Service</h2>
-                <button className="modal-close-btn" onClick={closeModal}><X size={20} /></button>
+                <button className="modal-close-btn" onClick={closeModal} aria-label="Close Terms of Service">
+                  <X size={20} aria-hidden="true" />
+                </button>
               </div>
               <div className="modal-body">
                 <p className="modal-updated">Last updated: September 2026</p>
-                
+
                 <h3>1. Purpose of This System</h3>
                 <p>LEAP-A (Labor Engagement and Analytics Platform for Administration) is an internal Human Resource Information System developed for the City Personnel Office of Lipa City Hall. It is intended solely for authorized personnel to manage employee records, attendance, leave applications, training records, and related HR functions.</p>
 
@@ -364,10 +393,18 @@ export default function Login({ onLoginSuccess }) {
         {/* PRIVACY POLICY MODAL */}
         {activeModal === 'privacy' && (
           <div className="modal-overlay" onClick={closeModal}>
-            <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="modal-box"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Privacy Policy"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="modal-header">
                 <h2>Privacy Policy</h2>
-                <button className="modal-close-btn" onClick={closeModal}><X size={20} /></button>
+                <button className="modal-close-btn" onClick={closeModal} aria-label="Close Privacy Policy">
+                  <X size={20} aria-hidden="true" />
+                </button>
               </div>
               <div className="modal-body">
                 <p className="modal-updated">Last updated: September 2026</p>
