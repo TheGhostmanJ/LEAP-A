@@ -68,12 +68,23 @@ pool.query(`
 // EVENT CERTIFICATES (PDFs stored in the database, like the cover images)
 // ==========================================
 // NEW (certificates): PDF upload setup + auto-added columns
+// Certificates can be a PDF, PNG or JPG
+const CERT_TYPES = ['application/pdf', 'image/png', 'image/jpeg'];
+
+// Check the real file header (magic bytes), not just the type the browser claims
+const matchesFileType = (buf, mime) => {
+    if (mime === 'application/pdf') return buf.slice(0, 4).toString() === '%PDF';
+    if (mime === 'image/png') return buf.length > 4 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47;
+    if (mime === 'image/jpeg') return buf.length > 3 && buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF;
+    return false;
+};
+
 const uploadCert = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
     fileFilter: (req, file, cb) => {
-        if (file.mimetype === 'application/pdf') return cb(null, true);
-        cb(new Error('Only PDF files are allowed.'));
+        if (CERT_TYPES.includes(file.mimetype)) return cb(null, true);
+        cb(new Error('Only PDF, PNG or JPG files are allowed.'));
     }
 });
 
@@ -81,7 +92,7 @@ const uploadCert = multer({
 const uploadCertFile = (req, res, next) => {
     uploadCert.single('certificate')(req, res, (err) => {
         if (err) {
-            const msg = err.code === 'LIMIT_FILE_SIZE' ? 'PDF must be 5MB or smaller.' : err.message;
+            const msg = err.code === 'LIMIT_FILE_SIZE' ? 'File must be 5MB or smaller.' : err.message;
             return res.status(400).json({ error: msg });
         }
         next();
@@ -93,6 +104,7 @@ pool.query(`
     ALTER TABLE public.fact_event_registration
         ADD COLUMN IF NOT EXISTS certificate_data BYTEA,
         ADD COLUMN IF NOT EXISTS certificate_name VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS certificate_mime VARCHAR(100),
         ADD COLUMN IF NOT EXISTS certificate_uploaded_at TIMESTAMP
 `).then(() => console.log('fact_event_registration certificate columns ready.'))
   .catch(err => console.error('Could not add certificate columns:', err.message));
@@ -366,7 +378,7 @@ app.get('/api/events/:id/registrants', async (req, res) => {
     }
 });
 
-// POST: HR - upload (or replace) one employee's certificate PDF
+// POST: HR - upload (or replace) one employee's certificate (PDF, PNG or JPG)
 app.post('/api/events/:id/certificates/:employee_key', uploadCertFile, async (req, res) => {
     const eventId = parseInt(req.params.id, 10);
     const employeeKey = parseInt(req.params.employee_key, 10);
@@ -374,11 +386,11 @@ app.post('/api/events/:id/certificates/:employee_key', uploadCertFile, async (re
         return res.status(400).json({ error: 'Invalid event or employee.' });
     }
     if (!req.file) {
-        return res.status(400).json({ error: 'Please choose a PDF file.' });
+        return res.status(400).json({ error: 'Please choose a PDF, PNG or JPG file.' });
     }
-    // Check the real file header, not just the declared type
-    if (req.file.buffer.slice(0, 4).toString() !== '%PDF') {
-        return res.status(400).json({ error: 'That file is not a valid PDF.' });
+    // Make sure the file contents really match its type
+    if (!matchesFileType(req.file.buffer, req.file.mimetype)) {
+        return res.status(400).json({ error: 'That file is not a valid PDF, PNG or JPG.' });
     }
 
     try {
@@ -386,10 +398,11 @@ app.post('/api/events/:id/certificates/:employee_key', uploadCertFile, async (re
             UPDATE public.fact_event_registration
             SET certificate_data = $1,
                 certificate_name = $2,
+                certificate_mime = $3,
                 certificate_uploaded_at = NOW()
-            WHERE event_id = $3 AND employee_key = $4 AND status = 'Registered'
+            WHERE event_id = $4 AND employee_key = $5 AND status = 'Registered'
             RETURNING registration_id;
-        `, [req.file.buffer, req.file.originalname.slice(0, 255), eventId, employeeKey]);
+        `, [req.file.buffer, req.file.originalname.slice(0, 255), req.file.mimetype, eventId, employeeKey]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'This employee is not registered for the event.' });
@@ -401,7 +414,7 @@ app.post('/api/events/:id/certificates/:employee_key', uploadCertFile, async (re
     }
 });
 
-// GET: View a certificate PDF (opens in the browser)
+// GET: View a certificate (PDF or image, opens in the browser)
 app.get('/api/events/:id/certificates/:employee_key', async (req, res) => {
     const eventId = parseInt(req.params.id, 10);
     const employeeKey = parseInt(req.params.employee_key, 10);
@@ -409,15 +422,15 @@ app.get('/api/events/:id/certificates/:employee_key', async (req, res) => {
 
     try {
         const result = await pool.query(`
-            SELECT certificate_data, certificate_name
+            SELECT certificate_data, certificate_name, certificate_mime
             FROM public.fact_event_registration
             WHERE event_id = $1 AND employee_key = $2 AND certificate_data IS NOT NULL
         `, [eventId, employeeKey]);
         const row = result.rows[0];
         if (!row) return res.status(404).json({ error: 'Certificate not found.' });
 
-        res.set('Content-Type', 'application/pdf');
-        res.set('Content-Disposition', `inline; filename="${(row.certificate_name || 'certificate.pdf').replace(/"/g, '')}"`);
+        res.set('Content-Type', row.certificate_mime || 'application/pdf'); // old rows without a saved type were PDFs
+        res.set('Content-Disposition', `inline; filename="${(row.certificate_name || 'certificate').replace(/"/g, '')}"`);
         res.set('Cache-Control', 'no-cache');
         res.send(row.certificate_data);
     } catch (error) {
@@ -437,7 +450,7 @@ app.delete('/api/events/:id/certificates/:employee_key', async (req, res) => {
     try {
         await pool.query(`
             UPDATE public.fact_event_registration
-            SET certificate_data = NULL, certificate_name = NULL, certificate_uploaded_at = NULL
+            SET certificate_data = NULL, certificate_name = NULL, certificate_mime = NULL, certificate_uploaded_at = NULL
             WHERE event_id = $1 AND employee_key = $2
         `, [eventId, employeeKey]);
         res.status(200).json({ success: true, message: 'Certificate removed.' });
