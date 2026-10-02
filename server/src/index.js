@@ -64,6 +64,39 @@ pool.query(`
 `).then(() => console.log('dim_event image columns ready.'))
   .catch(err => console.error('Could not add dim_event image columns:', err.message));
 
+// ==========================================
+// EVENT CERTIFICATES (PDFs stored in the database, like the cover images)
+// ==========================================
+// NEW (certificates): PDF upload setup + auto-added columns
+const uploadCert = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype === 'application/pdf') return cb(null, true);
+        cb(new Error('Only PDF files are allowed.'));
+    }
+});
+
+// Wrapper so upload errors come back as JSON
+const uploadCertFile = (req, res, next) => {
+    uploadCert.single('certificate')(req, res, (err) => {
+        if (err) {
+            const msg = err.code === 'LIMIT_FILE_SIZE' ? 'PDF must be 5MB or smaller.' : err.message;
+            return res.status(400).json({ error: msg });
+        }
+        next();
+    });
+};
+
+// Auto-add the certificate columns (safe to run on every startup)
+pool.query(`
+    ALTER TABLE public.fact_event_registration
+        ADD COLUMN IF NOT EXISTS certificate_data BYTEA,
+        ADD COLUMN IF NOT EXISTS certificate_name VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS certificate_uploaded_at TIMESTAMP
+`).then(() => console.log('fact_event_registration certificate columns ready.'))
+  .catch(err => console.error('Could not add certificate columns:', err.message));
+
 const logAuditAction = async (action, targetRecord, details, performedBy) => {
     try {
         const auditSet = await pool.query("SELECT setting_value FROM public.system_settings WHERE setting_key = 'audit_logs'");
@@ -87,6 +120,7 @@ const logAuditAction = async (action, targetRecord, details, performedBy) => {
 app.get('/api/events/employee/:employee_key/registered', async (req, res) => {
     const { employee_key } = req.params;
     try {
+        // CHANGED (certificates): pdf_url now points at the uploaded certificate (or NULL if none yet)
         const query = `
             SELECT 
                 r.event_id, 
@@ -101,7 +135,10 @@ app.get('/api/events/employee/:employee_key/registered', async (req, res) => {
                      THEN '/api/events/' || e.event_id || '/cover'
                      ELSE e.image_url
                 END AS image_url,
-                NULL AS pdf_url -- Placeholder for future certificates
+                CASE WHEN r.certificate_data IS NOT NULL
+                     THEN '/api/events/' || r.event_id || '/certificates/' || r.employee_key
+                     ELSE NULL
+                END AS pdf_url
             FROM public.fact_event_registration r
             JOIN public.dim_event e ON r.event_id = e.event_id
             WHERE r.employee_key = $1 AND r.status = 'Registered'
@@ -297,6 +334,119 @@ app.delete('/api/events/:id', async (req, res) => {
         res.status(500).json({ error: "Failed to cancel event." });
     }
 });
+
+// ==========================================
+// EVENT CERTIFICATE ROUTES
+// ==========================================
+// NEW (certificates): list registrants, upload, view, remove
+
+// GET: HR - everyone registered for an event, and whether they have a certificate
+app.get('/api/events/:id/registrants', async (req, res) => {
+    const eventId = parseInt(req.params.id, 10);
+    if (!Number.isInteger(eventId)) return res.status(400).json({ error: 'Invalid event id.' });
+
+    try {
+        const result = await pool.query(`
+            SELECT r.employee_key,
+                   e.employee_id,
+                   e.first_name,
+                   e.last_name,
+                   e.department,
+                   (r.certificate_data IS NOT NULL) AS has_certificate,
+                   r.certificate_name
+            FROM public.fact_event_registration r
+            JOIN public.dim_employee e ON e.employee_key = r.employee_key
+            WHERE r.event_id = $1 AND r.status = 'Registered'
+            ORDER BY e.last_name ASC, e.first_name ASC;
+        `, [eventId]);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error('Error fetching registrants:', error);
+        res.status(500).json({ error: 'Failed to fetch registrants.' });
+    }
+});
+
+// POST: HR - upload (or replace) one employee's certificate PDF
+app.post('/api/events/:id/certificates/:employee_key', uploadCertFile, async (req, res) => {
+    const eventId = parseInt(req.params.id, 10);
+    const employeeKey = parseInt(req.params.employee_key, 10);
+    if (!Number.isInteger(eventId) || !Number.isInteger(employeeKey)) {
+        return res.status(400).json({ error: 'Invalid event or employee.' });
+    }
+    if (!req.file) {
+        return res.status(400).json({ error: 'Please choose a PDF file.' });
+    }
+    // Check the real file header, not just the declared type
+    if (req.file.buffer.slice(0, 4).toString() !== '%PDF') {
+        return res.status(400).json({ error: 'That file is not a valid PDF.' });
+    }
+
+    try {
+        const result = await pool.query(`
+            UPDATE public.fact_event_registration
+            SET certificate_data = $1,
+                certificate_name = $2,
+                certificate_uploaded_at = NOW()
+            WHERE event_id = $3 AND employee_key = $4 AND status = 'Registered'
+            RETURNING registration_id;
+        `, [req.file.buffer, req.file.originalname.slice(0, 255), eventId, employeeKey]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'This employee is not registered for the event.' });
+        }
+        res.status(200).json({ success: true, message: 'Certificate uploaded.' });
+    } catch (error) {
+        console.error('Error uploading certificate:', error);
+        res.status(500).json({ error: 'Failed to upload certificate.' });
+    }
+});
+
+// GET: View a certificate PDF (opens in the browser)
+app.get('/api/events/:id/certificates/:employee_key', async (req, res) => {
+    const eventId = parseInt(req.params.id, 10);
+    const employeeKey = parseInt(req.params.employee_key, 10);
+    if (!Number.isInteger(eventId) || !Number.isInteger(employeeKey)) return res.status(400).end();
+
+    try {
+        const result = await pool.query(`
+            SELECT certificate_data, certificate_name
+            FROM public.fact_event_registration
+            WHERE event_id = $1 AND employee_key = $2 AND certificate_data IS NOT NULL
+        `, [eventId, employeeKey]);
+        const row = result.rows[0];
+        if (!row) return res.status(404).json({ error: 'Certificate not found.' });
+
+        res.set('Content-Type', 'application/pdf');
+        res.set('Content-Disposition', `inline; filename="${(row.certificate_name || 'certificate.pdf').replace(/"/g, '')}"`);
+        res.set('Cache-Control', 'no-cache');
+        res.send(row.certificate_data);
+    } catch (error) {
+        console.error('Error serving certificate:', error);
+        res.status(500).end();
+    }
+});
+
+// DELETE: HR - remove a certificate
+app.delete('/api/events/:id/certificates/:employee_key', async (req, res) => {
+    const eventId = parseInt(req.params.id, 10);
+    const employeeKey = parseInt(req.params.employee_key, 10);
+    if (!Number.isInteger(eventId) || !Number.isInteger(employeeKey)) {
+        return res.status(400).json({ error: 'Invalid event or employee.' });
+    }
+
+    try {
+        await pool.query(`
+            UPDATE public.fact_event_registration
+            SET certificate_data = NULL, certificate_name = NULL, certificate_uploaded_at = NULL
+            WHERE event_id = $1 AND employee_key = $2
+        `, [eventId, employeeKey]);
+        res.status(200).json({ success: true, message: 'Certificate removed.' });
+    } catch (error) {
+        console.error('Error removing certificate:', error);
+        res.status(500).json({ error: 'Failed to remove certificate.' });
+    }
+});
+
 // ==========================================
 // DASHBOARD CALENDAR
 // ==========================================
