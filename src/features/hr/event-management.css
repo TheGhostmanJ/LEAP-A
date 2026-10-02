@@ -356,3 +356,250 @@
   .event-modal-body { padding: 20px 18px 12px; }
   .event-modal-footer { padding: 12px 18px; }
 }
+
+/* =========================================================
+   EVENT FILTERS (paste at the bottom of event-management.css)
+   ========================================================= */
+
+.ef-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+/* Status tabs */
+.ef-tabs {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 4px;
+  padding: 4px;
+  background-color: var(--color-border-light);
+  border-radius: 10px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.ef-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-family: var(--font-family-base);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.ef-tab:hover {
+  color: var(--color-text-primary);
+}
+
+.ef-tab.active {
+  background-color: #fff;
+  color: var(--color-maroon);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+.ef-tab-count {
+  min-width: 20px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background-color: rgba(15, 23, 42, 0.08);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.ef-tab.active .ef-tab-count {
+  background-color: var(--color-maroon);
+  color: #fff;
+}
+
+/* Search + sort + filters button */
+.ef-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ef-search {
+  position: relative;
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+
+.ef-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.ef-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 36px 10px 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: #fff;
+  font-family: var(--font-family-base);
+  font-size: 14px;
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ef-search-input:focus {
+  border-color: var(--color-maroon);
+  box-shadow: 0 0 0 3px rgba(122, 0, 0, 0.1);
+}
+
+.ef-search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  padding: 4px;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.ef-search-clear:hover {
+  color: var(--color-maroon);
+  background-color: var(--color-border-light);
+}
+
+.ef-select {
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: #fff;
+  font-family: var(--font-family-base);
+  font-size: 14px;
+  color: var(--color-text-primary);
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.ef-select:focus {
+  border-color: var(--color-maroon);
+  box-shadow: 0 0 0 3px rgba(122, 0, 0, 0.1);
+}
+
+.ef-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: #fff;
+  font-family: var(--font-family-base);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.ef-filter-btn:hover {
+  border-color: var(--color-maroon);
+}
+
+.ef-filter-btn.active {
+  border-color: var(--color-maroon);
+  color: var(--color-maroon);
+  background-color: #fff5f5;
+}
+
+.ef-filter-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background-color: var(--color-maroon);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Expandable filter panel */
+.ef-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  padding: 16px 18px;
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.ef-panel-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ef-panel-field label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.ef-panel-field .ef-select {
+  width: 100%;
+}
+
+/* Result summary */
+.ef-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.ef-summary strong {
+  color: var(--color-text-primary);
+}
+
+.ef-clear-link {
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: var(--font-family-base);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-maroon);
+  cursor: pointer;
+}
+
+.ef-clear-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .ef-toolbar > .ef-select,
+  .ef-toolbar > .ef-filter-btn {
+    flex: 1 1 140px;
+    justify-content: center;
+  }
+}
