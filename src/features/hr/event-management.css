@@ -157,6 +157,7 @@
 
 .event-card-footer {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   border-top: 1px solid var(--color-border-light);
   padding-top: 16px;
