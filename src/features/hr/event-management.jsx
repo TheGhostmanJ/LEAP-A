@@ -8,6 +8,7 @@ import {
 import HrSidebar from '../../components/hr-sidebar';
 import Header from '../../components/Header';
 import './event-management.css';
+import EventCertificates from './EventCertificates.jsx';
 
 // Dynamic environment variable matching the rest of the system
 const API_BASE = import.meta.env.VITE_API_URL 
