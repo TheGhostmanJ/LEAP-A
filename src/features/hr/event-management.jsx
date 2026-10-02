@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Calendar, MapPin, Users, Plus, Pencil, XCircle, Upload, 
-  Tag, GraduationCap, Presentation, Briefcase, Compass, Sparkles, X, Award
+  Tag, GraduationCap, Presentation, Briefcase, Compass, Sparkles, X, Award,
+  Search, SlidersHorizontal
 } from 'lucide-react';
 
 import HrSidebar from '../../components/hr-sidebar';
@@ -30,6 +31,28 @@ const EMPTY_FORM = {
   capacity: ''
 };
 
+const STATUS_TABS = [
+  { key: 'upcoming', label: 'Upcoming' },
+  { key: 'past', label: 'Past' },
+  { key: 'cancelled', label: 'Cancelled' },
+  { key: 'all', label: 'All' }
+];
+
+const SORT_OPTIONS = [
+  { value: 'soonest', label: 'Date: soonest first' },
+  { value: 'latest', label: 'Date: latest first' },
+  { value: 'name', label: 'Name: A to Z' }
+];
+
+// Works out if an event is upcoming, past (already finished) or cancelled
+function getEventPhase(ev) {
+  if (ev.status === 'Cancelled') return 'cancelled';
+  if (!ev.start_date) return 'upcoming';
+  const end = ev.end_date ? new Date(ev.end_date) : new Date(ev.start_date);
+  if (!ev.end_date) end.setHours(23, 59, 59, 999);
+  return end < new Date() ? 'past' : 'upcoming';
+}
+
 export default function EventManagement({ currentUserEmployeeKey, user, onLogout }) {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
@@ -46,6 +69,14 @@ export default function EventManagement({ currentUserEmployeeKey, user, onLogout
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [certEvent, setCertEvent] = useState(null); // event whose certificates are being managed
+
+  // Filter states
+  const [statusTab, setStatusTab] = useState('upcoming');
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [deptFilter, setDeptFilter] = useState('');
+  const [sortBy, setSortBy] = useState('soonest');
+  const [showFilters, setShowFilters] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -85,6 +116,52 @@ export default function EventManagement({ currentUserEmployeeKey, user, onLogout
       console.error('Failed to load departments', err);
       setDeptError('Could not load departments');
     }
+  };
+
+  // Search + type + department filters (the status tab is applied after this)
+  const baseFiltered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return events.filter((ev) => {
+      if (q && !`${ev.title || ''} ${ev.venue || ''}`.toLowerCase().includes(q)) return false;
+      if (typeFilter && ev.event_type !== typeFilter) return false;
+      if (deptFilter) {
+        const dept = ev.department && ev.department !== 'All Departments' ? ev.department : '';
+        if (deptFilter === '__all__') {
+          if (dept) return false;
+        } else if (dept !== deptFilter) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [events, search, typeFilter, deptFilter]);
+
+  const tabCounts = useMemo(() => {
+    const counts = { upcoming: 0, past: 0, cancelled: 0, all: baseFiltered.length };
+    baseFiltered.forEach((ev) => { counts[getEventPhase(ev)] += 1; });
+    return counts;
+  }, [baseFiltered]);
+
+  const visibleEvents = useMemo(() => {
+    const list = statusTab === 'all'
+      ? [...baseFiltered]
+      : baseFiltered.filter((ev) => getEventPhase(ev) === statusTab);
+
+    list.sort((a, b) => {
+      if (sortBy === 'name') return (a.title || '').localeCompare(b.title || '');
+      const diff = new Date(a.start_date) - new Date(b.start_date);
+      return sortBy === 'latest' ? -diff : diff;
+    });
+    return list;
+  }, [baseFiltered, statusTab, sortBy]);
+
+  const activeFilterCount = (typeFilter ? 1 : 0) + (deptFilter ? 1 : 0);
+  const hasAnyFilter = Boolean(search.trim()) || activeFilterCount > 0;
+
+  const clearFilters = () => {
+    setSearch('');
+    setTypeFilter('');
+    setDeptFilter('');
   };
 
   const resetImageState = () => {
@@ -248,17 +325,123 @@ export default function EventManagement({ currentUserEmployeeKey, user, onLogout
           </button>
         </div>
 
+        {/* FILTER BAR */}
+        {!loading && events.length > 0 && (
+          <div className="ef-wrapper">
+            <div className="ef-tabs" role="tablist">
+              {STATUS_TABS.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={statusTab === t.key}
+                  className={`ef-tab ${statusTab === t.key ? 'active' : ''}`}
+                  onClick={() => setStatusTab(t.key)}
+                >
+                  {t.label}
+                  <span className="ef-tab-count">{tabCounts[t.key]}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="ef-toolbar">
+              <div className="ef-search">
+                <Search size={16} className="ef-search-icon" />
+                <input
+                  type="text"
+                  className="ef-search-input"
+                  placeholder="Search by event name or venue..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                {search && (
+                  <button type="button" className="ef-search-clear" onClick={() => setSearch('')} aria-label="Clear search">
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              <select
+                className="ef-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                aria-label="Sort events"
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                className={`ef-filter-btn ${showFilters || activeFilterCount > 0 ? 'active' : ''}`}
+                onClick={() => setShowFilters((v) => !v)}
+              >
+                <SlidersHorizontal size={15} />
+                Filters
+                {activeFilterCount > 0 && <span className="ef-filter-badge">{activeFilterCount}</span>}
+              </button>
+            </div>
+
+            {showFilters && (
+              <div className="ef-panel">
+                <div className="ef-panel-field">
+                  <label>Event Type</label>
+                  <select className="ef-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                    <option value="">All types</option>
+                    {EVENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+
+                <div className="ef-panel-field">
+                  <label>Department</label>
+                  <select className="ef-select" value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)}>
+                    <option value="">Any department</option>
+                    <option value="__all__">Open to all departments</option>
+                    {departments.map((d) => {
+                      const label = d.name || d.department_name;
+                      return <option key={d.id || d.department_id || label} value={label}>{label}</option>;
+                    })}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            <div className="ef-summary">
+              <span>
+                Showing <strong>{visibleEvents.length}</strong> {visibleEvents.length === 1 ? 'event' : 'events'}
+              </span>
+              {hasAnyFilter && (
+                <button type="button" className="ef-clear-link" onClick={clearFilters}>
+                  Clear filters
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Event Grid List */}
         {loading ? (
           <div className="event-empty-state"><p>Loading events...</p></div>
         ) : !Array.isArray(events) || events.length === 0 ? (
           <div className="event-empty-state"><p>No active events found. Create one to get started.</p></div>
+        ) : visibleEvents.length === 0 ? (
+          <div className="event-empty-state">
+            <p>No events match your filters.</p>
+            {hasAnyFilter && (
+              <button type="button" className="btn-secondary" onClick={clearFilters} style={{ margin: '12px auto 0' }}>
+                Clear filters
+              </button>
+            )}
+          </div>
         ) : (
           <div className="event-grid">
-            {events.map(ev => {
+            {visibleEvents.map(ev => {
               const regCount = ev.registered_count || 0;
               const capacity = ev.capacity ? parseInt(ev.capacity) : 0;
               const percentFilled = capacity > 0 ? Math.min(100, Math.round((regCount / capacity) * 100)) : 0;
+              const phase = getEventPhase(ev);
+              const badgeLabel = phase === 'past' ? 'Completed' : phase === 'cancelled' ? 'Cancelled' : (ev.status || 'Upcoming');
 
               return (
                 <div key={ev.event_id} className="app-card event-card">
@@ -274,8 +457,8 @@ export default function EventManagement({ currentUserEmployeeKey, user, onLogout
                       {renderEventTypeIcon(ev.event_type)}
                       {ev.event_type || 'Event'}
                     </span>
-                    <span className={`event-status-badge badge-${(ev.status || 'upcoming').toLowerCase()}`}>
-                      {ev.status || 'Upcoming'}
+                    <span className={`event-status-badge badge-${badgeLabel.toLowerCase()}`}>
+                      {badgeLabel}
                     </span>
                   </div>
 
