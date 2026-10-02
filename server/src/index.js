@@ -3132,24 +3132,29 @@ const OPEN_EXTERNAL_SQL = `
     FROM public.dim_department d
     LEFT JOIN public.dim_employee h ON h.employee_key = d.department_head_key
     WHERE (d.department_head_key IS NULL OR h.is_active = false)
-      AND EXISTS (
-          SELECT 1 FROM public.succession_offer so
-          WHERE so.department_id = d.department_id
-      )
-      AND NOT EXISTS (
-          SELECT 1 FROM public.succession_offer so
-          WHERE so.department_id = d.department_id
-            AND so.status IN ('Offered', 'Accepted')
-      )
-      AND NOT EXISTS (
-          SELECT 1 FROM public.dim_employee e
-          WHERE e.department = d.department_name
-            AND e.is_active = true
-            AND NOT EXISTS (
-                SELECT 1 FROM public.succession_offer so2
-                WHERE so2.department_id = d.department_id
-                  AND so2.employee_key = e.employee_key
-            )
+      AND (
+          d.open_to_external = true
+          OR (
+              EXISTS (
+                  SELECT 1 FROM public.succession_offer so
+                  WHERE so.department_id = d.department_id
+              )
+              AND NOT EXISTS (
+                  SELECT 1 FROM public.succession_offer so
+                  WHERE so.department_id = d.department_id
+                    AND so.status IN ('Offered', 'Accepted')
+              )
+              AND NOT EXISTS (
+                  SELECT 1 FROM public.dim_employee e
+                  WHERE e.department = d.department_name
+                    AND e.is_active = true
+                    AND NOT EXISTS (
+                        SELECT 1 FROM public.succession_offer so2
+                        WHERE so2.department_id = d.department_id
+                          AND so2.employee_key = e.employee_key
+                    )
+              )
+          )
       )
 `;
 
