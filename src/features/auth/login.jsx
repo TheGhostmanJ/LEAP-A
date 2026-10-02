@@ -322,7 +322,7 @@ export default function Login({ onLoginSuccess }) {
           <div className="right-panel">
             <div className="logo-wrapper">
 <img
-  src="/leaplogo.webp"
+  src="/leaplogo.png" 
   alt="LEAP-A Logo"
   className="logo-image"
   width="720"
