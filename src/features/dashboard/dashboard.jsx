@@ -75,7 +75,7 @@ export default function Dashboard({ onLogout, user }) {
   const [attendanceSummary, setAttendanceSummary] = useState({ presentDays: 0, percentage: 0 });
   
   // NEW: State to hold the calculated SVG graph data
-  const [chartData, setChartData] = useState({ path: '', points: [], earliest: '—', latest: '—' });
+  const [timelineData, setTimelineData] = useState([]);
 
   const normalizeAttachments = (row) => {
     // ... (keep existing normalizeAttachments function exactly as is)
@@ -157,52 +157,17 @@ export default function Dashboard({ onLogout, user }) {
           setAttendanceSummary(summaryData);
         }
 
-        // Fetch Detailed Logs for the Graph
+        // Fetch Detailed Logs for the Timeline
         const detailsRes = await fetch(`${apiUrl}/api/attendance/${user.employee_key}`);
         if (detailsRes.ok) {
           const records = await detailsRes.json();
-          
-          // Filter out absences/leaves, take the last 30, and reverse them chronologically (left to right)
-          const validPunches = records.filter(r => r.timeIn && r.timeIn !== '—').slice(0, 30).reverse();
-          
-          if (validPunches.length > 0) {
-            const timesInMinutes = validPunches.map(r => timeToMinutes(r.timeIn));
-            
-            // Determine the Y-axis scale based on the earliest and latest punch times
-            const minTime = Math.min(...timesInMinutes);
-            const maxTime = Math.max(...timesInMinutes);
-            
-            // Fallback range if the user clocks in at the exact same minute every single day
-            const timeRange = maxTime - minTime === 0 ? 60 : maxTime - minTime; 
-            
-            const paddingY = 20; // Keeps dots from touching the SVG borders
-            const usableHeight = 100 - (paddingY * 2);
-
-            // Calculate exact X and Y coordinates for each punch
-            const points = validPunches.map((rec, index) => {
-              const t = timeToMinutes(rec.timeIn);
-              const x = validPunches.length > 1 ? (index / (validPunches.length - 1)) * 400 : 200;
-              // Higher Y value = lower on the screen (later time)
-              const y = paddingY + ((t - minTime) / timeRange) * usableHeight;
-              return { x, y, time: rec.timeIn };
-            });
-
-            // Generate SVG Path instructions (Move to first point, Line to subsequent points)
-            const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-
-            setChartData({
-              path,
-              points,
-              earliest: minutesToTime(minTime),
-              latest: minutesToTime(maxTime)
-            });
-          }
+          // Take the most recent 30 records and reverse them so the oldest is on the left, newest on the right
+          setTimelineData(records.slice(0, 30).reverse());
         }
       } catch (err) {
         console.warn('API offline or unreachable.', err);
       }
     };
-
     fetchAttendanceData();
   }, [user, isRestricted]);
 
@@ -405,53 +370,52 @@ export default function Dashboard({ onLogout, user }) {
               </h3>
             </div>
             <div className="mock-graphic-frame">
-              <div className="attendance-chart-mock">
-                
-                {/* Dynamically display the highest (earliest) and lowest (latest) punch times */}
-                <div className="time-stamp-marker stamp-top">
-                  <Clock size={11} /> Earliest: {chartData.earliest}
-                </div>
-                <div className="time-stamp-marker stamp-bottom">
-                  <Clock size={11} /> Latest: {chartData.latest}
-                </div>
+              <div className="attendance-timeline-wrapper" style={{ margin: '20px 0' }}>
+                <div style={{ display: 'flex', gap: '4px', height: '32px', width: '100%' }}>
+                  {timelineData.length > 0 ? (
+                    timelineData.map((day, idx) => {
+                      let bgColor = '#e5e7eb'; // Default gray
+                      if (day.status === 'Present') {
+                        bgColor = day.tardy_minutes > 0 ? '#facc15' : '#22c55e'; // Yellow if late, Green if on time
+                      } else if (day.status === 'Half-day') {
+                        bgColor = '#fb923c'; // Orange
+                      } else if (day.status === 'Absent') {
+                        bgColor = '#ef4444'; // Red
+                      } else if (day.status === 'Leave') {
+                        bgColor = '#60a5fa'; // Blue
+                      }
 
-                <svg viewBox="0 0 400 100" className="sparkline-svg-vector">
-                  {chartData.points.length > 0 ? (
-                    <>
-                      <path
-                        d={chartData.path}
-                        fill="none"
-                        stroke="#7a0000"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      {chartData.points.map((pt, idx) => (
-                        <circle 
-                          key={idx} 
-                          cx={pt.x} 
-                          cy={pt.y} 
-                          r="3" 
-                          fill="#7a0000" 
-                          stroke="#fff" 
-                          strokeWidth="1.5" 
-                        >
-                          <title>{pt.time}</title>
-                        </circle>
-                      ))}
-                    </>
+                      const tooltipText = `${day.date} \nStatus: ${day.status} \nIn: ${day.timeIn} ${day.tardy_minutes > 0 ? `(${day.tardy_minutes}m late)` : ''}`;
+
+                      return (
+                        <div
+                          key={idx}
+                          style={{
+                            flex: 1,
+                            backgroundColor: bgColor,
+                            borderRadius: '4px',
+                            cursor: 'help',
+                            transition: 'transform 0.2s',
+                          }}
+                          title={tooltipText}
+                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        />
+                      );
+                    })
                   ) : (
-                    <text x="50%" y="50%" textAnchor="middle" fill="#888" fontSize="12px">
-                      Not enough data to plot
-                    </text>
+                    <div style={{ width: '100%', textAlign: 'center', color: '#888', fontSize: '12px', lineHeight: '32px' }}>
+                      No recent attendance data
+                    </div>
                   )}
-                </svg>
-
-                <div className="axis-labels-timeline">
-                  <span>Day 1</span>
-                  <span>Day 10</span>
-                  <span>Day 20</span>
-                  <span>Day 30</span>
+                </div>
+                
+                {/* Visual Legend */}
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '12px', fontSize: '11px', color: '#666' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e' }}></span> On Time</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#facc15' }}></span> Late</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444' }}></span> Absent</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#60a5fa' }}></span> Leave</span>
                 </div>
               </div>
 
