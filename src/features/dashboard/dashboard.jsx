@@ -53,6 +53,7 @@ export default function Dashboard({ onLogout, user }) {
   const [previewFileType, setPreviewFileType] = useState('pdf');
 
   const [activeFeedback, setActiveFeedback] = useState(null);
+  const [attendanceSummary, setAttendanceSummary] = useState({ presentDays: 0, percentage: 0 });
 
   const normalizeAttachments = (row) => {
     if (Array.isArray(row.attachment_urls) && row.attachment_urls.length > 0) {
@@ -131,6 +132,28 @@ export default function Dashboard({ onLogout, user }) {
     };
 
     fetchRecentLeaves();
+  }, [user, isRestricted]);
+
+  useEffect(() => {
+    if (isRestricted || !user?.employee_key) return;
+
+    const fetchAttendanceSummary = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${apiUrl}/api/attendance/summary/${user.employee_key}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          setAttendanceSummary(data);
+        } else {
+          console.error('Failed to fetch attendance summary:', response.status);
+        }
+      } catch (err) {
+        console.warn('API offline or unreachable.', err);
+      }
+    };
+
+    fetchAttendanceSummary();
   }, [user, isRestricted]);
 
   useEffect(() => {
@@ -378,11 +401,12 @@ export default function Dashboard({ onLogout, user }) {
                 </div>
               </div>
 
+              {/* Replace the static streak/avg check-in badges with this: */}
               <div className="attendance-summary-data-strip">
-                <div className="streak-badge">Current Streak: <strong>12 days</strong></div>
-                <div className="avg-checkin-badge">Avg. Check-In: <strong>07:51 AM</strong></div>
+                <div className="streak-badge">Days Present: <strong>{attendanceSummary.presentDays} days</strong></div>
+                <div className="avg-checkin-badge">Attendance Score: <strong>{attendanceSummary.percentage}%</strong></div>
               </div>
-              <p className="graphic-footer-caption">My 30 Day Attendance Consistency</p>
+              <p className="graphic-footer-caption">My Overall Attendance Metrics</p>
             </div>
           </div>
 
