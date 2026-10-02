@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Calendar, MapPin, Users, Plus, Pencil, XCircle, Upload, 
-  Tag, GraduationCap, Presentation, Briefcase, Compass, Sparkles, X 
+  Tag, GraduationCap, Presentation, Briefcase, Compass, Sparkles, X, Award
 } from 'lucide-react';
 
 import HrSidebar from '../../components/hr-sidebar';
@@ -45,6 +45,7 @@ export default function EventManagement({ currentUserEmployeeKey, user, onLogout
   const [imagePreview, setImagePreview] = useState(null);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [certEvent, setCertEvent] = useState(null); // event whose certificates are being managed
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -311,6 +312,16 @@ export default function EventManagement({ currentUserEmployeeKey, user, onLogout
 
                     {/* Card Actions */}
                     <div className="event-card-footer">
+                      {ev.status !== 'Cancelled' && (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => setCertEvent({ id: ev.event_id, name: ev.title })}
+                          style={{ flexBasis: '100%', justifyContent: 'center' }}
+                        >
+                          <Award size={15} /> Certificates
+                        </button>
+                      )}
                       <button type="button" className="btn-secondary" onClick={() => openEditModal(ev)} style={{ flex: 1, justifyContent: 'center' }}>
                         <Pencil size={15} /> Edit
                       </button>
@@ -327,6 +338,15 @@ export default function EventManagement({ currentUserEmployeeKey, user, onLogout
           </div>
         )}
       </main>
+
+      {/* Certificates Modal */}
+      {certEvent && (
+        <EventCertificates
+          event={certEvent}
+          apiBase={API_BASE}
+          onClose={() => setCertEvent(null)}
+        />
+      )}
 
       {/* Modal View */}
       {showModal && (
