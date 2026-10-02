@@ -321,13 +321,15 @@ export default function Login({ onLoginSuccess }) {
           {/* RIGHT PANEL: Logo only */}
           <div className="right-panel">
             <div className="logo-wrapper">
-              <img
-                src="/leaplogo.png"
-                alt="LEAP-A Logo"
-                className="logo-image"
-                fetchPriority="high"
-                decoding="async"
-              />
+<img
+  src="/leaplogo.webp"
+  alt="LEAP-A Logo"
+  className="logo-image"
+  width="720"
+  height="233"
+  fetchPriority="high"
+  decoding="async"
+/>
             </div>
           </div>
 
