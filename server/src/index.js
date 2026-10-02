@@ -289,7 +289,19 @@ app.post('/api/events', uploadCover, async (req, res) => {
         ];
         
         const result = await pool.query(query, values);
-        res.status(201).json(result.rows[0]);
+        const newEvent = result.rows[0];
+
+        // Notify everyone who can see this event (not the HR who created it)
+        await notifyDepartment(
+            department,
+            'New Event',
+            `${title}${venue ? ' at ' + venue : ''} is now open for registration. Check Training Records to join.`,
+            'new_event',
+            newEvent.event_id,
+            created_by ? parseInt(created_by) : null
+        );
+
+        res.status(201).json(newEvent);
     } catch (error) {
         console.error("Error creating event:", error);
         res.status(500).json({ error: "Failed to create event." });
@@ -699,6 +711,14 @@ app.post('/api/password-reset-requests', async (req, res) => {
       requesterIp
     ]);
 
+        await notifyRoles(
+      ['IT Admin', 'Super Admin'],
+      'New Password Reset Request',
+      `${first_name.trim()} ${last_name.trim()} (${employee_id.trim()}) requested a password reset.`,
+      'password_reset',
+      insertResult.rows[0].request_id
+    );
+
     return res.status(201).json({ 
       success: true, 
       message: "Password reset request submitted successfully.",
@@ -712,6 +732,58 @@ app.post('/api/password-reset-requests', async (req, res) => {
     });
   }
 });
+
+// ==========================================
+// NOTIFICATION HELPERS
+// ==========================================
+
+// One person
+const notify = async (employeeKey, title, message, type, relatedId = null) => {
+    try {
+        await pool.query(
+            `INSERT INTO public.notifications (employee_key, title, message, type, related_id, is_read)
+             VALUES ($1, $2, $3, $4, $5, false)`,
+            [employeeKey, title, message, type, relatedId]
+        );
+    } catch (error) {
+        console.error('Failed to create notification:', error.message);
+    }
+};
+
+// Everyone with one of these roles (system_access_level), active accounts only
+const notifyRoles = async (roles, title, message, type, relatedId = null) => {
+    try {
+        await pool.query(
+            `INSERT INTO public.notifications (employee_key, title, message, type, related_id, is_read)
+             SELECT a.employee_key, $1::text, $2::text, $3::text, $4::int, false
+             FROM public.user_accounts a
+             JOIN public.dim_employee e ON e.employee_key = a.employee_key
+             WHERE a.system_access_level = ANY($5::text[])
+               AND e.is_active = true`,
+            [title, message, type, relatedId, roles]
+        );
+    } catch (error) {
+        console.error('Failed to notify roles:', error.message);
+    }
+};
+
+// Everyone in a department ('All Departments' / empty = all active employees)
+const notifyDepartment = async (department, title, message, type, relatedId = null, excludeKey = null) => {
+    const everyone = !department || department === 'All Departments';
+    try {
+        await pool.query(
+            `INSERT INTO public.notifications (employee_key, title, message, type, related_id, is_read)
+             SELECT e.employee_key, $1::text, $2::text, $3::text, $4::int, false
+             FROM public.dim_employee e
+             WHERE e.is_active = true
+               AND ($5::boolean OR e.department = $6::text)
+               AND e.employee_key <> COALESCE($7::int, -1)`,
+            [title, message, type, relatedId, everyone, everyone ? null : department, excludeKey]
+        );
+    } catch (error) {
+        console.error('Failed to notify department:', error.message);
+    }
+};
 
 // ==========================================
 // NOTIFICATIONS SYSTEM
@@ -1637,6 +1709,32 @@ app.post('/api/leave/apply', async (req, res) => {
         ];
 
         const result = await pool.query(queryText, values);
+
+              // Notify the department head that a new request needs approval
+        try {
+            const headRes = await pool.query(
+                `SELECT department_head_key FROM public.dim_department WHERE department_name = $1`,
+                [department]
+            );
+            const headKey = headRes.rows[0]?.department_head_key;
+
+            if (headKey && Number(headKey) !== Number(employee_key)) {
+                const empRes = await pool.query(
+                    `SELECT first_name, last_name FROM public.dim_employee WHERE employee_key = $1`,
+                    [employee_key]
+                );
+                const emp = empRes.rows[0] || {};
+                await notify(
+                    headKey,
+                    'New Leave Request',
+                    `${emp.first_name || 'An employee'} ${emp.last_name || ''} filed a ${leave_type} request (${working_days} working day/s).`.replace('  ', ' '),
+                    'leave_request',
+                    result.rows[0].id
+                );
+            }
+        } catch (notifError) {
+            console.error('Leave request notification failed:', notifError.message);
+        }
         
         res.status(201).json({ success: true, message: 'Application submitted successfully!', application_id: result.rows[0].id });
     } catch (error) {
@@ -2753,6 +2851,21 @@ app.post('/api/succession/offer', async (req, res) => {
             VALUES ($1, $2, $3, 'Offered', NOW())
             RETURNING *
         `, [department_id, employee_key, offer_rank]);
+
+        const deptRes = await pool.query(
+            `SELECT department_name FROM public.dim_department WHERE department_id = $1`,
+            [department_id]
+        );
+        const deptName = deptRes.rows[0]?.department_name || 'a department';
+
+        await notify(
+            employee_key,
+            'Department Head Offer',
+            `You have been offered the Department Head position for ${deptName}. Please review and respond.`,
+            'succession_offer',
+            result.rows[0].offer_id
+        );
+
         res.status(201).json(result.rows[0]);
     } catch (error) {
         console.error("Error creating offer:", error);
@@ -2779,6 +2892,16 @@ app.post('/api/succession/respond/:offerId', async (req, res) => {
             return res.status(404).json({ error: 'Offer not found' });
         }
 
+        // Names for the notification text
+        const infoRes = await client.query(`
+            SELECT e.first_name, e.last_name, d.department_name
+            FROM public.dim_employee e, public.dim_department d
+            WHERE e.employee_key = $1 AND d.department_id = $2
+        `, [offer.employee_key, offer.department_id]);
+        const info = infoRes.rows[0] || {};
+        const candidateName = `${info.first_name || 'A candidate'} ${info.last_name || ''}`.trim();
+        const deptName = info.department_name || 'the department';
+
         await client.query(
             `UPDATE public.succession_offer SET status = $1, responded_date = NOW() WHERE offer_id = $2`,
             [status, offerId]
@@ -2790,6 +2913,15 @@ app.post('/api/succession/respond/:offerId', async (req, res) => {
                 [offer.employee_key, offer.department_id]
             );
             await client.query('COMMIT');
+
+            await notifyRoles(
+                ['HR Admin'],
+                'Offer Accepted',
+                `${candidateName} accepted the Department Head position for ${deptName}.`,
+                'succession_response',
+                offer.offer_id
+            );
+
             return res.status(200).json({ success: true, message: 'Offer accepted, department head updated.' });
         }
 
@@ -2815,9 +2947,34 @@ app.post('/api/succession/respond/:offerId', async (req, res) => {
                 `, [offer.department_id, nextCandidate.employee_key, offer.offer_rank + 1]);
 
                 await client.query('COMMIT');
+
+                await notifyRoles(
+                    ['HR Admin'],
+                    'Offer Declined',
+                    `${candidateName} declined the Department Head position for ${deptName}. The next candidate has been offered.`,
+                    'succession_response',
+                    offer.offer_id
+                );
+                await notify(
+                    nextCandidate.employee_key,
+                    'Department Head Offer',
+                    `You have been offered the Department Head position for ${deptName}. Please review and respond.`,
+                    'succession_offer',
+                    nextOffer.rows[0].offer_id
+                );
+
                 return res.status(200).json({ success: true, message: 'Declined. Next candidate offered.', nextOffer: nextOffer.rows[0] });
             } else {
                 await client.query('COMMIT');
+
+                await notifyRoles(
+                    ['HR Admin'],
+                    'Position Open to External Hiring',
+                    `${candidateName} declined and no internal candidates remain for ${deptName}. The position is now open to external applicants.`,
+                    'succession_response',
+                    offer.offer_id
+                );
+
                 return res.status(200).json({
                     success: true,
                     message: 'Declined. No more candidates — position open to external hiring.',
