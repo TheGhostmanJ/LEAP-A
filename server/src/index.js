@@ -1805,7 +1805,8 @@ app.get('/api/attendance/summary/:employee_key', async (req, res) => {
 
 // GET: Fetch raw real-time biometric punches (Server-Side Paginated & Searched)
 app.get('/api/admin/attendance/realtime', async (req, res) => {
-    const { department, search, page = 1, limit = 100 } = req.query;
+    // UPDATED: Changed default limit to 50
+    const { department, search, page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
 
     try {
@@ -1826,7 +1827,6 @@ app.get('/api/admin/attendance/realtime', async (req, res) => {
 
         const whereString = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-        // 1. Get total count for frontend pagination math
         const countQuery = `
             SELECT COUNT(*) 
             FROM public.fact_attendance_log l
@@ -1836,7 +1836,6 @@ app.get('/api/admin/attendance/realtime', async (req, res) => {
         const countResult = await pool.query(countQuery, queryParams);
         const totalRecords = parseInt(countResult.rows[0].count);
 
-        // 2. Get the actual paginated data
         const dataQuery = `
             SELECT 
                 l.log_id,
@@ -1870,7 +1869,8 @@ app.get('/api/admin/attendance/realtime', async (req, res) => {
 
 // GET: Fetch aggregated daily attendance history (Server-Side Paginated & Searched)
 app.get('/api/admin/attendance/history', async (req, res) => {
-    const { department, search, status, page = 1, limit = 100 } = req.query;
+    // UPDATED: Changed default limit to 50
+    const { department, search, status, page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
 
     try {
@@ -1896,7 +1896,6 @@ app.get('/api/admin/attendance/history', async (req, res) => {
 
         const whereString = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-        // 1. Get total count
         const countQuery = `
             SELECT COUNT(*) 
             FROM public.fact_attendance a
@@ -1906,7 +1905,6 @@ app.get('/api/admin/attendance/history', async (req, res) => {
         const countResult = await pool.query(countQuery, queryParams);
         const totalRecords = parseInt(countResult.rows[0].count);
 
-        // 2. Get paginated data
         const dataQuery = `
             SELECT 
                 a.attendance_id,

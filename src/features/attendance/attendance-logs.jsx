@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Fingerprint, Search, Clock, Calendar, 
   ShieldAlert, Loader2, Filter, History, 
-  ChevronLeft, ChevronRight 
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react';
 
+/* SIDEBAR & HEADER COMPONENTS */
 import HrSidebar from '../../components/hr-sidebar';
 import HodSidebar from '../../components/hod-sidebar';
 import Header from '../../components/Header';
+
 import './attendance-logs.css';
 
 export default function AttendanceLogs({ onLogout, user }) {
@@ -36,11 +38,11 @@ export default function AttendanceLogs({ onLogout, user }) {
   const hasAccess = allowedRoles.includes(user?.role);
   const isGlobal = user?.role === 'HR Admin' || user?.role === 'Super Admin';
 
-  // Debounce Search Inputs (Waits 500ms after user stops typing to trigger search)
+  // Debounce Search Inputs
   useEffect(() => {
     const rtTimer = setTimeout(() => {
       setRtDebouncedSearch(rtSearch);
-      setRtPage(1); // Reset to page 1 on new search
+      setRtPage(1); 
     }, 500);
     return () => clearTimeout(rtTimer);
   }, [rtSearch]);
@@ -48,12 +50,12 @@ export default function AttendanceLogs({ onLogout, user }) {
   useEffect(() => {
     const histTimer = setTimeout(() => {
       setHistDebouncedSearch(histSearch);
-      setHistPage(1); // Reset to page 1 on new search
+      setHistPage(1); 
     }, 500);
     return () => clearTimeout(histTimer);
   }, [histSearch]);
 
-  // Fetch Real-Time Data (Triggers on Page or Search change)
+  // Fetch Real-Time Data (Limit: 50)
   useEffect(() => {
     if (!hasAccess) return;
     const fetchRealTime = async () => {
@@ -63,7 +65,7 @@ export default function AttendanceLogs({ onLogout, user }) {
         const deptParam = isGlobal ? '' : `&department=${encodeURIComponent(user?.department || '')}`;
         const searchParam = rtDebouncedSearch ? `&search=${encodeURIComponent(rtDebouncedSearch)}` : '';
         
-        const res = await fetch(`${apiUrl}/api/admin/attendance/realtime?page=${rtPage}&limit=100${deptParam}${searchParam}`);
+        const res = await fetch(`${apiUrl}/api/admin/attendance/realtime?page=${rtPage}&limit=50${deptParam}${searchParam}`);
         if (res.ok) {
           const json = await res.json();
           setRtLogs(json.data);
@@ -78,7 +80,7 @@ export default function AttendanceLogs({ onLogout, user }) {
     fetchRealTime();
   }, [user, hasAccess, isGlobal, rtPage, rtDebouncedSearch]);
 
-  // Fetch History Data (Triggers on Page, Status, or Search change)
+  // Fetch History Data (Limit: 50)
   useEffect(() => {
     if (!hasAccess) return;
     const fetchHistory = async () => {
@@ -89,7 +91,7 @@ export default function AttendanceLogs({ onLogout, user }) {
         const searchParam = histDebouncedSearch ? `&search=${encodeURIComponent(histDebouncedSearch)}` : '';
         const statusParam = histStatus !== 'All' ? `&status=${encodeURIComponent(histStatus)}` : '';
         
-        const res = await fetch(`${apiUrl}/api/admin/attendance/history?page=${histPage}&limit=100${deptParam}${searchParam}${statusParam}`);
+        const res = await fetch(`${apiUrl}/api/admin/attendance/history?page=${histPage}&limit=50${deptParam}${searchParam}${statusParam}`);
         if (res.ok) {
           const json = await res.json();
           setHistLogs(json.data);
@@ -136,6 +138,83 @@ export default function AttendanceLogs({ onLogout, user }) {
     if (type === 0) return <span className="punch-badge punch-in">Check In</span>;
     if (type === 1) return <span className="punch-badge punch-out">Check Out</span>;
     return <span className="punch-badge punch-other">Unknown</span>;
+  };
+
+  // ----------------------------------------------------
+  // PAGINATION UI GENERATOR
+  // ----------------------------------------------------
+  const renderPagination = (currentPage, totalPages, setPageFn) => {
+    if (totalPages <= 1) return null;
+
+    // Build a sliding window of 5 pages around the current page
+    const pages = [];
+    const maxVisible = 5; 
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+    if (endPage - startPage + 1 < maxVisible) {
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return (
+      <div className="al-pagination-footer">
+        <div className="al-pagination-group">
+          <button 
+            className="btn-secondary al-page-arrow" 
+            disabled={currentPage === 1} 
+            onClick={() => setPageFn(1)}
+            title="First Page"
+          >
+            <ChevronsLeft size={16} />
+          </button>
+          <button 
+            className="btn-secondary al-page-arrow" 
+            disabled={currentPage === 1} 
+            onClick={() => setPageFn(currentPage - 1)}
+            title="Previous Page"
+          >
+            <ChevronLeft size={16} />
+          </button>
+        </div>
+
+        <div className="al-pagination-numbers">
+          {startPage > 1 && <span className="al-page-dots">...</span>}
+          {pages.map((p) => (
+            <button
+              key={p}
+              className={`al-page-num ${p === currentPage ? 'active' : ''}`}
+              onClick={() => setPageFn(p)}
+            >
+              {p}
+            </button>
+          ))}
+          {endPage < totalPages && <span className="al-page-dots">...</span>}
+        </div>
+
+        <div className="al-pagination-group">
+          <button 
+            className="btn-secondary al-page-arrow" 
+            disabled={currentPage === totalPages} 
+            onClick={() => setPageFn(currentPage + 1)}
+            title="Next Page"
+          >
+            <ChevronRight size={16} />
+          </button>
+          <button 
+            className="btn-secondary al-page-arrow" 
+            disabled={currentPage === totalPages} 
+            onClick={() => setPageFn(totalPages)}
+            title="Last Page"
+          >
+            <ChevronsRight size={16} />
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -232,25 +311,7 @@ export default function AttendanceLogs({ onLogout, user }) {
               </div>
               
               {/* Pagination Controls */}
-              {!isRtLoading && rtTotalPages > 1 && (
-                <div className="al-pagination-footer">
-                  <button 
-                    className="btn-secondary al-page-btn" 
-                    disabled={rtPage === 1} 
-                    onClick={() => setRtPage(p => p - 1)}
-                  >
-                    <ChevronLeft size={16} /> Prev
-                  </button>
-                  <span className="al-page-indicator">Page {rtPage} of {rtTotalPages}</span>
-                  <button 
-                    className="btn-secondary al-page-btn" 
-                    disabled={rtPage === rtTotalPages} 
-                    onClick={() => setRtPage(p => p + 1)}
-                  >
-                    Next <ChevronRight size={16} />
-                  </button>
-                </div>
-              )}
+              {!isRtLoading && renderPagination(rtPage, rtTotalPages, setRtPage)}
             </div>
 
             {/* TABLE 2: DAILY ATTENDANCE HISTORY */}
@@ -354,25 +415,7 @@ export default function AttendanceLogs({ onLogout, user }) {
               </div>
 
               {/* Pagination Controls */}
-              {!isHistLoading && histTotalPages > 1 && (
-                <div className="al-pagination-footer">
-                  <button 
-                    className="btn-secondary al-page-btn" 
-                    disabled={histPage === 1} 
-                    onClick={() => setHistPage(p => p - 1)}
-                  >
-                    <ChevronLeft size={16} /> Prev
-                  </button>
-                  <span className="al-page-indicator">Page {histPage} of {histTotalPages}</span>
-                  <button 
-                    className="btn-secondary al-page-btn" 
-                    disabled={histPage === histTotalPages} 
-                    onClick={() => setHistPage(p => p + 1)}
-                  >
-                    Next <ChevronRight size={16} />
-                  </button>
-                </div>
-              )}
+              {!isHistLoading && renderPagination(histPage, histTotalPages, setHistPage)}
             </div>
 
           </div>

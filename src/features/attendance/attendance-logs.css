@@ -147,3 +147,64 @@
   align-items: center;
   gap: 4px;
 }
+
+/* Pagination Styling */
+.al-pagination-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background-color: var(--color-bg-page);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.al-pagination-group {
+  display: flex;
+  gap: 8px;
+}
+
+.al-page-arrow {
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.al-pagination-numbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.al-page-num {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.al-page-num:hover:not(.active) {
+  background: var(--color-border-light);
+  border-color: var(--color-border);
+}
+
+.al-page-num.active {
+  background: var(--color-maroon);
+  color: #fff;
+  border-color: var(--color-maroon);
+}
+
+.al-page-dots {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  padding: 0 4px;
+}
