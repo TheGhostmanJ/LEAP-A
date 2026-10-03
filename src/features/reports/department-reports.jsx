@@ -635,7 +635,7 @@ export default function DepartmentReports({ onLogout, user }) {
                                 return (
                                   <div 
                                     key={type} 
-                                    className={`stack-part ${getColorClass(type)}`} 
+                                    className={`stack-part color-${getColorClass(type)}`} 
                                     style={{ height: `${percentOfStack}%` }}
                                     title={`${count} ${type}`}
                                   ></div>
