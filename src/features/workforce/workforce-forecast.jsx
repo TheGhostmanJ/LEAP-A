@@ -310,7 +310,9 @@ export default function WorkforceForecast({ onLogout, user }) {
           </>
         )}
 
-        {/* FULL FORECAST MODAL */}
+        
+      </main>
+      {/* FULL FORECAST MODAL */}
         {isModalOpen && forecastData && (
           <div className="wf-modal-overlay" onClick={() => setIsModalOpen(false)}>
             <div className="wf-modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px', width: '90%', maxHeight: '85vh', overflowY: 'auto' }}>
@@ -375,7 +377,6 @@ export default function WorkforceForecast({ onLogout, user }) {
             </div>
           </div>
         )}
-      </main>
     </div>
   );
 }
