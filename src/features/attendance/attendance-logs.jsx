@@ -47,11 +47,13 @@ export default function AttendanceLogs({ onLogout, user }) {
       setIsLoading(true);
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        // HR/Super Admin pass empty string for global data. HODs pass their specific department.
         const deptParam = isGlobal ? '' : `?department=${encodeURIComponent(user?.department || '')}`;
         
+        // Point to the newly renamed admin endpoints to prevent Express route collisions
         const [punchesRes, historyRes] = await Promise.all([
-          fetch(`${apiUrl}/api/attendance/realtime-punches${deptParam}`),
-          fetch(`${apiUrl}/api/attendance/logs${deptParam}`)
+          fetch(`${apiUrl}/api/admin/attendance/realtime${deptParam}`),
+          fetch(`${apiUrl}/api/admin/attendance/history${deptParam}`)
         ]);
         
         if (punchesRes.ok) setRawPunches(await punchesRes.json());

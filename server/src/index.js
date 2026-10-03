@@ -1804,7 +1804,7 @@ app.get('/api/attendance/summary/:employee_key', async (req, res) => {
 });
 
 // GET: Fetch raw real-time biometric punches for HR and HODs
-app.get('/api/attendance/realtime-punches', async (req, res) => {
+app.get('/api/admin/attendance/realtime', async (req, res) => {
     const { department } = req.query;
 
     try {
@@ -1840,8 +1840,8 @@ app.get('/api/attendance/realtime-punches', async (req, res) => {
     }
 });
 
-// GET: Fetch aggregated attendance logs for HR and HODs
-app.get('/api/attendance/logs', async (req, res) => {
+// GET: Fetch aggregated daily attendance history for HR and HODs
+app.get('/api/admin/attendance/history', async (req, res) => {
     const { department } = req.query;
 
     try {
@@ -1853,39 +1853,39 @@ app.get('/api/attendance/logs', async (req, res) => {
             queryParams.push(department);
         }
 
+        // Optimized: Uses TO_DATE on a.date_key to avoid dim_date dependency risks
         const query = `
             SELECT 
                 a.attendance_id,
                 e.first_name || ' ' || e.last_name AS employee_name,
                 e.employee_id,
                 e.department,
-                d.full_date AS date,
+                TO_DATE(a.date_key::TEXT, 'YYYYMMDD') AS date,
                 a.status,
                 a.hours_worked,
                 a.tardy_minutes,
                 (SELECT MIN(punch_time) 
                  FROM public.fact_attendance_log 
                  WHERE employee_key = a.employee_key 
-                   AND CAST(TO_CHAR(punch_time, 'YYYYMMDD') AS INTEGER) = a.date_key 
+                   AND TO_CHAR(punch_time, 'YYYYMMDD') = a.date_key::TEXT 
                    AND punch_type = 0) AS time_in,
                 (SELECT MAX(punch_time) 
                  FROM public.fact_attendance_log 
                  WHERE employee_key = a.employee_key 
-                   AND CAST(TO_CHAR(punch_time, 'YYYYMMDD') AS INTEGER) = a.date_key 
+                   AND TO_CHAR(punch_time, 'YYYYMMDD') = a.date_key::TEXT 
                    AND punch_type = 1) AS time_out
             FROM public.fact_attendance a
             JOIN public.dim_employee e ON a.employee_key = e.employee_key
-            JOIN public.dim_date d ON a.date_key = d.date_key
             ${deptFilter}
-            ORDER BY d.full_date DESC, time_in DESC
+            ORDER BY date DESC
             LIMIT 200;
         `;
         
         const result = await pool.query(query, queryParams);
         res.status(200).json(result.rows);
     } catch (error) {
-        console.error("Error fetching aggregated attendance logs:", error);
-        res.status(500).json({ error: "Failed to fetch attendance logs." });
+        console.error("Error fetching aggregated attendance history:", error);
+        res.status(500).json({ error: "Failed to fetch attendance history." });
     }
 });
 
