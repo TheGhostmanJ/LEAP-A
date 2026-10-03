@@ -1806,8 +1806,7 @@ app.get('/api/attendance/summary/:employee_key', async (req, res) => {
 
 // GET: Fetch raw real-time biometric punches (Server-Side Paginated & Searched)
 app.get('/api/admin/attendance/realtime', async (req, res) => {
-    // UPDATED: Changed default limit to 50
-    const { department, search, page = 1, limit = 50 } = req.query;
+    const { department, search, page = 1, limit = 25 } = req.query; // Reduced to 25
     const offset = (page - 1) * limit;
 
     try {
@@ -1870,8 +1869,7 @@ app.get('/api/admin/attendance/realtime', async (req, res) => {
 
 // GET: Fetch aggregated daily attendance history (Server-Side Paginated & Searched)
 app.get('/api/admin/attendance/history', async (req, res) => {
-    // UPDATED: Changed default limit to 50
-    const { department, search, status, page = 1, limit = 50 } = req.query;
+    const { department, search, status, page = 1, limit = 25 } = req.query; // Reduced to 25
     const offset = (page - 1) * limit;
 
     try {
@@ -1916,8 +1914,8 @@ app.get('/api/admin/attendance/history', async (req, res) => {
                 a.status,
                 a.hours_worked,
                 a.tardy_minutes,
-                a.time_in,   -- Now safely pulling directly from the fact table
-                a.time_out   -- Now safely pulling directly from the fact table
+                a.time_in,
+                a.time_out
             FROM public.fact_attendance a
             LEFT JOIN public.dim_employee e ON a.employee_key = e.employee_key
             ${whereString}
@@ -1939,6 +1937,86 @@ app.get('/api/admin/attendance/history', async (req, res) => {
         res.status(500).json({ error: "Failed to fetch attendance history." });
     }
 });
+
+// ==========================================
+// ATTENDANCE ETL: RAW LOGS TO FACT TABLE
+// ==========================================
+const processDailyAttendance = async () => {
+    const client = await pool.connect();
+    console.log('[System Task] Running Attendance ETL Processing...');
+
+    try {
+        await client.query('BEGIN');
+
+        const etlQuery = `
+            WITH DailyPunches AS (
+                SELECT 
+                    employee_key,
+                    TO_CHAR(punch_time, 'YYYYMMDD')::INTEGER AS date_key,
+                    MIN(CASE WHEN punch_type = 0 THEN punch_time END) AS check_in,
+                    MAX(CASE WHEN punch_type = 1 THEN punch_time END) AS check_out
+                FROM public.fact_attendance_log
+                WHERE punch_time >= '2020-01-01' -- REMOVED 7-DAY LIMIT TO ALLOW 2021 TEST DATA
+                GROUP BY employee_key, TO_CHAR(punch_time, 'YYYYMMDD')::INTEGER
+            ),
+            CalculatedMetrics AS (
+                SELECT 
+                    employee_key,
+                    date_key,
+                    check_in,
+                    check_out,
+                    CASE 
+                        WHEN check_in IS NOT NULL AND EXTRACT(HOUR FROM check_in) >= 8 THEN
+                            GREATEST(0, EXTRACT(EPOCH FROM (check_in - DATE_TRUNC('day', check_in) - INTERVAL '8 hours')) / 60)
+                        ELSE 0 
+                    END AS tardy_minutes,
+                    CASE 
+                        WHEN check_in IS NOT NULL AND check_out IS NOT NULL THEN
+                            GREATEST(0, EXTRACT(EPOCH FROM (check_out - check_in)) / 3600)
+                        ELSE 0 
+                    END AS hours_worked
+                FROM DailyPunches
+            )
+            INSERT INTO public.fact_attendance (employee_key, date_key, status, hours_worked, tardy_minutes, time_in, time_out)
+            SELECT 
+                employee_key,
+                date_key,
+                CASE 
+                    WHEN hours_worked >= 8 THEN 'Present'
+                    WHEN hours_worked > 0 AND hours_worked < 8 THEN 'Half-day'
+                    ELSE 'Absent'
+                END AS status,
+                ROUND(hours_worked::numeric, 2),
+                ROUND(tardy_minutes::numeric, 0),
+                check_in,
+                check_out
+            FROM CalculatedMetrics
+            ON CONFLICT (employee_key, date_key) 
+            DO UPDATE SET 
+                status = EXCLUDED.status,
+                hours_worked = EXCLUDED.hours_worked,
+                tardy_minutes = EXCLUDED.tardy_minutes,
+                time_in = EXCLUDED.time_in,
+                time_out = EXCLUDED.time_out;
+        `;
+
+        await client.query(etlQuery);
+
+        const deleteQuery = `
+            DELETE FROM public.fact_attendance_log 
+            WHERE punch_time < CURRENT_DATE;
+        `;
+        const deleteRes = await client.query(deleteQuery);
+
+        await client.query('COMMIT');
+        console.log(`[System Task] Attendance ETL complete. Purged ${deleteRes.rowCount} old raw logs.`);
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('[System Task] Error processing attendance:', error);
+    } finally {
+        client.release();
+    }
+};
 
 // ==========================================
 // HOD: LEAVE APPROVALS 
@@ -2837,87 +2915,6 @@ app.post('/api/admin/attendance/trigger-etl', async (req, res) => {
         res.status(500).json({ error: "Failed to run Attendance ETL pipeline." });
     }
 });
-
-const processDailyAttendance = async () => {
-    const client = await pool.connect();
-    console.log('[System Task] Running Attendance ETL Processing...');
-
-    try {
-        await client.query('BEGIN');
-
-        // 1. Calculate and Upsert the data (Now including time_in and time_out)
-        const etlQuery = `
-            WITH DailyPunches AS (
-                SELECT 
-                    employee_key,
-                    TO_CHAR(punch_time, 'YYYYMMDD')::INTEGER AS date_key,
-                    MIN(CASE WHEN punch_type = 0 THEN punch_time END) AS check_in,
-                    MAX(CASE WHEN punch_type = 1 THEN punch_time END) AS check_out
-                FROM public.fact_attendance_log
-                GROUP BY employee_key, TO_CHAR(punch_time, 'YYYYMMDD')::INTEGER
-            ),
-            CalculatedMetrics AS (
-                SELECT 
-                    employee_key,
-                    date_key,
-                    check_in,
-                    check_out,
-                    CASE 
-                        WHEN check_in IS NOT NULL AND EXTRACT(HOUR FROM check_in) >= 8 THEN
-                            GREATEST(0, EXTRACT(EPOCH FROM (check_in - DATE_TRUNC('day', check_in) - INTERVAL '8 hours')) / 60)
-                        ELSE 0 
-                    END AS tardy_minutes,
-                    CASE 
-                        WHEN check_in IS NOT NULL AND check_out IS NOT NULL THEN
-                            GREATEST(0, EXTRACT(EPOCH FROM (check_out - check_in)) / 3600)
-                        ELSE 0 
-                    END AS hours_worked
-                FROM DailyPunches
-            )
-            INSERT INTO public.fact_attendance 
-            (employee_key, date_key, status, hours_worked, tardy_minutes, time_in, time_out)
-            SELECT 
-                employee_key,
-                date_key,
-                CASE 
-                    WHEN hours_worked >= 8 THEN 'Present'
-                    WHEN hours_worked > 0 AND hours_worked < 8 THEN 'Half-day'
-                    ELSE 'Absent'
-                END AS status,
-                ROUND(hours_worked::numeric, 2),
-                ROUND(tardy_minutes::numeric, 0),
-                check_in,
-                check_out
-            FROM CalculatedMetrics
-            ON CONFLICT (employee_key, date_key) 
-            DO UPDATE SET 
-                status = EXCLUDED.status,
-                hours_worked = EXCLUDED.hours_worked,
-                tardy_minutes = EXCLUDED.tardy_minutes,
-                time_in = EXCLUDED.time_in,
-                time_out = EXCLUDED.time_out;
-        `;
-
-        await client.query(etlQuery);
-
-        // 2. Safely delete historical raw logs to save database storage.
-        // We keep logs from CURRENT_DATE so the "Live Punches" tab doesn't go blank mid-day,
-        // and so employees who haven't clocked out yet don't lose their morning check-in.
-        const deleteQuery = `
-            DELETE FROM public.fact_attendance_log 
-            WHERE punch_time < CURRENT_DATE;
-        `;
-        const deleteRes = await client.query(deleteQuery);
-
-        await client.query('COMMIT');
-        console.log(`[System Task] Attendance ETL complete. Purged ${deleteRes.rowCount} old raw logs.`);
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.error('[System Task] Error processing attendance:', error);
-    } finally {
-        client.release();
-    }
-};
 
 let mlSyncTimer = null;
 

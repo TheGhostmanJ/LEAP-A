@@ -58,7 +58,7 @@ export default function AttendanceLogs({ onLogout, user }) {
     return () => clearTimeout(histTimer);
   }, [histSearch]);
 
-  // Fetch Real-Time Data (Limit: 50)
+  // Fetch Real-Time Data
   useEffect(() => {
     if (!hasAccess) return;
     const fetchRealTime = async () => {
@@ -68,7 +68,8 @@ export default function AttendanceLogs({ onLogout, user }) {
         const deptParam = isGlobal ? '' : `&department=${encodeURIComponent(user?.department || '')}`;
         const searchParam = rtDebouncedSearch ? `&search=${encodeURIComponent(rtDebouncedSearch)}` : '';
         
-        const res = await fetch(`${apiUrl}/api/admin/attendance/realtime?page=${rtPage}&limit=50${deptParam}${searchParam}`);
+        // Changed limit to 25
+        const res = await fetch(`${apiUrl}/api/admin/attendance/realtime?page=${rtPage}&limit=25${deptParam}${searchParam}`);
         if (res.ok) {
           const json = await res.json();
           setRtLogs(json.data);
@@ -83,7 +84,7 @@ export default function AttendanceLogs({ onLogout, user }) {
     fetchRealTime();
   }, [user, hasAccess, isGlobal, rtPage, rtDebouncedSearch]);
 
-  // Fetch History Data (Limit: 50)
+  // Fetch History Data
   useEffect(() => {
     if (!hasAccess) return;
     const fetchHistory = async () => {
@@ -94,7 +95,8 @@ export default function AttendanceLogs({ onLogout, user }) {
         const searchParam = histDebouncedSearch ? `&search=${encodeURIComponent(histDebouncedSearch)}` : '';
         const statusParam = histStatus !== 'All' ? `&status=${encodeURIComponent(histStatus)}` : '';
         
-        const res = await fetch(`${apiUrl}/api/admin/attendance/history?page=${histPage}&limit=50${deptParam}${searchParam}${statusParam}`);
+        // Changed limit to 25
+        const res = await fetch(`${apiUrl}/api/admin/attendance/history?page=${histPage}&limit=25${deptParam}${searchParam}${statusParam}`);
         if (res.ok) {
           const json = await res.json();
           setHistLogs(json.data);
@@ -109,129 +111,76 @@ export default function AttendanceLogs({ onLogout, user }) {
     fetchHistory();
   }, [user, hasAccess, isGlobal, histPage, histDebouncedSearch, histStatus, refreshTrigger]);
 
-  if (!hasAccess) {
-    navigate('/dashboard'); 
-    return null;
-  }
-
-  const handleForceSync = async () => {
-    setIsSyncing(true);
-    try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const res = await fetch(`${apiUrl}/api/admin/attendance/trigger-etl`, { method: 'POST' });
-      
-      if (res.ok) {
-        setRefreshTrigger(prev => prev + 1); // Tells the useEffect to reload the history table
-      }
-    } catch (error) {
-      console.error("Manual sync failed:", error);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const renderSidebar = () => {
-    return isGlobal ? <HrSidebar user={user} /> : <HodSidebar user={user} />;
-  };
-
-  const formatDateTime = (dateString) => {
-    if (!dateString) return { date: '—', time: '—' };
-    const d = new Date(dateString);
-    return {
-      date: d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
-      time: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-    };
-  };
-
-  const getStatusClass = (status) => {
-    switch(status?.toLowerCase()) {
-      case 'present': return 'status-success';
-      case 'tardy': return 'status-warning';
-      case 'absent': return 'status-danger';
-      case 'leave': return 'status-info';
-      default: return 'status-info';
-    }
-  };
-
-  const getPunchBadge = (type) => {
-    if (type === 0) return <span className="punch-badge punch-in">Check In</span>;
-    if (type === 1) return <span className="punch-badge punch-out">Check Out</span>;
-    return <span className="punch-badge punch-other">Unknown</span>;
-  };
-
   // ----------------------------------------------------
-  // PAGINATION UI GENERATOR
+  // PAGINATION UI GENERATOR (Matches Screenshot)
   // ----------------------------------------------------
   const renderPagination = (currentPage, totalPages, setPageFn) => {
     if (totalPages <= 1) return null;
 
-    // Build a sliding window of 5 pages around the current page
     const pages = [];
-    const maxVisible = 5; 
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, currentPage + 2);
 
-    if (endPage - startPage + 1 < maxVisible) {
-      startPage = Math.max(1, endPage - maxVisible + 1);
+    if (currentPage <= 3) {
+        endPage = Math.min(totalPages, 5);
+    }
+    if (currentPage >= totalPages - 2) {
+        startPage = Math.max(1, totalPages - 4);
     }
 
     for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
+        pages.push(i);
     }
 
     return (
-      <div className="al-pagination-footer">
-        <div className="al-pagination-group">
-          <button 
-            className="btn-secondary al-page-arrow" 
-            disabled={currentPage === 1} 
-            onClick={() => setPageFn(1)}
-            title="First Page"
-          >
-            <ChevronsLeft size={16} />
-          </button>
-          <button 
-            className="btn-secondary al-page-arrow" 
-            disabled={currentPage === 1} 
-            onClick={() => setPageFn(currentPage - 1)}
-            title="Previous Page"
-          >
-            <ChevronLeft size={16} />
-          </button>
-        </div>
+      <div className="al-custom-pagination">
+        <button 
+          className="al-page-nav" 
+          disabled={currentPage === 1} 
+          onClick={() => setPageFn(1)}
+          title="First Page"
+        >
+          « First
+        </button>
+        <button 
+          className="al-page-nav" 
+          disabled={currentPage === 1} 
+          onClick={() => setPageFn(currentPage - 1)}
+          title="Previous Page"
+        >
+          «
+        </button>
 
-        <div className="al-pagination-numbers">
-          {startPage > 1 && <span className="al-page-dots">...</span>}
-          {pages.map((p) => (
-            <button
-              key={p}
-              className={`al-page-num ${p === currentPage ? 'active' : ''}`}
-              onClick={() => setPageFn(p)}
-            >
-              {p}
-            </button>
-          ))}
-          {endPage < totalPages && <span className="al-page-dots">...</span>}
-        </div>
+        {startPage > 1 && <span className="al-page-dots">...</span>}
+        
+        {pages.map(p => (
+          <button
+            key={p}
+            className={`al-page-num ${p === currentPage ? 'active' : ''}`}
+            onClick={() => setPageFn(p)}
+          >
+            {p}
+          </button>
+        ))}
 
-        <div className="al-pagination-group">
-          <button 
-            className="btn-secondary al-page-arrow" 
-            disabled={currentPage === totalPages} 
-            onClick={() => setPageFn(currentPage + 1)}
-            title="Next Page"
-          >
-            <ChevronRight size={16} />
-          </button>
-          <button 
-            className="btn-secondary al-page-arrow" 
-            disabled={currentPage === totalPages} 
-            onClick={() => setPageFn(totalPages)}
-            title="Last Page"
-          >
-            <ChevronsRight size={16} />
-          </button>
-        </div>
+        {endPage < totalPages && <span className="al-page-dots">...</span>}
+
+        <button 
+          className="al-page-nav" 
+          disabled={currentPage === totalPages} 
+          onClick={() => setPageFn(currentPage + 1)}
+          title="Next Page"
+        >
+          »
+        </button>
+        <button 
+          className="al-page-nav" 
+          disabled={currentPage === totalPages} 
+          onClick={() => setPageFn(totalPages)}
+          title="Last Page"
+        >
+          Last »
+        </button>
       </div>
     );
   };
