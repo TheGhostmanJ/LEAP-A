@@ -6,7 +6,9 @@ import {
   Clock, 
   Calendar, 
   ShieldAlert,
-  Loader2
+  Loader2,
+  Filter,
+  History
 } from 'lucide-react';
 
 /* SIDEBAR & HEADER COMPONENTS */
@@ -18,43 +20,51 @@ import './attendance-logs.css';
 
 export default function AttendanceLogs({ onLogout, user }) {
   const navigate = useNavigate();
-  const [logs, setLogs] = useState([]);
+  
+  // State for Real-Time Punches
+  const [rawPunches, setRawPunches] = useState([]);
+  const [searchPunches, setSearchPunches] = useState('');
+  
+  // State for Daily Attendance History
+  const [historyLogs, setHistoryLogs] = useState([]);
+  const [searchHistory, setSearchHistory] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
 
-  // 1. Role-Based Access Control
+  // Role-Based Access Control
   const allowedRoles = ['Super Admin', 'HR Admin', 'Department Head'];
   const hasAccess = allowedRoles.includes(user?.role);
   const isGlobal = user?.role === 'HR Admin' || user?.role === 'Super Admin';
 
   useEffect(() => {
     if (!hasAccess) {
-      navigate('/dashboard'); // Redirect unauthorized users
+      navigate('/dashboard'); 
       return;
     }
 
-    const fetchLogs = async () => {
+    const fetchAllLogs = async () => {
       setIsLoading(true);
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-        
-        // HR/Super Admin pass empty string for global data. HODs pass their specific department.
         const deptParam = isGlobal ? '' : `?department=${encodeURIComponent(user?.department || '')}`;
         
-        const response = await fetch(`${apiUrl}/api/attendance/logs${deptParam}`);
+        const [punchesRes, historyRes] = await Promise.all([
+          fetch(`${apiUrl}/api/attendance/realtime-punches${deptParam}`),
+          fetch(`${apiUrl}/api/attendance/logs${deptParam}`)
+        ]);
         
-        if (response.ok) {
-          const data = await response.json();
-          setLogs(data);
-        }
+        if (punchesRes.ok) setRawPunches(await punchesRes.json());
+        if (historyRes.ok) setHistoryLogs(await historyRes.json());
+        
       } catch (error) {
-        console.error("Failed to load attendance logs:", error);
+        console.error("Failed to load attendance data:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (user) fetchLogs();
+    if (user) fetchAllLogs();
   }, [user, hasAccess, isGlobal, navigate]);
 
   const renderSidebar = () => {
@@ -68,14 +78,13 @@ export default function AttendanceLogs({ onLogout, user }) {
     }
   };
 
-  const formatTime = (dateString) => {
+  const formatDateTime = (dateString) => {
     if (!dateString) return '—';
-    return new Date(dateString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '—';
-    return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    const d = new Date(dateString);
+    return {
+      date: d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      time: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    };
   };
 
   const getStatusClass = (status) => {
@@ -88,12 +97,25 @@ export default function AttendanceLogs({ onLogout, user }) {
     }
   };
 
-  const normalizedQuery = searchQuery.trim().toLowerCase();
-  const filteredLogs = logs.filter(log => 
-    (log.employee_name && log.employee_name.toLowerCase().includes(normalizedQuery)) ||
-    (log.employee_id && log.employee_id.toLowerCase().includes(normalizedQuery)) ||
-    (log.department && log.department.toLowerCase().includes(normalizedQuery))
+  const getPunchBadge = (type) => {
+    if (type === 0) return <span className="punch-badge punch-in">Check In</span>;
+    if (type === 1) return <span className="punch-badge punch-out">Check Out</span>;
+    return <span className="punch-badge punch-other">Unknown</span>;
+  };
+
+  // Filter Logic
+  const filteredPunches = rawPunches.filter(log => 
+    (log.employee_name && log.employee_name.toLowerCase().includes(searchPunches.toLowerCase())) ||
+    (log.employee_id && log.employee_id.toLowerCase().includes(searchPunches.toLowerCase()))
   );
+
+  const filteredHistory = historyLogs.filter(log => {
+    const matchesSearch = 
+      (log.employee_name && log.employee_name.toLowerCase().includes(searchHistory.toLowerCase())) ||
+      (log.employee_id && log.employee_id.toLowerCase().includes(searchHistory.toLowerCase()));
+    const matchesStatus = statusFilter === 'All' || log.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   if (!hasAccess) return null;
 
@@ -111,27 +133,122 @@ export default function AttendanceLogs({ onLogout, user }) {
                   <Fingerprint size={20} />
                 </div>
                 <div>
-                  <h1 className="app-title">Real-Time Attendance</h1>
+                  <h1 className="app-title">Workforce Attendance</h1>
                   <p className="app-subtitle">
-                    {isGlobal ? 'Global Organization Logs' : `${user?.department} Logs`}
+                    {isGlobal ? 'Global Organization Records' : `${user?.department} Records`}
                   </p>
                 </div>
               </div>
               <Header user={user} onLogout={onLogout} />
             </header>
 
+            {/* TABLE 1: RAW REAL-TIME PUNCHES */}
             <div className="app-card">
               <div className="app-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>ZKTeco Biometric Sync Logs</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="al-live-indicator"></div>
+                  <span>Live Biometric Punches</span>
+                </div>
                 <div style={{ position: 'relative', width: '300px' }}>
-                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--color-text-muted)' }} />
+                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--color-text-muted)' }} />
                   <input
                     type="text"
                     className="app-search-input"
-                    placeholder="Search name, ID, or department..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{ padding: '8px 14px 8px 38px', fontSize: '13px' }}
+                    placeholder="Search name or ID..."
+                    value={searchPunches}
+                    onChange={(e) => setSearchPunches(e.target.value)}
                   />
+                </div>
+              </div>
+
+              <div className="table-responsive-scroll" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <table className="al-data-table">
+                  <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                    <tr>
+                      <th>Timestamp</th>
+                      <th>Employee</th>
+                      {isGlobal && <th>Department</th>}
+                      <th>Action</th>
+                      <th>Source</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={isGlobal ? 5 : 4} className="al-empty-state">
+                          <Loader2 size={24} className="spin" style={{ margin: '0 auto 12px auto', color: 'var(--color-maroon)' }} />
+                          Connecting to biometric bridge...
+                        </td>
+                      </tr>
+                    ) : filteredPunches.length === 0 ? (
+                      <tr>
+                        <td colSpan={isGlobal ? 5 : 4} className="al-empty-state">
+                          <ShieldAlert size={24} style={{ margin: '0 auto 12px auto', color: 'var(--color-text-muted)' }} />
+                          No live punches recorded today.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredPunches.map((log, idx) => {
+                        const dt = formatDateTime(log.punch_time);
+                        return (
+                          <tr key={idx}>
+                            <td>
+                              <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{dt.time}</div>
+                              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{dt.date}</div>
+                            </td>
+                            <td>
+                              <div className="al-emp-name">{log.employee_name}</div>
+                              <div className="al-emp-id">{log.employee_id}</div>
+                            </td>
+                            {isGlobal && <td><span className="al-dept-badge">{log.department}</span></td>}
+                            <td>{getPunchBadge(log.punch_type)}</td>
+                            <td style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>{log.source}</td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* TABLE 2: DAILY ATTENDANCE HISTORY */}
+            <div className="app-card">
+              <div className="app-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <History size={18} style={{ color: 'var(--color-maroon)' }} />
+                  <span>Daily Attendance History</span>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ position: 'relative' }}>
+                    <Filter size={14} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--color-text-muted)' }} />
+                    <select 
+                      className="app-search-input"
+                      style={{ padding: '8px 14px 8px 34px', fontSize: '13px', cursor: 'pointer', width: '140px' }}
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                      <option value="All">All Statuses</option>
+                      <option value="Present">Present</option>
+                      <option value="Tardy">Tardy</option>
+                      <option value="Absent">Absent</option>
+                      <option value="Leave">On Leave</option>
+                    </select>
+                  </div>
+
+                  <div style={{ position: 'relative', width: '250px' }}>
+                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--color-text-muted)' }} />
+                    <input
+                      type="text"
+                      className="app-search-input"
+                      style={{ padding: '8px 14px 8px 38px', fontSize: '13px' }}
+                      placeholder="Search history..."
+                      value={searchHistory}
+                      onChange={(e) => setSearchHistory(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -153,22 +270,22 @@ export default function AttendanceLogs({ onLogout, user }) {
                       <tr>
                         <td colSpan={isGlobal ? 7 : 6} className="al-empty-state">
                           <Loader2 size={24} className="spin" style={{ margin: '0 auto 12px auto', color: 'var(--color-maroon)' }} />
-                          Fetching live logs from database...
+                          Compiling historical records...
                         </td>
                       </tr>
-                    ) : filteredLogs.length === 0 ? (
+                    ) : filteredHistory.length === 0 ? (
                       <tr>
                         <td colSpan={isGlobal ? 7 : 6} className="al-empty-state">
                           <ShieldAlert size={24} style={{ margin: '0 auto 12px auto', color: 'var(--color-text-muted)' }} />
-                          No attendance records found.
+                          No historical attendance records found for this filter.
                         </td>
                       </tr>
                     ) : (
-                      filteredLogs.map((log, idx) => (
+                      filteredHistory.map((log, idx) => (
                         <tr key={idx}>
                           <td className="al-cell-date">
                             <Calendar size={14} className="al-icon" />
-                            {formatDate(log.date)}
+                            {formatDateTime(log.date).date}
                           </td>
                           <td>
                             <div className="al-emp-name">{log.employee_name}</div>
@@ -176,10 +293,10 @@ export default function AttendanceLogs({ onLogout, user }) {
                           </td>
                           {isGlobal && <td><span className="al-dept-badge">{log.department}</span></td>}
                           <td className="al-cell-time">
-                            {log.time_in ? <><Clock size={14} className="al-icon" /> {formatTime(log.time_in)}</> : '—'}
+                            {log.time_in ? <><Clock size={14} className="al-icon" /> {formatDateTime(log.time_in).time}</> : '—'}
                           </td>
                           <td className="al-cell-time">
-                            {log.time_out ? <><Clock size={14} className="al-icon" /> {formatTime(log.time_out)}</> : '—'}
+                            {log.time_out ? <><Clock size={14} className="al-icon" /> {formatDateTime(log.time_out).time}</> : '—'}
                           </td>
                           <td>
                             {log.hours_worked > 0 ? <strong>{log.hours_worked}h</strong> : '—'}

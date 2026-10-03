@@ -1803,6 +1803,43 @@ app.get('/api/attendance/summary/:employee_key', async (req, res) => {
   }
 });
 
+// GET: Fetch raw real-time biometric punches for HR and HODs
+app.get('/api/attendance/realtime-punches', async (req, res) => {
+    const { department } = req.query;
+
+    try {
+        let deptFilter = '';
+        let queryParams = [];
+
+        if (department) {
+            deptFilter = `WHERE e.department = $1`;
+            queryParams.push(department);
+        }
+
+        const query = `
+            SELECT 
+                l.log_id,
+                e.first_name || ' ' || e.last_name AS employee_name,
+                e.employee_id,
+                e.department,
+                l.punch_time,
+                l.punch_type,
+                l.source
+            FROM public.fact_attendance_log l
+            JOIN public.dim_employee e ON l.employee_key = e.employee_key
+            ${deptFilter}
+            ORDER BY l.punch_time DESC
+            LIMIT 100;
+        `;
+        
+        const result = await pool.query(query, queryParams);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching real-time punches:", error);
+        res.status(500).json({ error: "Failed to fetch real-time punches." });
+    }
+});
+
 // GET: Fetch aggregated attendance logs for HR and HODs
 app.get('/api/attendance/logs', async (req, res) => {
     const { department } = req.query;
