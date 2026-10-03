@@ -1,83 +1,116 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Fingerprint, 
-  Search, 
-  Clock, 
-  Calendar, 
-  ShieldAlert,
-  Loader2,
-  Filter,
-  History
+  Fingerprint, Search, Clock, Calendar, 
+  ShieldAlert, Loader2, Filter, History, 
+  ChevronLeft, ChevronRight 
 } from 'lucide-react';
 
-/* SIDEBAR & HEADER COMPONENTS */
 import HrSidebar from '../../components/hr-sidebar';
 import HodSidebar from '../../components/hod-sidebar';
 import Header from '../../components/Header';
-
 import './attendance-logs.css';
 
 export default function AttendanceLogs({ onLogout, user }) {
   const navigate = useNavigate();
   
-  // State for Real-Time Punches
-  const [rawPunches, setRawPunches] = useState([]);
-  const [searchPunches, setSearchPunches] = useState('');
+  // Real-Time Table State
+  const [rtLogs, setRtLogs] = useState([]);
+  const [rtSearch, setRtSearch] = useState('');
+  const [rtDebouncedSearch, setRtDebouncedSearch] = useState('');
+  const [rtPage, setRtPage] = useState(1);
+  const [rtTotalPages, setRtTotalPages] = useState(1);
+  const [isRtLoading, setIsRtLoading] = useState(true);
   
-  // State for Daily Attendance History
-  const [historyLogs, setHistoryLogs] = useState([]);
-  const [searchHistory, setSearchHistory] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
-  
-  const [isLoading, setIsLoading] = useState(true);
+  // History Table State
+  const [histLogs, setHistLogs] = useState([]);
+  const [histSearch, setHistSearch] = useState('');
+  const [histDebouncedSearch, setHistDebouncedSearch] = useState('');
+  const [histStatus, setHistStatus] = useState('All');
+  const [histPage, setHistPage] = useState(1);
+  const [histTotalPages, setHistTotalPages] = useState(1);
+  const [isHistLoading, setIsHistLoading] = useState(true);
 
-  // Role-Based Access Control
+  // Role Control
   const allowedRoles = ['Super Admin', 'HR Admin', 'Department Head'];
   const hasAccess = allowedRoles.includes(user?.role);
   const isGlobal = user?.role === 'HR Admin' || user?.role === 'Super Admin';
 
+  // Debounce Search Inputs (Waits 500ms after user stops typing to trigger search)
   useEffect(() => {
-    if (!hasAccess) {
-      navigate('/dashboard'); 
-      return;
-    }
+    const rtTimer = setTimeout(() => {
+      setRtDebouncedSearch(rtSearch);
+      setRtPage(1); // Reset to page 1 on new search
+    }, 500);
+    return () => clearTimeout(rtTimer);
+  }, [rtSearch]);
 
-    const fetchAllLogs = async () => {
-      setIsLoading(true);
+  useEffect(() => {
+    const histTimer = setTimeout(() => {
+      setHistDebouncedSearch(histSearch);
+      setHistPage(1); // Reset to page 1 on new search
+    }, 500);
+    return () => clearTimeout(histTimer);
+  }, [histSearch]);
+
+  // Fetch Real-Time Data (Triggers on Page or Search change)
+  useEffect(() => {
+    if (!hasAccess) return;
+    const fetchRealTime = async () => {
+      setIsRtLoading(true);
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-        // HR/Super Admin pass empty string for global data. HODs pass their specific department.
-        const deptParam = isGlobal ? '' : `?department=${encodeURIComponent(user?.department || '')}`;
+        const deptParam = isGlobal ? '' : `&department=${encodeURIComponent(user?.department || '')}`;
+        const searchParam = rtDebouncedSearch ? `&search=${encodeURIComponent(rtDebouncedSearch)}` : '';
         
-        // Point to the newly renamed admin endpoints to prevent Express route collisions
-        const [punchesRes, historyRes] = await Promise.all([
-          fetch(`${apiUrl}/api/admin/attendance/realtime${deptParam}`),
-          fetch(`${apiUrl}/api/admin/attendance/history${deptParam}`)
-        ]);
-        
-        if (punchesRes.ok) setRawPunches(await punchesRes.json());
-        if (historyRes.ok) setHistoryLogs(await historyRes.json());
-        
-      } catch (error) {
-        console.error("Failed to load attendance data:", error);
+        const res = await fetch(`${apiUrl}/api/admin/attendance/realtime?page=${rtPage}&limit=100${deptParam}${searchParam}`);
+        if (res.ok) {
+          const json = await res.json();
+          setRtLogs(json.data);
+          setRtTotalPages(json.totalPages || 1);
+        }
+      } catch (err) {
+        console.error("Failed to load realtime logs:", err);
       } finally {
-        setIsLoading(false);
+        setIsRtLoading(false);
       }
     };
+    fetchRealTime();
+  }, [user, hasAccess, isGlobal, rtPage, rtDebouncedSearch]);
 
-    if (user) fetchAllLogs();
-  }, [user, hasAccess, isGlobal, navigate]);
+  // Fetch History Data (Triggers on Page, Status, or Search change)
+  useEffect(() => {
+    if (!hasAccess) return;
+    const fetchHistory = async () => {
+      setIsHistLoading(true);
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const deptParam = isGlobal ? '' : `&department=${encodeURIComponent(user?.department || '')}`;
+        const searchParam = histDebouncedSearch ? `&search=${encodeURIComponent(histDebouncedSearch)}` : '';
+        const statusParam = histStatus !== 'All' ? `&status=${encodeURIComponent(histStatus)}` : '';
+        
+        const res = await fetch(`${apiUrl}/api/admin/attendance/history?page=${histPage}&limit=100${deptParam}${searchParam}${statusParam}`);
+        if (res.ok) {
+          const json = await res.json();
+          setHistLogs(json.data);
+          setHistTotalPages(json.totalPages || 1);
+        }
+      } catch (err) {
+        console.error("Failed to load history logs:", err);
+      } finally {
+        setIsHistLoading(false);
+      }
+    };
+    fetchHistory();
+  }, [user, hasAccess, isGlobal, histPage, histDebouncedSearch, histStatus]);
+
+  if (!hasAccess) {
+    navigate('/dashboard'); 
+    return null;
+  }
 
   const renderSidebar = () => {
-    switch (user?.role) {
-      case 'HR Admin':
-      case 'Super Admin':
-        return <HrSidebar user={user} />;
-      case 'Department Head':
-      default:
-        return <HodSidebar user={user} />;
-    }
+    return isGlobal ? <HrSidebar user={user} /> : <HodSidebar user={user} />;
   };
 
   const formatDateTime = (dateString) => {
@@ -104,22 +137,6 @@ export default function AttendanceLogs({ onLogout, user }) {
     if (type === 1) return <span className="punch-badge punch-out">Check Out</span>;
     return <span className="punch-badge punch-other">Unknown</span>;
   };
-
-  // Filter Logic
-  const filteredPunches = rawPunches.filter(log => 
-    (log.employee_name && log.employee_name.toLowerCase().includes(searchPunches.toLowerCase())) ||
-    (log.employee_id && log.employee_id.toLowerCase().includes(searchPunches.toLowerCase()))
-  );
-
-  const filteredHistory = historyLogs.filter(log => {
-    const matchesSearch = 
-      (log.employee_name && log.employee_name.toLowerCase().includes(searchHistory.toLowerCase())) ||
-      (log.employee_id && log.employee_id.toLowerCase().includes(searchHistory.toLowerCase()));
-    const matchesStatus = statusFilter === 'All' || log.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  if (!hasAccess) return null;
 
   return (
     <div className="app-layout-wrapper">
@@ -158,8 +175,8 @@ export default function AttendanceLogs({ onLogout, user }) {
                     className="app-search-input"
                     style={{ padding: '8px 14px 8px 38px', fontSize: '13px' }}
                     placeholder="Search name or ID..."
-                    value={searchPunches}
-                    onChange={(e) => setSearchPunches(e.target.value)}
+                    value={rtSearch}
+                    onChange={(e) => setRtSearch(e.target.value)}
                   />
                 </div>
               </div>
@@ -176,22 +193,22 @@ export default function AttendanceLogs({ onLogout, user }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {isLoading ? (
+                    {isRtLoading ? (
                       <tr>
                         <td colSpan={isGlobal ? 5 : 4} className="al-empty-state">
                           <Loader2 size={24} className="spin" style={{ margin: '0 auto 12px auto', color: 'var(--color-maroon)' }} />
-                          Connecting to biometric bridge...
+                          Fetching live logs from database...
                         </td>
                       </tr>
-                    ) : filteredPunches.length === 0 ? (
+                    ) : rtLogs.length === 0 ? (
                       <tr>
                         <td colSpan={isGlobal ? 5 : 4} className="al-empty-state">
                           <ShieldAlert size={24} style={{ margin: '0 auto 12px auto', color: 'var(--color-text-muted)' }} />
-                          No live punches recorded today.
+                          No live punches found.
                         </td>
                       </tr>
                     ) : (
-                      filteredPunches.map((log, idx) => {
+                      rtLogs.map((log, idx) => {
                         const dt = formatDateTime(log.punch_time);
                         return (
                           <tr key={idx}>
@@ -213,6 +230,27 @@ export default function AttendanceLogs({ onLogout, user }) {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Pagination Controls */}
+              {!isRtLoading && rtTotalPages > 1 && (
+                <div className="al-pagination-footer">
+                  <button 
+                    className="btn-secondary al-page-btn" 
+                    disabled={rtPage === 1} 
+                    onClick={() => setRtPage(p => p - 1)}
+                  >
+                    <ChevronLeft size={16} /> Prev
+                  </button>
+                  <span className="al-page-indicator">Page {rtPage} of {rtTotalPages}</span>
+                  <button 
+                    className="btn-secondary al-page-btn" 
+                    disabled={rtPage === rtTotalPages} 
+                    onClick={() => setRtPage(p => p + 1)}
+                  >
+                    Next <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* TABLE 2: DAILY ATTENDANCE HISTORY */}
@@ -229,8 +267,8 @@ export default function AttendanceLogs({ onLogout, user }) {
                     <select 
                       className="app-search-input"
                       style={{ padding: '8px 14px 8px 34px', fontSize: '13px', cursor: 'pointer', width: '140px' }}
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
+                      value={histStatus}
+                      onChange={(e) => { setHistStatus(e.target.value); setHistPage(1); }}
                     >
                       <option value="All">All Statuses</option>
                       <option value="Present">Present</option>
@@ -247,8 +285,8 @@ export default function AttendanceLogs({ onLogout, user }) {
                       className="app-search-input"
                       style={{ padding: '8px 14px 8px 38px', fontSize: '13px' }}
                       placeholder="Search history..."
-                      value={searchHistory}
-                      onChange={(e) => setSearchHistory(e.target.value)}
+                      value={histSearch}
+                      onChange={(e) => setHistSearch(e.target.value)}
                     />
                   </div>
                 </div>
@@ -268,14 +306,14 @@ export default function AttendanceLogs({ onLogout, user }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {isLoading ? (
+                    {isHistLoading ? (
                       <tr>
                         <td colSpan={isGlobal ? 7 : 6} className="al-empty-state">
                           <Loader2 size={24} className="spin" style={{ margin: '0 auto 12px auto', color: 'var(--color-maroon)' }} />
                           Compiling historical records...
                         </td>
                       </tr>
-                    ) : filteredHistory.length === 0 ? (
+                    ) : histLogs.length === 0 ? (
                       <tr>
                         <td colSpan={isGlobal ? 7 : 6} className="al-empty-state">
                           <ShieldAlert size={24} style={{ margin: '0 auto 12px auto', color: 'var(--color-text-muted)' }} />
@@ -283,7 +321,7 @@ export default function AttendanceLogs({ onLogout, user }) {
                         </td>
                       </tr>
                     ) : (
-                      filteredHistory.map((log, idx) => (
+                      histLogs.map((log, idx) => (
                         <tr key={idx}>
                           <td className="al-cell-date">
                             <Calendar size={14} className="al-icon" />
@@ -314,6 +352,27 @@ export default function AttendanceLogs({ onLogout, user }) {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination Controls */}
+              {!isHistLoading && histTotalPages > 1 && (
+                <div className="al-pagination-footer">
+                  <button 
+                    className="btn-secondary al-page-btn" 
+                    disabled={histPage === 1} 
+                    onClick={() => setHistPage(p => p - 1)}
+                  >
+                    <ChevronLeft size={16} /> Prev
+                  </button>
+                  <span className="al-page-indicator">Page {histPage} of {histTotalPages}</span>
+                  <button 
+                    className="btn-secondary al-page-btn" 
+                    disabled={histPage === histTotalPages} 
+                    onClick={() => setHistPage(p => p + 1)}
+                  >
+                    Next <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
             </div>
 
           </div>

@@ -125,3 +125,25 @@
   z-index: 10;
   background-color: var(--color-bg-page);
 }
+
+/* Pagination Styling */
+.al-pagination-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background-color: #fafafa;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.al-page-indicator {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.al-page-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

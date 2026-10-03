@@ -1803,20 +1803,41 @@ app.get('/api/attendance/summary/:employee_key', async (req, res) => {
   }
 });
 
-// GET: Fetch raw real-time biometric punches for HR and HODs
+// GET: Fetch raw real-time biometric punches (Server-Side Paginated & Searched)
 app.get('/api/admin/attendance/realtime', async (req, res) => {
-    const { department } = req.query;
+    const { department, search, page = 1, limit = 100 } = req.query;
+    const offset = (page - 1) * limit;
 
     try {
-        let deptFilter = '';
+        let whereClauses = [];
         let queryParams = [];
+        let paramIndex = 1;
 
         if (department) {
-            deptFilter = `WHERE e.department = $1`;
+            whereClauses.push(`e.department = $${paramIndex++}`);
             queryParams.push(department);
         }
 
-        const query = `
+        if (search) {
+            whereClauses.push(`(e.first_name ILIKE $${paramIndex} OR e.last_name ILIKE $${paramIndex} OR e.employee_id ILIKE $${paramIndex})`);
+            queryParams.push(`%${search}%`);
+            paramIndex++;
+        }
+
+        const whereString = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+        // 1. Get total count for frontend pagination math
+        const countQuery = `
+            SELECT COUNT(*) 
+            FROM public.fact_attendance_log l
+            LEFT JOIN public.dim_employee e ON l.employee_key = e.employee_key
+            ${whereString}
+        `;
+        const countResult = await pool.query(countQuery, queryParams);
+        const totalRecords = parseInt(countResult.rows[0].count);
+
+        // 2. Get the actual paginated data
+        const dataQuery = `
             SELECT 
                 l.log_id,
                 COALESCE(e.first_name || ' ' || e.last_name, 'Unknown (ID: ' || l.employee_key || ')') AS employee_name,
@@ -1827,33 +1848,66 @@ app.get('/api/admin/attendance/realtime', async (req, res) => {
                 l.source
             FROM public.fact_attendance_log l
             LEFT JOIN public.dim_employee e ON l.employee_key = e.employee_key
-            ${deptFilter}
+            ${whereString}
             ORDER BY l.punch_time DESC
-            LIMIT 100;
+            LIMIT $${paramIndex++} OFFSET $${paramIndex++}
         `;
         
-        const result = await pool.query(query, queryParams);
-        res.status(200).json(result.rows);
+        queryParams.push(limit, offset);
+        const result = await pool.query(dataQuery, queryParams);
+
+        res.status(200).json({
+            data: result.rows,
+            total: totalRecords,
+            page: parseInt(page),
+            totalPages: Math.ceil(totalRecords / limit)
+        });
     } catch (error) {
         console.error("Error fetching real-time punches:", error);
         res.status(500).json({ error: "Failed to fetch real-time punches." });
     }
 });
 
-// GET: Fetch aggregated daily attendance history for HR and HODs
+// GET: Fetch aggregated daily attendance history (Server-Side Paginated & Searched)
 app.get('/api/admin/attendance/history', async (req, res) => {
-    const { department } = req.query;
+    const { department, search, status, page = 1, limit = 100 } = req.query;
+    const offset = (page - 1) * limit;
 
     try {
-        let deptFilter = '';
+        let whereClauses = [];
         let queryParams = [];
+        let paramIndex = 1;
 
         if (department) {
-            deptFilter = `WHERE e.department = $1`;
+            whereClauses.push(`e.department = $${paramIndex++}`);
             queryParams.push(department);
         }
 
-        const query = `
+        if (search) {
+            whereClauses.push(`(e.first_name ILIKE $${paramIndex} OR e.last_name ILIKE $${paramIndex} OR e.employee_id ILIKE $${paramIndex})`);
+            queryParams.push(`%${search}%`);
+            paramIndex++;
+        }
+
+        if (status && status !== 'All') {
+            whereClauses.push(`a.status = $${paramIndex++}`);
+            queryParams.push(status);
+        }
+
+        const whereString = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+        // 1. Get total count
+        const countQuery = `
+            SELECT COUNT(*) 
+            FROM public.fact_attendance a
+            LEFT JOIN public.dim_employee e ON a.employee_key = e.employee_key
+            ${whereString}
+        `;
+        const countResult = await pool.query(countQuery, queryParams);
+        const totalRecords = parseInt(countResult.rows[0].count);
+
+        // 2. Get paginated data
+        const dataQuery = `
             SELECT 
                 a.attendance_id,
                 COALESCE(e.first_name || ' ' || e.last_name, 'Unknown (ID: ' || a.employee_key || ')') AS employee_name,
@@ -1875,13 +1929,20 @@ app.get('/api/admin/attendance/history', async (req, res) => {
                    AND punch_type = 1) AS time_out
             FROM public.fact_attendance a
             LEFT JOIN public.dim_employee e ON a.employee_key = e.employee_key
-            ${deptFilter}
+            ${whereString}
             ORDER BY date DESC
-            LIMIT 200;
+            LIMIT $${paramIndex++} OFFSET $${paramIndex++}
         `;
         
-        const result = await pool.query(query, queryParams);
-        res.status(200).json(result.rows);
+        queryParams.push(limit, offset);
+        const result = await pool.query(dataQuery, queryParams);
+
+        res.status(200).json({
+            data: result.rows,
+            total: totalRecords,
+            page: parseInt(page),
+            totalPages: Math.ceil(totalRecords / limit)
+        });
     } catch (error) {
         console.error("Error fetching aggregated attendance history:", error);
         res.status(500).json({ error: "Failed to fetch attendance history." });
