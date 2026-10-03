@@ -58,7 +58,7 @@ export default function AttendanceLogs({ onLogout, user }) {
     return () => clearTimeout(histTimer);
   }, [histSearch]);
 
-  // Fetch Real-Time Data
+  // Fetch Real-Time Data (Limit: 25)
   useEffect(() => {
     if (!hasAccess) return;
     const fetchRealTime = async () => {
@@ -68,7 +68,6 @@ export default function AttendanceLogs({ onLogout, user }) {
         const deptParam = isGlobal ? '' : `&department=${encodeURIComponent(user?.department || '')}`;
         const searchParam = rtDebouncedSearch ? `&search=${encodeURIComponent(rtDebouncedSearch)}` : '';
         
-        // Changed limit to 25
         const res = await fetch(`${apiUrl}/api/admin/attendance/realtime?page=${rtPage}&limit=25${deptParam}${searchParam}`);
         if (res.ok) {
           const json = await res.json();
@@ -84,7 +83,7 @@ export default function AttendanceLogs({ onLogout, user }) {
     fetchRealTime();
   }, [user, hasAccess, isGlobal, rtPage, rtDebouncedSearch]);
 
-  // Fetch History Data
+  // Fetch History Data (Limit: 25)
   useEffect(() => {
     if (!hasAccess) return;
     const fetchHistory = async () => {
@@ -95,7 +94,6 @@ export default function AttendanceLogs({ onLogout, user }) {
         const searchParam = histDebouncedSearch ? `&search=${encodeURIComponent(histDebouncedSearch)}` : '';
         const statusParam = histStatus !== 'All' ? `&status=${encodeURIComponent(histStatus)}` : '';
         
-        // Changed limit to 25
         const res = await fetch(`${apiUrl}/api/admin/attendance/history?page=${histPage}&limit=25${deptParam}${searchParam}${statusParam}`);
         if (res.ok) {
           const json = await res.json();
@@ -111,8 +109,58 @@ export default function AttendanceLogs({ onLogout, user }) {
     fetchHistory();
   }, [user, hasAccess, isGlobal, histPage, histDebouncedSearch, histStatus, refreshTrigger]);
 
+  if (!hasAccess) {
+    navigate('/dashboard'); 
+    return null;
+  }
+
+  const handleForceSync = async () => {
+    setIsSyncing(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const res = await fetch(`${apiUrl}/api/admin/attendance/trigger-etl`, { method: 'POST' });
+      
+      if (res.ok) {
+        setRefreshTrigger(prev => prev + 1); // Tells the useEffect to reload the history table
+      }
+    } catch (error) {
+      console.error("Manual sync failed:", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const renderSidebar = () => {
+    return isGlobal ? <HrSidebar user={user} /> : <HodSidebar user={user} />;
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return { date: '—', time: '—' };
+    const d = new Date(dateString);
+    return {
+      date: d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      time: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    };
+  };
+
+  const getStatusClass = (status) => {
+    switch(status?.toLowerCase()) {
+      case 'present': return 'status-success';
+      case 'tardy': return 'status-warning';
+      case 'absent': return 'status-danger';
+      case 'leave': return 'status-info';
+      default: return 'status-info';
+    }
+  };
+
+  const getPunchBadge = (type) => {
+    if (type === 0) return <span className="punch-badge punch-in">Check In</span>;
+    if (type === 1) return <span className="punch-badge punch-out">Check Out</span>;
+    return <span className="punch-badge punch-other">Unknown</span>;
+  };
+
   // ----------------------------------------------------
-  // PAGINATION UI GENERATOR (Matches Screenshot)
+  // PAGINATION UI GENERATOR
   // ----------------------------------------------------
   const renderPagination = (currentPage, totalPages, setPageFn) => {
     if (totalPages <= 1) return null;
@@ -211,49 +259,20 @@ export default function AttendanceLogs({ onLogout, user }) {
             {/* TABLE 1: RAW REAL-TIME PUNCHES */}
             <div className="app-card">
               <div className="app-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <History size={18} style={{ color: 'var(--color-maroon)' }} />
-                  <span>Daily Attendance History</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="al-live-indicator"></div>
+                  <span>Live Biometric Punches</span>
                 </div>
-                
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <button 
-                    className="btn-primary" 
-                    onClick={handleForceSync} 
-                    disabled={isSyncing}
-                    style={{ fontSize: '13px', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <RefreshCw size={14} className={isSyncing ? "spin" : ""} />
-                    {isSyncing ? "Syncing..." : "Force Sync Now"}
-                  </button>
-
-                  <div style={{ position: 'relative' }}>
-                    <Filter size={14} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--color-text-muted)' }} />
-                    <select 
-                      className="app-search-input"
-                      style={{ padding: '8px 14px 8px 34px', fontSize: '13px', cursor: 'pointer', width: '140px' }}
-                      value={histStatus}
-                      onChange={(e) => { setHistStatus(e.target.value); setHistPage(1); }}
-                    >
-                      <option value="All">All Statuses</option>
-                      <option value="Present">Present</option>
-                      <option value="Tardy">Tardy</option>
-                      <option value="Absent">Absent</option>
-                      <option value="Leave">On Leave</option>
-                    </select>
-                  </div>
-
-                  <div style={{ position: 'relative', width: '250px' }}>
-                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--color-text-muted)' }} />
-                    <input
-                      type="text"
-                      className="app-search-input"
-                      style={{ padding: '8px 14px 8px 38px', fontSize: '13px' }}
-                      placeholder="Search history..."
-                      value={histSearch}
-                      onChange={(e) => setHistSearch(e.target.value)}
-                    />
-                  </div>
+                <div style={{ position: 'relative', width: '300px' }}>
+                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--color-text-muted)' }} />
+                  <input
+                    type="text"
+                    className="app-search-input"
+                    style={{ padding: '8px 14px 8px 38px', fontSize: '13px' }}
+                    placeholder="Search name or ID..."
+                    value={rtSearch}
+                    onChange={(e) => setRtSearch(e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -319,7 +338,17 @@ export default function AttendanceLogs({ onLogout, user }) {
                   <span>Daily Attendance History</span>
                 </div>
                 
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <button 
+                    className="btn-primary" 
+                    onClick={handleForceSync} 
+                    disabled={isSyncing}
+                    style={{ fontSize: '13px', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <RefreshCw size={14} className={isSyncing ? "spin" : ""} />
+                    {isSyncing ? "Syncing..." : "Force Sync Now"}
+                  </button>
+
                   <div style={{ position: 'relative' }}>
                     <Filter size={14} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--color-text-muted)' }} />
                     <select 
