@@ -1,6 +1,7 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const axios = require('axios');
+const cron = require('node-cron');
 
 const express = require('express');
 const cors = require('cors');
@@ -2834,6 +2835,17 @@ app.post('/api/system-action/:action', async (req, res) => {
 // ==========================================
 // ATTENDANCE ETL: RAW LOGS TO FACT TABLE
 // ==========================================
+// POST: Manually trigger the Attendance ETL process
+app.post('/api/admin/attendance/trigger-etl', async (req, res) => {
+    try {
+        await processDailyAttendance();
+        res.status(200).json({ success: true, message: "Attendance data processed and synced successfully." });
+    } catch (error) {
+        console.error("Manual ETL Trigger Error:", error);
+        res.status(500).json({ error: "Failed to run Attendance ETL pipeline." });
+    }
+});
+
 const processDailyAttendance = async () => {
     const client = await pool.connect();
     console.log('[System Task] Running Attendance ETL Processing...');
@@ -3491,6 +3503,14 @@ app.put('/api/hiring/open-to-external/:departmentId', async (req, res) => {
         console.error('Error toggling external opening:', error);
         res.status(500).json({ error: 'Failed to update the department.' });
     }
+});
+
+// Automated Cron Job: Run every night at 11:59 PM
+cron.schedule('59 23 * * *', () => {
+    console.log('[Cron Job] Executing scheduled Daily Attendance ETL...');
+    processDailyAttendance();
+}, {
+    timezone: "Asia/Manila" // Ensures it aligns with Lipa City time
 });
 
 // Start listening for API calls

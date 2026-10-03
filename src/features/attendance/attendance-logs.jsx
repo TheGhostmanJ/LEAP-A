@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Fingerprint, Search, Clock, Calendar, 
   ShieldAlert, Loader2, Filter, History, 
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RefreshCw
 } from 'lucide-react';
 
 /* SIDEBAR & HEADER COMPONENTS */
@@ -15,6 +15,9 @@ import './attendance-logs.css';
 
 export default function AttendanceLogs({ onLogout, user }) {
   const navigate = useNavigate();
+
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Real-Time Table State
   const [rtLogs, setRtLogs] = useState([]);
@@ -104,12 +107,28 @@ export default function AttendanceLogs({ onLogout, user }) {
       }
     };
     fetchHistory();
-  }, [user, hasAccess, isGlobal, histPage, histDebouncedSearch, histStatus]);
+  }, [user, hasAccess, isGlobal, histPage, histDebouncedSearch, histStatus, refreshTrigger]);
 
   if (!hasAccess) {
     navigate('/dashboard'); 
     return null;
   }
+
+  const handleForceSync = async () => {
+    setIsSyncing(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const res = await fetch(`${apiUrl}/api/admin/attendance/trigger-etl`, { method: 'POST' });
+      
+      if (res.ok) {
+        setRefreshTrigger(prev => prev + 1); // Tells the useEffect to reload the history table
+      }
+    } catch (error) {
+      console.error("Manual sync failed:", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const renderSidebar = () => {
     return isGlobal ? <HrSidebar user={user} /> : <HodSidebar user={user} />;
@@ -243,20 +262,49 @@ export default function AttendanceLogs({ onLogout, user }) {
             {/* TABLE 1: RAW REAL-TIME PUNCHES */}
             <div className="app-card">
               <div className="app-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div className="al-live-indicator"></div>
-                  <span>Live Biometric Punches</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <History size={18} style={{ color: 'var(--color-maroon)' }} />
+                  <span>Daily Attendance History</span>
                 </div>
-                <div style={{ position: 'relative', width: '300px' }}>
-                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--color-text-muted)' }} />
-                  <input
-                    type="text"
-                    className="app-search-input"
-                    style={{ padding: '8px 14px 8px 38px', fontSize: '13px' }}
-                    placeholder="Search name or ID..."
-                    value={rtSearch}
-                    onChange={(e) => setRtSearch(e.target.value)}
-                  />
+                
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <button 
+                    className="btn-primary" 
+                    onClick={handleForceSync} 
+                    disabled={isSyncing}
+                    style={{ fontSize: '13px', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <RefreshCw size={14} className={isSyncing ? "spin" : ""} />
+                    {isSyncing ? "Syncing..." : "Force Sync Now"}
+                  </button>
+
+                  <div style={{ position: 'relative' }}>
+                    <Filter size={14} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--color-text-muted)' }} />
+                    <select 
+                      className="app-search-input"
+                      style={{ padding: '8px 14px 8px 34px', fontSize: '13px', cursor: 'pointer', width: '140px' }}
+                      value={histStatus}
+                      onChange={(e) => { setHistStatus(e.target.value); setHistPage(1); }}
+                    >
+                      <option value="All">All Statuses</option>
+                      <option value="Present">Present</option>
+                      <option value="Tardy">Tardy</option>
+                      <option value="Absent">Absent</option>
+                      <option value="Leave">On Leave</option>
+                    </select>
+                  </div>
+
+                  <div style={{ position: 'relative', width: '250px' }}>
+                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--color-text-muted)' }} />
+                    <input
+                      type="text"
+                      className="app-search-input"
+                      style={{ padding: '8px 14px 8px 38px', fontSize: '13px' }}
+                      placeholder="Search history..."
+                      value={histSearch}
+                      onChange={(e) => setHistSearch(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
 
