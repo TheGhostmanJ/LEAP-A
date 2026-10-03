@@ -81,7 +81,7 @@ export default function AttendanceLogs({ onLogout, user }) {
   };
 
   const formatDateTime = (dateString) => {
-    if (!dateString) return '—';
+    if (!dateString) return { date: '—', time: '—' };
     const d = new Date(dateString);
     return {
       date: d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),

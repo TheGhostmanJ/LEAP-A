@@ -1819,14 +1819,14 @@ app.get('/api/admin/attendance/realtime', async (req, res) => {
         const query = `
             SELECT 
                 l.log_id,
-                e.first_name || ' ' || e.last_name AS employee_name,
-                e.employee_id,
-                e.department,
+                COALESCE(e.first_name || ' ' || e.last_name, 'Unknown (ID: ' || l.employee_key || ')') AS employee_name,
+                COALESCE(e.employee_id, 'N/A') AS employee_id,
+                COALESCE(e.department, 'Unassigned') AS department,
                 l.punch_time,
                 l.punch_type,
                 l.source
             FROM public.fact_attendance_log l
-            JOIN public.dim_employee e ON l.employee_key = e.employee_key
+            LEFT JOIN public.dim_employee e ON l.employee_key = e.employee_key
             ${deptFilter}
             ORDER BY l.punch_time DESC
             LIMIT 100;
@@ -1853,13 +1853,12 @@ app.get('/api/admin/attendance/history', async (req, res) => {
             queryParams.push(department);
         }
 
-        // Optimized: Uses TO_DATE on a.date_key to avoid dim_date dependency risks
         const query = `
             SELECT 
                 a.attendance_id,
-                e.first_name || ' ' || e.last_name AS employee_name,
-                e.employee_id,
-                e.department,
+                COALESCE(e.first_name || ' ' || e.last_name, 'Unknown (ID: ' || a.employee_key || ')') AS employee_name,
+                COALESCE(e.employee_id, 'N/A') AS employee_id,
+                COALESCE(e.department, 'Unassigned') AS department,
                 TO_DATE(a.date_key::TEXT, 'YYYYMMDD') AS date,
                 a.status,
                 a.hours_worked,
@@ -1875,7 +1874,7 @@ app.get('/api/admin/attendance/history', async (req, res) => {
                    AND TO_CHAR(punch_time, 'YYYYMMDD') = a.date_key::TEXT 
                    AND punch_type = 1) AS time_out
             FROM public.fact_attendance a
-            JOIN public.dim_employee e ON a.employee_key = e.employee_key
+            LEFT JOIN public.dim_employee e ON a.employee_key = e.employee_key
             ${deptFilter}
             ORDER BY date DESC
             LIMIT 200;
