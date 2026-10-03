@@ -5,7 +5,7 @@ import {
   User, Clock, Users, Building2, Banknote,
   ChevronLeft, ChevronRight, ClipboardList, Menu, X,
   UserCheck, History, CreditCard, GraduationCap, Calendar,
-  Briefcase
+  Briefcase, Fingerprint
 } from 'lucide-react';
 import './sidebar.css';
 
@@ -71,6 +71,7 @@ export default function HrSidebar() {
 
   const analyticsMenuItems = [
     { path: '/hr-dashboard', icon: Home, label: 'Global Dashboard' },
+    { path: '/attendance-logs', icon: Fingerprint, label: 'Real-Time Attendance' },
     { path: '/workforce-forecast', icon: BarChart3, label: 'Workforce Forecast' },
     { path: '/anomaly-alerts', icon: AlertTriangle, label: 'Anomaly Alerts' },
     { path: '/department-reports', icon: FileText, label: 'Global Reports' },

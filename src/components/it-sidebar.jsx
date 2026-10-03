@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Server, Shield, Database, Terminal, User, Clock, Settings,
   ChevronLeft, ChevronRight, Menu, X, Home, UserCheck, History, CreditCard, GraduationCap,
-  KeyRound
+  KeyRound, Fingerprint
 } from 'lucide-react';
 import './sidebar.css'; 
 
@@ -78,6 +78,7 @@ export default function ItSidebar() {
     { path: '/role-management', icon: Shield, label: 'Role Management (RBAC)' },
     { path: '/database-metrics', icon: Database, label: 'Database Metrics' },
     { path: '/api-gateway', icon: Terminal, label: 'API Gateway Log' },
+    { path: '/attendance-logs', icon: Fingerprint, label: 'Real-Time Attendance' },
     { path: '/password-reset-requests', icon: KeyRound, label: 'Password Reset Requests' },
     { path: '/system-settings', icon: Settings, label: 'Global Settings' },
   ];

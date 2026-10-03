@@ -27,6 +27,7 @@ const LeaveApprovals = lazy(() => import('./features/leave/leave-approvals.jsx')
 const WorkforceForecast = lazy(() => import('./features/workforce/workforce-forecast.jsx'));
 const AnomalyAlert = lazy(() => import('./features/anomaly/anomaly-alert.jsx'));
 const DepartmentReports = lazy(() => import('./features/reports/department-reports.jsx'));
+const AttendanceLogs = lazy(() => import('./features/attendance/attendance-logs.jsx'));
 
 // HR Features (lazy)
 const HrDashboard = lazy(() => import('./features/dashboard/hr-dashboard.jsx'));
@@ -251,6 +252,11 @@ export default function Root() {
         <Route path="/department-reports" element={
           <ProtectedRoute user={currentUser} allowedRoles={MANAGEMENT_ROLES}>
             <DepartmentReports onLogout={handleLogout} user={currentUser} />
+          </ProtectedRoute>
+        } />
+        <Route path="/attendance-logs" element={
+          <ProtectedRoute user={currentUser} allowedRoles={MANAGEMENT_ROLES}>
+            <AttendanceLogs onLogout={handleLogout} user={currentUser} />
           </ProtectedRoute>
         } />
 

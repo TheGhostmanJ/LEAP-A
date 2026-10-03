@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, CheckSquare, BarChart3, AlertTriangle, FileText,
   User, Clock, ChevronLeft, ChevronRight, Menu, X,
-  UserCheck, History, CreditCard, GraduationCap
+  UserCheck, History, CreditCard, GraduationCap, Fingerprint
 } from 'lucide-react';
 import './sidebar.css';
 
@@ -75,6 +75,7 @@ export default function HodSidebar() {
 
   const mainMenuItems = [
     { path: '/hod-dashboard', icon: Home, label: 'Department Dashboard' },
+    { path: '/attendance-logs', icon: Fingerprint, label: 'Real-Time Attendance' },
     { path: '/leave-approvals', icon: CheckSquare, label: 'Leave Approvals' },
     { path: '/workforce-forecast', icon: BarChart3, label: 'Workforce Forecast' },
     { path: '/anomaly-alerts', icon: AlertTriangle, label: 'Anomaly Alerts' },

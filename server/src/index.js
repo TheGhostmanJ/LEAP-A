@@ -1803,6 +1803,55 @@ app.get('/api/attendance/summary/:employee_key', async (req, res) => {
   }
 });
 
+// GET: Fetch aggregated attendance logs for HR and HODs
+app.get('/api/attendance/logs', async (req, res) => {
+    const { department } = req.query;
+
+    try {
+        let deptFilter = '';
+        let queryParams = [];
+
+        if (department) {
+            deptFilter = `WHERE e.department = $1`;
+            queryParams.push(department);
+        }
+
+        const query = `
+            SELECT 
+                a.attendance_id,
+                e.first_name || ' ' || e.last_name AS employee_name,
+                e.employee_id,
+                e.department,
+                d.full_date AS date,
+                a.status,
+                a.hours_worked,
+                a.tardy_minutes,
+                (SELECT MIN(punch_time) 
+                 FROM public.fact_attendance_log 
+                 WHERE employee_key = a.employee_key 
+                   AND CAST(TO_CHAR(punch_time, 'YYYYMMDD') AS INTEGER) = a.date_key 
+                   AND punch_type = 0) AS time_in,
+                (SELECT MAX(punch_time) 
+                 FROM public.fact_attendance_log 
+                 WHERE employee_key = a.employee_key 
+                   AND CAST(TO_CHAR(punch_time, 'YYYYMMDD') AS INTEGER) = a.date_key 
+                   AND punch_type = 1) AS time_out
+            FROM public.fact_attendance a
+            JOIN public.dim_employee e ON a.employee_key = e.employee_key
+            JOIN public.dim_date d ON a.date_key = d.date_key
+            ${deptFilter}
+            ORDER BY d.full_date DESC, time_in DESC
+            LIMIT 200;
+        `;
+        
+        const result = await pool.query(query, queryParams);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error("Error fetching aggregated attendance logs:", error);
+        res.status(500).json({ error: "Failed to fetch attendance logs." });
+    }
+});
+
 // ==========================================
 // HOD: LEAVE APPROVALS 
 // ==========================================

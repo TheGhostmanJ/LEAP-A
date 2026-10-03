@@ -1,0 +1,78 @@
+.al-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.al-data-table th {
+  background-color: var(--color-bg-page);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.al-data-table td {
+  padding: 14px 20px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-light);
+  vertical-align: middle;
+}
+
+.al-data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.al-data-table tbody tr:hover {
+  background-color: var(--color-bg-page);
+}
+
+.al-emp-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.al-emp-id {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.al-cell-date, .al-cell-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.al-icon {
+  color: var(--color-text-muted);
+}
+
+.al-dept-badge {
+  display: inline-block;
+  background-color: var(--color-border-light);
+  color: var(--color-text-secondary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.al-empty-state {
+  text-align: center;
+  padding: 40px 20px !important;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.text-center {
+  text-align: center;
+}
