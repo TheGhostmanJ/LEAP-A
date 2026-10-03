@@ -1369,26 +1369,41 @@ app.get('/api/workforce-forecast', async (req, res) => {
         const alerts = [];
         let suggestion = null;
 
+        // NEW LOGIC: Provide a Weekly Breakdown instead of just an empty/stable message
+        // We will slice the 30-day forecast into 4 chunks (approx 1 week each)
+        for (let w = 0; w < 4; w++) {
+            // Get business days for the current week
+            const weekDays = forecast.slice(w * 7, (w + 1) * 7).filter(d => !d.isWeekend);
+            if (weekDays.length === 0) continue;
+
+            // Find the day with the lowest availability to represent the week's highest risk point
+            const minDay = weekDays.reduce((min, d) => d.availablePercentage < min.availablePercentage ? d : min, weekDays[0]);
+
+            let riskLevel = 'Low';
+            if (minDay.availablePercentage < 80) riskLevel = 'High';
+            else if (minDay.availablePercentage < 90) riskLevel = 'Moderate';
+
+            breakdowns.push({
+                dateRange: `${weekDays[0].dateStr} - ${weekDays[weekDays.length - 1].dateStr}`,
+                available: minDay.available,
+                required: requiredStaff,
+                riskLevel: riskLevel
+            });
+        }
+
+        // Keep the existing alert logic for critical dips
         const criticalDays = forecast.filter(f => f.availablePercentage < 90 && !f.isWeekend);
         
         if (criticalDays.length > 0) {
             const firstCrit = criticalDays[0].dateStr;
-            const lastCrit = criticalDays[criticalDays.length - 1].dateStr;
             
-            breakdowns.push({
-                dateRange: firstCrit === lastCrit ? firstCrit : `${firstCrit} -${lastCrit}`,
-                available: criticalDays[0].available,
-                required: requiredStaff,
-                riskLevel: criticalDays[0].availablePercentage < 80 ? 'High' : 'Moderate'
-            });
-
             alerts.push({
                 type: criticalDays[0].availablePercentage < 80 ? 'critical' : 'warning',
                 tag: 'Critical Dip',
-                message: `Availability drops to ${Math.round(criticalDays[0].availablePercentage)}\% around${firstCrit}.`
+                message: `Availability drops to ${Math.round(criticalDays[0].availablePercentage)}% around ${firstCrit}.`
             });
 
-            suggestion = `For the ${firstCrit} risk period, deferring${requiredStaff - criticalDays[0].available} pending leave requests restores the minimum 90% operational requirement.`;
+            suggestion = `For the ${firstCrit} risk period, deferring ${requiredStaff - criticalDays[0].available} pending leave requests restores the minimum 90% operational requirement.`;
         }
 
         if (pendingLeaves > 3) {
