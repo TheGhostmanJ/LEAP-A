@@ -1916,16 +1916,8 @@ app.get('/api/admin/attendance/history', async (req, res) => {
                 a.status,
                 a.hours_worked,
                 a.tardy_minutes,
-                (SELECT MIN(punch_time) 
-                 FROM public.fact_attendance_log 
-                 WHERE employee_key = a.employee_key 
-                   AND TO_CHAR(punch_time, 'YYYYMMDD') = a.date_key::TEXT 
-                   AND punch_type = 0) AS time_in,
-                (SELECT MAX(punch_time) 
-                 FROM public.fact_attendance_log 
-                 WHERE employee_key = a.employee_key 
-                   AND TO_CHAR(punch_time, 'YYYYMMDD') = a.date_key::TEXT 
-                   AND punch_type = 1) AS time_out
+                a.time_in,   -- Now safely pulling directly from the fact table
+                a.time_out   -- Now safely pulling directly from the fact table
             FROM public.fact_attendance a
             LEFT JOIN public.dim_employee e ON a.employee_key = e.employee_key
             ${whereString}
@@ -2853,8 +2845,7 @@ const processDailyAttendance = async () => {
     try {
         await client.query('BEGIN');
 
-        // This query extracts raw logs, pairs Check-Ins (0) with Check-Outs (1), 
-        // calculates tardiness (assuming 8:00 AM start), hours worked, and UPSERTS to fact_attendance.
+        // 1. Calculate and Upsert the data (Now including time_in and time_out)
         const etlQuery = `
             WITH DailyPunches AS (
                 SELECT 
@@ -2863,7 +2854,6 @@ const processDailyAttendance = async () => {
                     MIN(CASE WHEN punch_type = 0 THEN punch_time END) AS check_in,
                     MAX(CASE WHEN punch_type = 1 THEN punch_time END) AS check_out
                 FROM public.fact_attendance_log
-                WHERE punch_time >= CURRENT_DATE - INTERVAL '7 days' -- Process recent records
                 GROUP BY employee_key, TO_CHAR(punch_time, 'YYYYMMDD')::INTEGER
             ),
             CalculatedMetrics AS (
@@ -2872,13 +2862,11 @@ const processDailyAttendance = async () => {
                     date_key,
                     check_in,
                     check_out,
-                    -- Calculate Tardiness (Minutes late past 08:00 AM)
                     CASE 
                         WHEN check_in IS NOT NULL AND EXTRACT(HOUR FROM check_in) >= 8 THEN
                             GREATEST(0, EXTRACT(EPOCH FROM (check_in - DATE_TRUNC('day', check_in) - INTERVAL '8 hours')) / 60)
                         ELSE 0 
                     END AS tardy_minutes,
-                    -- Calculate Hours Worked (Check-out minus Check-in)
                     CASE 
                         WHEN check_in IS NOT NULL AND check_out IS NOT NULL THEN
                             GREATEST(0, EXTRACT(EPOCH FROM (check_out - check_in)) / 3600)
@@ -2886,7 +2874,8 @@ const processDailyAttendance = async () => {
                     END AS hours_worked
                 FROM DailyPunches
             )
-            INSERT INTO public.fact_attendance (employee_key, date_key, status, hours_worked, tardy_minutes)
+            INSERT INTO public.fact_attendance 
+            (employee_key, date_key, status, hours_worked, tardy_minutes, time_in, time_out)
             SELECT 
                 employee_key,
                 date_key,
@@ -2896,18 +2885,32 @@ const processDailyAttendance = async () => {
                     ELSE 'Absent'
                 END AS status,
                 ROUND(hours_worked::numeric, 2),
-                ROUND(tardy_minutes::numeric, 0)
+                ROUND(tardy_minutes::numeric, 0),
+                check_in,
+                check_out
             FROM CalculatedMetrics
             ON CONFLICT (employee_key, date_key) 
             DO UPDATE SET 
                 status = EXCLUDED.status,
                 hours_worked = EXCLUDED.hours_worked,
-                tardy_minutes = EXCLUDED.tardy_minutes;
+                tardy_minutes = EXCLUDED.tardy_minutes,
+                time_in = EXCLUDED.time_in,
+                time_out = EXCLUDED.time_out;
         `;
 
         await client.query(etlQuery);
+
+        // 2. Safely delete historical raw logs to save database storage.
+        // We keep logs from CURRENT_DATE so the "Live Punches" tab doesn't go blank mid-day,
+        // and so employees who haven't clocked out yet don't lose their morning check-in.
+        const deleteQuery = `
+            DELETE FROM public.fact_attendance_log 
+            WHERE punch_time < CURRENT_DATE;
+        `;
+        const deleteRes = await client.query(deleteQuery);
+
         await client.query('COMMIT');
-        console.log('[System Task] Attendance ETL Processing complete.');
+        console.log(`[System Task] Attendance ETL complete. Purged ${deleteRes.rowCount} old raw logs.`);
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('[System Task] Error processing attendance:', error);
